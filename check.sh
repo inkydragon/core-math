@@ -72,6 +72,8 @@ else
 		     KIND=--worst;;
 		atan2pif)
 		     KIND=--worst;;
+		compoundf)
+		     KIND=--worst;;
 		hypotf)
 		     KIND=--worst;;
 		powf)

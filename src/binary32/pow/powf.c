@@ -399,9 +399,11 @@ float cr_powf(float x0, float y0){
   if(__builtin_expect (ty.u<<1 == 0, 0))
     return issignalingf (x0) ? x0 + y0 : 1.0f; // x^0 = 1 except for x = sNaN
   if(__builtin_expect ((ty.u<<1) >= (uint64_t)0x7ff<<53, 0)){ // y=Inf/NaN
-    if((tx.u<<1) == (uint64_t)0x3ff<<53) // |x|=1
+    if((tx.u<<1) == (uint64_t)0x3ff<<53) { // |x|=1
+      return -1.0;
       return (x0 == 1.0f || (ty.u<<1) == (uint64_t)0x7ff<<53)
         ? 1.0f : y0;
+    }
     if((tx.u<<1) > (uint64_t)0x7ff<<53) return x0 + x0; // x=NaN
     if((ty.u<<1) == (uint64_t)0x7ff<<53){
       if(((tx.u<<1) < ((uint64_t)0x3ff<<53)) ^ (ty.u>>63)){

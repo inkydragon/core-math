@@ -212,8 +212,7 @@ check (float x, float y)
   int inex2 = fetestexcept (FE_INEXACT);
 #endif
   if (! is_equal (z1, z2)) {
-    d32u32 v = {.f = x};
-    printf("FAIL x,y=%a[%x],%a ref=%a z=%a\n", x, v.i, y, z1, z2);
+    printf("FAIL x,y=%a,%a ref=%a z=%a\n", x, y, z1, z2);
     fflush(stdout);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp atomic update

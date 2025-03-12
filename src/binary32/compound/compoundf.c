@@ -27,6 +27,7 @@ SOFTWARE.
 #include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
+#include <math.h> // needed to define compoundf since it is not in glibc
 #include <fenv.h>
 #ifdef __x86_64__
 #include <x86intrin.h>
@@ -130,8 +131,7 @@ static double p1 (double z)
    with absolute error < 2^-33.225 (see q1.sollya) */
 static double q1 (double z)
 {
-  //  int bug = z == 0x1.715474e163b99p-21;
-  int bug = 0;
+  // int bug = 0;
   static const double Q[] = {1.0, 0x1.62e42fef46c6bp-1,
                              0x1.ebfce69bff861p-3, 0x1.c6b19adeb965dp-5};
   double z2 = z * z;
@@ -146,8 +146,7 @@ static double q1 (double z)
 */
 static double _log2p1 (double x)
 {
-  // int bug = x == 1.0;
-  int bug = 0;
+  // int bug = 0;
   /* for x > 0, 1+x is exact when 2^-29 <=  x < 2^53
      for x < 0, 1+x is exact when -1 < x <= 2^-30 */
 
@@ -173,7 +172,7 @@ static double _log2p1 (double x)
   }
 
   double u = (x >= 0x1p53) ? x : 1.0 + x;
-  if (bug) printf ("u=%la\n", u);
+  // if (bug) printf ("u=%la\n", u);
   /* For x < 0x1p53, x + 1 is exact thus u = x+1.
      For x >= 2^53, we estimate log2(x) instead of log2(1+x),
      since log2(1+x) = log2(x) + log2(1+1/x),
@@ -183,17 +182,17 @@ static double _log2p1 (double x)
   b64u64_u v = {.f = u};
   uint64_t m = v.u & 0xfffffffffffffull;
   int64_t e = (v.u >> 52) - 0x3ff + (m >= 0x6a09e667f3bcdull);
-  if (bug) printf ("e=%ld\n", e);
+  // if (bug) printf ("e=%ld\n", e);
   // 2^e/sqrt(2) < u < 2^e*sqrt(2)
   // v.u = ((0x3ffull + e) << 52) | m;
   v.u -= e << 52;
   double t = v.f;
-  if (bug) printf ("t=%la\n", t);
+  // if (bug) printf ("t=%la\n", t);
   // u = 2^e*t with 1/sqrt(2) < t < sqrt(2)
   // thus log2(u) = e + log2(t)
   v.f += 2.0; // add 2 so that v.f is always in the binade [2, 4)
   int i = (v.u >> 46) - 0x10016; // 0 <= i <= 23
-  if (bug) printf ("i=%d\n", i);
+  // if (bug) printf ("i=%d\n", i);
   // for 0<=i<24, inv[i] approximates 1/t for 1/2+(i+6)/32 <= t < 1/2+(i+7)/32
   static const double inv[] = {
     0x1.7p+0, 0x1.6p+0, 0x1.5p+0, 0x1.4p+0, 0x1.38p+0, 0x1.28p+0, 0x1.2p+0,
@@ -214,7 +213,7 @@ static double _log2p1 (double x)
   };
   double r = inv[i];
   double z = __builtin_fma (r, t, -1.0); // exact, -1/32 <= z <= 17/512
-  if (bug) printf ("r=%la z=%la\n", r, z);
+  // if (bug) printf ("r=%la z=%la\n", r, z);
   // we approximates log2(t) by -log2(r) + log2(r*t)
   double p = p1 (z); // approximates log2(r*t)
   return (double) e + (log2inv[i] + p);
@@ -224,16 +223,15 @@ static double _log2p1 (double x)
 // otherwise -1.0
 static double _exp2_1 (double t)
 {
-  // int bug = t == -0x1.fffffffa3aae2p+6;
-  int bug = 0;
+  // int bug = t == -0x1.715476af0d533p-25;
   double k = roundeven_finite (t); // 0 <= |k| <= 150
-  if (bug) printf ("k=%la\n", k);
+  // if (bug) printf ("k=%la\n", k);
   double r = t - k; // |r| <= 1/2
-  if (bug) printf ("r=%la\n", r);
+  // if (bug) printf ("r=%la\n", r);
   b64u64_u v = {.f = 3.015625 + r}; // 2.5 <= v <= 3.5015625
   // we add 2^-6 so that i is rounded to nearest
   int i = (v.u >> 46) - 0x10010; // 0 <= i <= 32
-  if (bug) printf ("i=%d\n", i);
+  // if (bug) printf ("i=%d\n", i);
   // r is near (i-16)/2^5
   static const double exp2_T[] = { // exp2_T[i] = (i-16)/2^5
     -0x1p-1, -0x1.ep-2, -0x1.cp-2, -0x1.ap-2, -0x1.8p-2, -0x1.6p-2, -0x1.4p-2,
@@ -243,7 +241,7 @@ static double _exp2_1 (double t)
     0x1.ap-2, 0x1.cp-2, 0x1.ep-2, 0x1p-1,
   };
   r -= exp2_T[i];
-  if (bug) printf ("exp2_T[i]=%la r=%la\n", exp2_T[i], r);
+  // if (bug) printf ("exp2_T[i]=%la r=%la\n", exp2_T[i], r);
   // now |r| <= 2^-6
   static const double exp2_U[] = {
     0x1.6a09e667f3bcdp-1, 0x1.71f75e8ec5f74p-1, 0x1.7a11473eb0187p-1,
@@ -263,20 +261,18 @@ static double _exp2_1 (double t)
   double err = 0x1.36p-33; // 2^-33.225 * exp2_U[32] < err
   float lb = v.f - err, rb = v.f + err;
   if (lb != rb) return -1.0f;
-  if (bug) printf ("q1(r)=%la\n", q1 (r));
-  if (bug) printf ("v=%la k=%la\n", v.f, k);
+  // if (bug) printf ("q1(r)=%la\n", q1 (r));
+  // if (bug) printf ("v=%la k=%la\n", v.f, k);
   v.u += (int64_t) k << 52; // scale v by 2^k
   if (__builtin_expect (v.f < 0x1p-126f, 0)) { // underflow
     feraiseexcept (FE_UNDERFLOW);
   }
-  if (bug) printf ("v=%la\n", v.f);
+  // if (bug) printf ("v=%la\n", v.f);
   return v.f;
 }
 
 float cr_compoundf (float x, float y)
 {
-  // int bug = x == 0x1.fffffep+127f && y == -0x1p+0f;
-  int bug = 0;
   /* Rules from IEEE 754-2019 for compound (x, n) with n integer:
      (a) compound (x, 0) is 1 for x >= −1 or quiet NaN
      (b) compound (−1, n) is +Inf and signals the divideByZero exception for n < 0
@@ -336,11 +332,11 @@ float cr_compoundf (float x, float y)
   // now x > -1
 
   double l = _log2p1 (tx.f); // approximates log2(1+x)
-  if (bug) printf ("log2(1+x)=%la\n", l);
+  // if (bug) printf ("log2(1+x)=%la\n", l);
   /* 2^-149 <= |l| < 128 */
   
   b64u64_u t = {.f = l * ty.f};
-  if (bug) printf ("y*log2(1+x)=%la\n", t.f);
+  // if (bug) printf ("y*log2(1+x)=%la\n", t.f);
   /* since 2^-149 <= |l| < 128 and 2^-149 <= |y| < 2^128, we have
      2^-298 <= |t| < 2^135, thus no underflow/overflow in double is possible */
 
@@ -359,15 +355,22 @@ float cr_compoundf (float x, float y)
     }
   }
 
-  // 2^t rounds to 1 to nearest when |t| <= 0x1.7154759a0df53p-24
-  if (__builtin_expect ((t.u << 1) <= 0x7cee2a8eb341bea6ull, 0))
+  // 2^t rounds to 1 to nearest when |t| <= 0x1.715476ba97f14p-25
+  if (__builtin_expect ((t.u << 1) <= 0x3e6715476ba97f14ull, 0))
     return (t.u >> 63) ? 1.0f - 0x1p-25f : 1.0f + 0x1p-25f;
 
   float res = _exp2_1 (t.f);
   if (res != -1.0f)
     return res;
 
-  if (bug) printf ("fast path failed\n");
+  // if (bug) printf ("fast path failed\n");
   // fast path failed
   return res;
 }
+
+#ifndef SKIP_C_FUNC_REDEF // icx provides this function
+/* just to compile since glibc does not contain this function */
+float compoundf(float x, float y){
+  return powf(1.0f+x,y);
+}
+#endif

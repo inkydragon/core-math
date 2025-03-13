@@ -268,37 +268,42 @@ static double _exp2_1 (double t)
      exp(u) = exp(t) * (1 + eps) with eps < 2^(2^-40.293)-1 < 2^-40.821.
      The total absolute error is thus bounded by 2^-43.035 + 2^-40.821
      < 2^-40.539. */
-  double err = 0x1.61p-41; // 2^-40.539 < 0x1.61p-41
-  float lb = v.f - err, rb = v.f + err;
-  if (lb != rb) return -1.0f;
+  b64u64_u err = {.f = 0x1.61p-41}; // 2^-40.539 < 0x1.61p-41
   v.u += (int64_t) k << 52; // scale v by 2^k
-  if (__builtin_expect (v.f < 0x1p-126f, 0)) // underflow
-    return -1.0f; /* fail because the above rounding test does not work
-                     for subnormals */
+  err.u += (int64_t) k << 52; // scale the error by 2^k too
+  float lb = v.f - err.f, rb = v.f + err.f;
+  if (lb != rb) return -1.0f; // rounded test failed
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  if (__builtin_expect (v.f < 0x1p-126, 0)) // underflow
+    errno = ERANGE;
+#endif
+
   return v.f;
 }
 
 float cr_compoundf (float x, float y)
 {
   /* Rules from IEEE 754-2019 for compound (x, n) with n integer:
-     (a) compound (x, 0) is 1 for x >= −1 or quiet NaN
-     (b) compound (−1, n) is +Inf and signals the divideByZero exception for n < 0
-     (c) compound (−1, n) is +0 for n > 0
+     (a) compound (x, 0) is 1 for x >= -1 or quiet NaN
+     (b) compound (-1, n) is +Inf and signals the divideByZero exception for n < 0
+     (c) compound (-1, n) is +0 for n > 0
      (d) compound (+/-0, n) is 1
      (e) compound (+Inf, n) is +Inf for n > 0
      (f) compound (+Inf, n) is +0 for n < 0
-     (g) compound (x, n) is qNaN and signals the invalid exception for x < −1
+     (g) compound (x, n) is qNaN and signals the invalid exception for x < -1
      (h) compound (qNaN, n) is qNaN for n <> 0.
   */
   double xd = x, yd = y;
   b64u64_u tx = {.f = xd}, ty = {.f = yd};
 
-  if(__builtin_expect (x == 0, 0)) // compound(0,y) = 1 except for y = sNaN
-    return issignalingf (y) ? x + y : 1.0f;
+  if (__builtin_expect((tx.u & ty.u)<<1 == 0, 0)) {
+    if (tx.u<<1 == 0)   // compound(0,y) = 1 except for y = sNaN
+      return issignalingf (y) ? x + y : 1.0f;
 
-  if(__builtin_expect (ty.u<<1 == 0, 0)) { // compound (x, 0)
-    if (issignalingf (x)) return x + y; // x = sNaN
-    return (x < -1.0f) ? 0.0f / 0.0f : 1.0f; // rules (g) and (a)
+    if (ty.u<<1 == 0) { // compound (x, 0)
+      if (issignalingf (x)) return x + y; // x = sNaN
+      return (x < -1.0f) ? 0.0f / 0.0f : 1.0f; // rules (g) and (a)
+    }
   }
 
   if(__builtin_expect ((ty.u<<1) >= (uint64_t)0x7ff<<53, 0)){ // y=Inf/NaN

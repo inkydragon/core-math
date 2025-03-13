@@ -3,7 +3,7 @@ pretty = proc(u) {
 };
 
 d=[-1/2^6,1/2^6];
-n=3;
+n=4;
 f = 2^x;
 w = 1;
 p =  remez(f, n, d, w);

@@ -188,7 +188,7 @@ fix_underflow (float x, float y, float z)
   mpfr_clear (u);
 }
 
-int tests = 0, failures = 0;
+int tests = 0, failures = 0, skipped = 0;
 
 static void
 check (float x, float y)
@@ -211,6 +211,7 @@ check (float x, float y)
 #ifdef CORE_MATH_CHECK_INEXACT
   int inex2 = fetestexcept (FE_INEXACT);
 #endif
+  if (z2 == -1.0f) skipped++;
   if (z2 != -1.0f && ! is_equal (z1, z2)) {
     printf("FAIL x,y=%a,%a ref=%a z=%a\n", x, y, z1, z2);
     fflush(stdout);
@@ -372,7 +373,8 @@ doloop(void)
   }
 
   free(items);
-  printf("%d tests passed, %d failure(s)\n", tests, failures);
+  printf("%d tests passed, %d failure(s), %d skipped\n", tests, failures,
+         skipped);
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN

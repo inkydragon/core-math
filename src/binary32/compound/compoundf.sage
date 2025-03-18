@@ -57,6 +57,57 @@ def inv():
    if s!="   ":
       print (s)
    print ("  };")
+   print (Zmin, Zmax, err)
+
+def inv2():
+   Zmin = 0
+   Zmax = 0
+   T = []
+   U = []
+   for i in range(46):
+      a = 1/2+(i+13)/64
+      b = 1/2+(i+14)/64
+      c = (a+b)/2
+      p = 53
+      while true:
+         R = RealField(p)
+         if a==1 or b==1: # force r=1 near 1
+            r = R(1)
+         else:
+            r = R(1/c)
+         R = r.exact_rational()
+         zmin = R*a-1
+         zmax = R*b-1
+         u = min(RR(a).ulp(),RR(b).ulp())
+         u = u*r.ulp()
+         # r*x-1 is an integer multiple of u
+         kmin = abs(zmin/u)
+         kmax = abs(zmax/u)
+         if max(kmin,kmax)>2^53:
+            p = p-1
+            continue
+         # print (i, get_hex(r))
+         Zmin = min(Zmin,zmin)
+         Zmax = max(Zmax,zmax)
+         break
+      T.append(r)
+      h = RR(n(-log(R)/log(2),200))
+      l = RR(n(-log(R)/log(2)-h.exact_rational(),200))
+      U.append((h,l))
+   print ("  static const double inv2[] = {")
+   s = "   "
+   for r in T:
+      s = s + " " + get_hex(r) + ","
+      if len(s)+11>=80:
+         print (s)
+         s = "   "
+   if s!="   ":
+      print (s)
+   print ("  };")
+   print ("  static const double log2inv2[][2] = {")
+   for h,l in U:
+      print ("    {" + get_hex(h) + "," + get_hex(l) + "},")
+   print ("  };")
    print (Zmin, Zmax)
 
 # exp2_tables()

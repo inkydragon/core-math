@@ -4,9 +4,9 @@ def inv():
    T = []
    U = []
    maxerr = 0 # maximal absolute error on u[i] ~ -log(r[i])/log(2)
-   for i in range(6,29+1):
-      a = 1/2+i/32
-      b = 1/2+(i+1)/32
+   for i in range(13,58+1):
+      a = 1/2+i/64
+      b = 1/2+(i+1)/64
       c = (a+b)/2
       p = 53
       while true:
@@ -41,7 +41,7 @@ def inv():
    s = "   "
    for r in T:
       s = s + " " + get_hex(r) + ","
-      if len(s)+10>=80:
+      if len(s)+11>=80:
          print (s)
          s = "   "
    if s!="   ":
@@ -162,16 +162,14 @@ def x_minus_one_exact(x):
 def RIFulp(x):
    return max(x.lower().ulp(),x.upper().ulp())
 
+# analyze_p1()
+# (1.13776403884686e-15, -0.0227200765000836, 0.0227200765000836)
 def analyze_p1():
-   z = RIF(-1/32,17/512)
+   z = RIF(-1/64,1/64)
    z2 = z*z
    err_z2 = RIFulp(z2)
-   P = ["0x0p0", "0x1.71547652b82f8p0", "-0x1.71547652b85dep-1",
-    "0x1.ec709dc45dfb6p-2", "-0x1.7154764584224p-2", "0x1.2776b6f101774p-2",
-    "-0x1.ec718114b01e7p-3", "0x1.a6c377acc0adbp-3", "-0x1.6f7027053a9e5p-3"]
+   P = ["0x0p0", "0x1.71547652b82fep0", "-0x1.71547652b8d11p-1", "0x1.ec709dc3a5014p-2", "-0x1.715475b144983p-2", "0x1.2776c3fda300ep-2", "-0x1.ec990162358cep-3", "0x1.a645337c29e27p-3"]
    P = [RIF(RR(x,16)) for x in P]
-   c7 = P[8]*z+P[7]
-   err_c7 = RIFulp(c7)
    c5 = P[6]*z+P[5]
    err_c5 = RIFulp(c5)
    c3 = P[4]*z+P[3]
@@ -180,8 +178,8 @@ def analyze_p1():
    err_c1 = RIFulp(c1)
    z4 = z2*z2
    err_z4 = RIFulp(z4)+2*z2.abs().upper()*err_z2
-   c5 = c7*z2+c5
-   err_c5 = err_c7*z2.abs().upper()+c7.abs().upper()*err_z2+err_c5+RIFulp(c5)
+   c5 = P[7]*z2+c5
+   err_c5 = P[7].abs().upper()*err_z2+err_c5+RIFulp(c5)
    c1 = c3*z2+c1
    err_c1 = err_c3*z2.abs().upper()+c3.abs().upper()*err_z2+err_c1+RIFulp(c1)
    c1 = c5*z4+c1
@@ -189,26 +187,27 @@ def analyze_p1():
    relerr_c1 = err_c1/c1.abs().lower() # bound on relative error on c1
    res = z*c1
    # since c1 has relative error <= relerr_c1, the product z*c1 has
-   # relative error < 2^-52, and the Sollya relative error is < 2^-49.809,
+   # relative error < 2^-52, and the Sollya relative error is < 2^-50.98
    # the total relative error is bounded by
-   # (1+relerr_c1)*(1+2^-52)*(1+2^-49.809)-1
+   # (1+relerr_c1)*(1+2^-52)*(1+2^-50.98)-1
    R = RealField(100)
-   relerr = (1+R(relerr_c1))*(1+R(2^-52))*(1+R(2^-49.809))-1
+   relerr = (1+R(relerr_c1))*(1+R(2^-52))*(1+R(2^-50.98))-1
    return RR(relerr), res.lower(), res.upper()
 
 # analyze the maximal relative error of _log2p1() for |x| >= 2^-29
 # analyze_log2p1()
-# e= 0 i= 11 relerr= 4.72359317396951e-15
-# thus the maximal relative error is 4.72359317396951e-15 < 2^-47.589
+# e= 0 i= 11 relerr= 1.15272137198494e-15
+# thus the maximal relative error is 1.15272137198494e-15 < 2^-49.623
 def analyze_log2p1():
    R = RealField(100)
    err0 = R(2^-58.198) # additional relative error for x >= 2^53   
-   p = RIF(R("-0x1.773d5d60f4006p-5",16), R("0x1.8eb1333703407p-5",16))
+   # p is the interval for p1()
+   p = RIF(R(-2^-5.459), R(2^-5.459))
    log2inv = ["-0x1.0c10500d63aa6p-1", "-0x1.d6753e032ea0fp-2", "-0x1.91bba891f1709p-2", "-0x1.49a784bcd1b8bp-2", "-0x1.24407ab0e073ap-2", "-0x1.acf5e2db4ec94p-3", "-0x1.5c01a39fbd688p-3", "-0x1.08c588cda79e4p-3", "-0x1.663f6fac91316p-4", "0x0p+0", "0x0p+0", "0x1.1bb32a600549dp-4", "0x1.e0b1ae8f2fd56p-4", "0x1.22dadc2ab3497p-3", "0x1.8a8980abfbd32p-3", "0x1.dac22d3e441d3p-3", "0x1.169c05363f158p-2", "0x1.32bfee370ee68p-2", "0x1.5dfdcf1eeae0ep-2", "0x1.7b89f02cf2aadp-2", "0x1.a8ff971810a5ep-2", "0x1.c819dc2d45fe4p-2", "0x1.e7df5fe538ab3p-2", "0x1.042bd4b9a7c99p-1"]
    log2inv = [R(x,16) for x in log2inv]
    n = len(log2inv)
    assert n==24, "n==24"
-   relerr_p1 = R(2^-49.058)
+   relerr_p1 = R(2^-49.642)
    abserr_p1 = relerr_p1*p.abs().upper() # bound on absolute error for p1
    maxerr = 0
    for e in [-29..128]:

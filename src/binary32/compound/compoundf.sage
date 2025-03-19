@@ -1,69 +1,18 @@
-def inv():
+# compute the tables for log2 (fast and accurate path)
+# log2_tables()
+# -1/64 1/64
+# (4.02886959854394e-17, 1.43610231315189e-33)
+# thus r*x-1 is included in [-1/64,1/64]
+# and the maximal absolute error between -log(r)/log(2) and h is
+# less than 4.02886959854394e-17 < 2^-54.462
+# and the maximal absolute error between -log(r)/log(2) and h+l is
+# less than 1.43610231315189e-33 < 2^-109.101
+def log2_tables():
    Zmin = 0
    Zmax = 0
    T = []
    U = []
-   maxerr = 0 # maximal absolute error on u[i] ~ -log(r[i])/log(2)
-   for i in range(13,58+1):
-      a = 1/2+i/64
-      b = 1/2+(i+1)/64
-      c = (a+b)/2
-      p = 53
-      while true:
-         R = RealField(p)
-         if a==1 or b==1: # force r=1 near 1
-            r = R(1)
-         else:
-            r = R(1/c)
-         R = r.exact_rational()
-         zmin = R*a-1
-         zmax = R*b-1
-         u = min(RR(a).ulp(),RR(b).ulp())
-         u = u*r.ulp()
-         # r*x-1 is an integer multiple of u
-         kmin = abs(zmin/u)
-         kmax = abs(zmax/u)
-         if max(kmin,kmax)>2^53:
-            p = p-1
-            continue
-         # print (i, get_hex(r))
-         Zmin = min(Zmin,zmin)
-         Zmax = max(Zmax,zmax)
-         break
-      T.append(r)
-      u = RR(n(-log(R)/log(2),100))
-      err = abs(n(u.exact_rational()+log(R)/log(2),100))
-      if err>maxerr:
-         maxerr = err
-         print (i,err)
-      U.append(u)
-   print ("  static const double inv[] = {")
-   s = "   "
-   for r in T:
-      s = s + " " + get_hex(r) + ","
-      if len(s)+11>=80:
-         print (s)
-         s = "   "
-   if s!="   ":
-      print (s)
-   print ("  };")
-   print ("  static const double log2inv[] = {")
-   s = "   "
-   for r in U:
-      s = s + " " + get_hex(r) + ","
-      if len(s)+20>=80:
-         print (s)
-         s = "   "
-   if s!="   ":
-      print (s)
-   print ("  };")
-   print (Zmin, Zmax, err)
-
-def inv2():
-   Zmin = 0
-   Zmax = 0
-   T = []
-   U = []
+   maxerr = maxerr2 = 0
    for i in range(46):
       a = 1/2+(i+13)/64
       b = 1/2+(i+14)/64
@@ -94,6 +43,14 @@ def inv2():
       h = RR(n(-log(R)/log(2),200))
       l = RR(n(-log(R)/log(2)-h.exact_rational(),200))
       U.append((h,l))
+      err = abs(n(-log(R)/log(2)-h.exact_rational(),200))
+      if err>maxerr:
+         print (i, "err=", err)
+         maxerr = err
+      err2 = abs(n(-log(R)/log(2)-h.exact_rational()-l.exact_rational(),200))
+      if err2>maxerr2:
+         print (i, "err2=", err2)
+         maxerr2 = err2
    print ("  static const double inv2[] = {")
    s = "   "
    for r in T:
@@ -109,14 +66,23 @@ def inv2():
       print ("    {" + get_hex(h) + "," + get_hex(l) + "},")
    print ("  };")
    print (Zmin, Zmax)
+   return RR(maxerr), RR(maxerr2)
 
 # exp2_tables()
 # 21 1.0410278456845496999236326786e-16
-# 1.0410278456845496999236326786e-16
-# thus the maximal absolute error between u[i] and 2^r[i] is
+# 25 err2= 4.7172061428849980120374241673535457364810803525893497222708e-33
+# thus the maximal absolute error between u[i][0] and 2^r[i] is
 # 1.0410278456845496999236326786e-16 < 2^-53.092
+# and the maximal absolute error between u[i][0]+u[i][1] and 2^r[i] is
+# 4.7172061428849980120374241673535457364810803525893497222708e-33 < 2^-107.385
 def exp2_tables():
    T = [RR((i-16)/2^5) for i in [0..32]]
+   U = []
+   for x in T:
+      X = x.exact_rational()
+      h = RR(n(2^X,200))
+      l = RR(n(2^X-h.exact_rational(),200))
+      U.append((h,l))
    print ("  static const double exp2_T[] = {")
    s = "   "
    for r in T:
@@ -127,26 +93,24 @@ def exp2_tables():
    if s!="   ":
       print (s)
    print ("  };")
-   U = [RR(n(2^x.exact_rational(),100)) for x in T]
-   print ("  static const double exp2_U[] = {")
-   s = "   "
-   for r in U:
-      s = s + " " + get_hex(r) + ","
-      if len(s)+20>=80:
-         print (s)
-         s = "   "
-   if s!="   ":
-      print (s)
+   print ("  static const double exp2_U[][2] = {")
+   for h,l in U:
+      print ("    {" + get_hex(h) + "," + get_hex(l) + "},")
    print ("  };")
    maxerr = 0
+   maxerr2 = 0
    for i in range(len(T)):
       x = T[i]
       X = x.exact_rational()
-      err = abs(n(2^X-U[i].exact_rational(),100))
+      err = abs(n(2^X-U[i][0].exact_rational(),100))
       if err>maxerr:
-         print (i,err)
+         print (i,"err=",err)
          maxerr = err
-   return maxerr
+      err2 = abs(n(2^X-U[i][0].exact_rational()-U[i][1].exact_rational(),200))
+      if err2>maxerr2:
+         print (i,"err2=",err2)
+         maxerr2 = err2
+   return maxerr, maxerr2
 
 # return true if x-1 is exact
 def x_minus_one_exact(x):
@@ -196,22 +160,22 @@ def analyze_p1():
 
 # analyze the maximal relative error of _log2p1() for |x| >= 2^-29
 # analyze_log2p1()
-# e= 0 i= 11 relerr= 1.15272137198494e-15
-# thus the maximal relative error is 1.15272137198494e-15 < 2^-49.623
+# e= 0 i= 20 relerr= 3.46263286161655e-15
+# thus the maximal relative error is 3.46263286161655e-15 < 2^-48.037
 def analyze_log2p1():
    R = RealField(100)
    err0 = R(2^-58.198) # additional relative error for x >= 2^53   
    # p is the interval for p1()
    p = RIF(R(-2^-5.459), R(2^-5.459))
-   log2inv = ["-0x1.0c10500d63aa6p-1", "-0x1.d6753e032ea0fp-2", "-0x1.91bba891f1709p-2", "-0x1.49a784bcd1b8bp-2", "-0x1.24407ab0e073ap-2", "-0x1.acf5e2db4ec94p-3", "-0x1.5c01a39fbd688p-3", "-0x1.08c588cda79e4p-3", "-0x1.663f6fac91316p-4", "0x0p+0", "0x0p+0", "0x1.1bb32a600549dp-4", "0x1.e0b1ae8f2fd56p-4", "0x1.22dadc2ab3497p-3", "0x1.8a8980abfbd32p-3", "0x1.dac22d3e441d3p-3", "0x1.169c05363f158p-2", "0x1.32bfee370ee68p-2", "0x1.5dfdcf1eeae0ep-2", "0x1.7b89f02cf2aadp-2", "0x1.a8ff971810a5ep-2", "0x1.c819dc2d45fe4p-2", "0x1.e7df5fe538ab3p-2", "0x1.042bd4b9a7c99p-1"]
+   log2inv = ["-0x1.f7a8568cb06cfp-2","-0x1.d6753e032ea0fp-2","-0x1.b47ebf73882a1p-2","-0x1.91bba891f1709p-2","-0x1.800a563161c54p-2","-0x1.5c01a39fbd688p-2","-0x1.49a784bcd1b8bp-2","-0x1.24407ab0e073ap-2","-0x1.11307dad30b76p-2","-0x1.d49ee4c32597p-3","-0x1.acf5e2db4ec94p-3","-0x1.5c01a39fbd688p-3","-0x1.32ae9e278ae1ap-3","-0x1.08c588cda79e4p-3","-0x1.bc84240adabbap-4","-0x1.663f6fac91316p-4","-0x1.0eb389fa29f9bp-4","-0x1.6bad3758efd87p-5","0x0p+0","0x0p+0","0x1.184b8e4c56af8p-5","0x1.d6ebd1f1febfep-5","0x1.4c560fe68af88p-4","0x1.7d60496cfbb4cp-4","0x1.e0b1ae8f2fd56p-4","0x1.22dadc2ab3497p-3","0x1.494f863b8df35p-3","0x1.7046031c79f85p-3","0x1.97c1cb13c7ec1p-3","0x1.bfc67a7fff4ccp-3","0x1.e857d3d361368p-3","0x1.08bce0d95fa38p-2","0x1.169c05363f158p-2","0x1.2baa0c34be1ecp-2","0x1.4106017c3eca3p-2","0x1.4f6fbb2cec598p-2","0x1.6552b49986277p-2","0x1.7b89f02cf2aadp-2","0x1.8a8980abfbd32p-2","0x1.99b072a96c6b2p-2","0x1.a8ff971810a5ep-2","0x1.b877c57b1b07p-2","0x1.cffae611ad12bp-2","0x1.dfdd89d586e2bp-2","0x1.efec61b011f85p-2","0x1.0014332be0033p-1"]
    log2inv = [R(x,16) for x in log2inv]
    n = len(log2inv)
-   assert n==24, "n==24"
+   assert n==46, "n==46"
    relerr_p1 = R(2^-49.642)
    abserr_p1 = relerr_p1*p.abs().upper() # bound on absolute error for p1
    maxerr = 0
    for e in [-29..128]:
-      for i in range(24):
+      for i in range(46):
          t = RIF(log2inv[i]) + p
          u = R(e) + t
          if log2inv[i]==0 and e==0:
@@ -246,3 +210,15 @@ def analyze_q1():
    err_res = err_c2*z2.abs().upper()+c2.abs().upper()*err_z2+err_c0+RIFulp(res)
    err_res += err0 # Sollya error
    return err_res, res.lower(), res.upper()
+
+def scale_table():
+   print ("  static const double scale[] = {")
+   s = "   "
+   for e in range(-29, 128+1):
+      s += " " + get_hex (RR(2^-e)) + ","
+      if len(s)+10>=80:
+         print (s)
+         s = "   "
+   if s != "   ":
+     print (s)
+   print ("  };")

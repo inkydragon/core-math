@@ -66,15 +66,18 @@ def log2_tables():
       print ("    {" + get_hex(h) + "," + get_hex(l) + "},")
    print ("  };")
    print (Zmin, Zmax)
-   return RR(maxerr), RR(maxerr2)
+   print (RR(maxerr), RR(maxerr2))
+   return T, U
 
 # exp2_tables()
 # 21 1.0410278456845496999236326786e-16
 # 25 err2= 4.7172061428849980120374241673535457364810803525893497222708e-33
+# |exp2_U[i][1]| <  1.04102784568456e-16
 # thus the maximal absolute error between u[i][0] and 2^r[i] is
 # 1.0410278456845496999236326786e-16 < 2^-53.092
 # and the maximal absolute error between u[i][0]+u[i][1] and 2^r[i] is
 # 4.7172061428849980120374241673535457364810803525893497222708e-33 < 2^-107.385
+# and |exp2_U[i][1]| < 1.04102784568456e-16 < 2^-53.092
 def exp2_tables():
    T = [RR((i-16)/2^5) for i in [0..32]]
    U = []
@@ -94,8 +97,10 @@ def exp2_tables():
       print (s)
    print ("  };")
    print ("  static const double exp2_U[][2] = {")
+   Al = 0
    for h,l in U:
       print ("    {" + get_hex(h) + "," + get_hex(l) + "},")
+      Al = max(Al,abs(l))
    print ("  };")
    maxerr = 0
    maxerr2 = 0
@@ -110,7 +115,8 @@ def exp2_tables():
       if err2>maxerr2:
          print (i,"err2=",err2)
          maxerr2 = err2
-   return maxerr, maxerr2
+   print ("|exp2_U[i][1]| < ", Al)
+   return maxerr, maxerr2, U
 
 # return true if x-1 is exact
 def x_minus_one_exact(x):
@@ -158,17 +164,121 @@ def analyze_p1():
    relerr = (1+R(relerr_c1))*(1+R(2^-52))*(1+R(2^-50.98))-1
    return RR(relerr), res.lower(), res.upper()
 
+# return hi, lo and a bound on the dmul error
+def analyze_dmul(ah,al,bh,bl):
+   err = (al*bl).abs().upper() # ignored term
+   hi = ah*bh
+   u = RIFulp(hi)
+   s = RIF(-u,u)
+   t = al*bh+s
+   err += RIFulp(t)
+   lo = ah*bl+t
+   err += RIFulp(lo)
+   return hi, lo, err
+
+# return hi, lo and a bound on the relative dmul error
+# this is only called with (bh,bl)=(zh,zl), with |zl| < ulp(zh)
+# thus |zl| < 2^-52 |zh|
+def analyze_dmul_rel(ah,al,bh,bl):
+   R = RealField(200)
+   rel_a = R((al/ah).abs()) # bound on |al/ah|
+   rel_b = R(2^-52)     # bound on |bl/bh|
+   err = rel_a*rel_b # ignored term
+   hi = ah*bh
+   u = RIFulp(hi)
+   s = RIF(-u,u) # |s| <= 2^-52 |hi|
+   t = al*bh+s
+   # |t| <= (rel_a+2^-52)*|hi|
+   rel_t = rel_a+R(2^-52)
+   k = log(rel_t)/log(2.)
+   # if |t| <= 2^k*|hi| then ulp(t) <= 2^k ulp(hi) <= 2^(k-52) |hi|
+   err = (1+err)*(1+R(2^ceil(k-52)))-1
+   lo = ah*bl+t
+   # |lo| <= (2^k+rel_b)*|hi|
+   rel_lo = R(2^k)+rel_b
+   k2 = log(rel_lo)/log(2.)
+   err = (1+err)*(1+R(2^ceil(k2-52)))-1
+   return hi, lo, RR(err)
+
+sage.rings.real_mpfi.printing_style = 'brackets'
+
+# analyze_p2()
+# (3.52538243018662e-28,
+#  [-0.022720076500083991 .. 0.022720076500083991],
+# [-1.2398970949199793e-17 .. 1.2398970949199793e-17])
+# thus the relative error is bounded by 3.52538243018662e-28 < 2^-91.196
+# |h| <= 0.022720076500083991 < 2^-5.459
+# |l| <= 1.2398970949199793e-17 < 2^56.162
+# since |l/h| <= 1.7370008299703799e-16 < 2^-52.354 before the final mult,
+# and |zl/zh| <= 2^-52, the variable s in d_mul is bounded by
+# ulp(hi) <= 2^-52*|hi|, then |t| <= (2^-52.354+2^-52)*|hi|,
+# and |lo| <= (2^-52+2^-52.354+2^-52)*|hi| < 2^-50.523*|hi|
+def analyze_p2():
+   R = RealField(200)
+   zh = RIF(-1/64-2^-51.508,1/64+2^-51.508)
+   zl = RIF(-2^-58,2^-58)
+   z = zh+zl
+   P2 = ["0x1.71547652b82fep+0", "0x1.777d0ffda0d8p-56", "-0x1.71547652b82fep-1", "-0x1.777d0fd20b49cp-57", "0x1.ec709dc3a03fdp-2", "0x1.d27f05171b74ap-56", "-0x1.71547652b82fep-2", "-0x1.7814e70b828bp-58", "0x1.2776c50ef9bfep-2", "0x1.e4f63e12bff83p-56", "-0x1.ec709dc3a03f4p-3", "0x1.a61762a7adeccp-3", "-0x1.71547652d8849p-3", "0x1.484b13d7e7029p-3", "-0x1.2776c1b2a40fdp-3", "0x1.0c9a80f9b7c1cp-3", "-0x1.ecc68011212p-4", "0x1.c6e4b91fd10e5p-4"]
+   P2 = [RIF(RR(x,16)) for x in P2]
+   h = P2[4+13]
+   err = R(0)
+   for i in range(12,7-1,-1):
+      ignored = h*zl
+      h = h*zh+P2[4+i]
+      err = err*zh.abs().upper()+ignored.abs().upper()+RIFulp(h)
+   # s_mul (h, l, *h, zh, zl)
+   h_old = h
+   h = h*z
+   u = RIFulp(h)
+   l = RIF(-u,u)
+   err = err*z.abs().upper()+l.abs().upper().ulp()
+   # fast_two_sum (h, &t, P2[10], *h)
+   h = P2[10]+h
+   u = RIFulp(h)
+   t = RIF(-u,u)
+   # the fast_two_sum error is bounded by 2 u^2 ufp(h) by Theorem 6 from [1]
+   # thus by u ulp(h)
+   err += 2^-53*u
+   # *l += t
+   l += t
+   err += RIFulp(l)
+   for i in range(8, -1, -2):
+      # d_mul (h, l, *h, *l, zh, zl)
+      h, l, err_dmul = analyze_dmul(h, l, zh, zl)
+      err = err*z.abs().upper() + err_dmul
+      # fast_two_sum (h, &t, P2[i], *h)
+      h = P2[i]+h
+      u = RIFulp(h)
+      t = RIF(-u,u)
+      err += 2^-53*u
+      # *l += t + P2[i+1]
+      v = t+P2[i+1]
+      err += RIFulp(v)
+      l += v
+      err += RIFulp(l)
+   relerr = err/(h+l).abs().lower() # bound on relative error
+   # d_mul (h, l, *h, *l, zh, zl)
+   print ("|l/h|=", l/h)
+   h, l, relerr_dmul = analyze_dmul_rel(h, l, zh, zl)
+   relerr = (1+R(relerr))*(1+R(relerr_dmul))-1
+   res = h+l
+   # since h+l has relative error <= relerr, and the Sollya relative
+   # error is < 2^-93.777, the total relative error is bounded by
+   # (1+relerr)*(1+2^-93.777)-1
+   relerr = (1+R(relerr))*(1+R(2^-93.777))-1
+   return RR(relerr), h, l
+
 # analyze the maximal relative error of _log2p1() for |x| >= 2^-29
 # analyze_log2p1()
-# e= 0 i= 20 relerr= 3.46263286161655e-15
-# thus the maximal relative error is 3.46263286161655e-15 < 2^-48.037
+# e= 0 i= 20 relerr= 3.55975363703180e-15
+# thus the maximal relative error is 3.55975363703180e-15 < 2^-47.997
 def analyze_log2p1():
    R = RealField(100)
    err0 = R(2^-58.198) # additional relative error for x >= 2^53   
    # p is the interval for p1()
    p = RIF(R(-2^-5.459), R(2^-5.459))
-   log2inv = ["-0x1.f7a8568cb06cfp-2","-0x1.d6753e032ea0fp-2","-0x1.b47ebf73882a1p-2","-0x1.91bba891f1709p-2","-0x1.800a563161c54p-2","-0x1.5c01a39fbd688p-2","-0x1.49a784bcd1b8bp-2","-0x1.24407ab0e073ap-2","-0x1.11307dad30b76p-2","-0x1.d49ee4c32597p-3","-0x1.acf5e2db4ec94p-3","-0x1.5c01a39fbd688p-3","-0x1.32ae9e278ae1ap-3","-0x1.08c588cda79e4p-3","-0x1.bc84240adabbap-4","-0x1.663f6fac91316p-4","-0x1.0eb389fa29f9bp-4","-0x1.6bad3758efd87p-5","0x0p+0","0x0p+0","0x1.184b8e4c56af8p-5","0x1.d6ebd1f1febfep-5","0x1.4c560fe68af88p-4","0x1.7d60496cfbb4cp-4","0x1.e0b1ae8f2fd56p-4","0x1.22dadc2ab3497p-3","0x1.494f863b8df35p-3","0x1.7046031c79f85p-3","0x1.97c1cb13c7ec1p-3","0x1.bfc67a7fff4ccp-3","0x1.e857d3d361368p-3","0x1.08bce0d95fa38p-2","0x1.169c05363f158p-2","0x1.2baa0c34be1ecp-2","0x1.4106017c3eca3p-2","0x1.4f6fbb2cec598p-2","0x1.6552b49986277p-2","0x1.7b89f02cf2aadp-2","0x1.8a8980abfbd32p-2","0x1.99b072a96c6b2p-2","0x1.a8ff971810a5ep-2","0x1.b877c57b1b07p-2","0x1.cffae611ad12bp-2","0x1.dfdd89d586e2bp-2","0x1.efec61b011f85p-2","0x1.0014332be0033p-1"]
-   log2inv = [R(x,16) for x in log2inv]
+   inv, log2inv = log2_tables()
+   log2inv = [x[0] for x in log2inv]
    n = len(log2inv)
    assert n==46, "n==46"
    relerr_p1 = R(2^-49.642)
@@ -181,7 +291,9 @@ def analyze_log2p1():
          if log2inv[i]==0 and e==0:
             relerr_u = relerr_p1
          else:
-            abserr_u = RIFulp(u) + RIFulp(t) + abserr_p1
+            Ri = inv[i].exact_rational()
+            err_log2inv = R(-log(Ri)/log(2)-log2inv[i].exact_rational())
+            abserr_u = RIFulp(u) + RIFulp(t) + abserr_p1 + RR(err_log2inv)
             relerr_u = abserr_u/u.abs().lower()
          # for x >= 2^53, we have an additional relative error err0
          if e >= 53:
@@ -189,6 +301,63 @@ def analyze_log2p1():
          if relerr_u>maxerr:
             print ("e=", e, "i=", i, "relerr=", relerr_u)
             maxerr = relerr_u
+
+# analyze_log2p1_accurate()
+# e= 0 i= 17 relerr= 6.99553129707774e-28
+# e= 0 i= 20 |l/h|= 2.38612684958266e-15
+# thus the maximal relative error is 6.99553129707774e-28 < 2^-90.207
+# and |l/h| <= 2.38612684958266e-15 < 2^-48.574
+def analyze_log2p1_accurate():
+   R = RealField(200)
+   err0 = R(2^-105) # additional relative error for |x|>=2^54
+   # p is the interval for p2()
+   p = RIF(R(-2^-5.459), R(2^-5.459))
+   pl = RIF(-2^-56.162,2^-56.162)
+   _, log2inv = log2_tables()
+   n = len(log2inv)
+   assert n==46, "n==46"
+   relerr_p2 = R(2^-91.195)
+   abserr_p2 = relerr_p2*p.abs().upper() # bound on absolute error for p2
+   maxerr = 0
+   max_l_over_h = 0
+   for e in [-29..128]:
+      for i in range(46):
+         if log2inv[i][0]==0 and e==0:
+            relerr = relerr_p2
+            l_over_h = RR(2^-50.523)
+         else:
+            # fast_two_sum (h, l, (double) e, log2inv[i][0])
+            h = RIF(e) + RIF(log2inv[i][0])   
+            u = RIFulp(h)
+            l = RIF(-u,u)
+            err = 2^-53*u # fast_two_sum error <= 2 u^2 ufp(h) = u ulp(h)
+            # *l += log2inv[i][1]
+            l += log2inv[i][1]
+            err += RIFulp(l)
+            # error on log2inv[i]
+            err += R(2^-109.101)
+            # fast_two_sum (h, &t, *h, ph)
+            h = h+p
+            u = RIFulp(h)
+            t = RIF(-u,u)
+            err += 2^-53*u # fast_two_sum error
+            err += abserr_p2 # absolute error on p2()
+            # *l += t + pl
+            v = t + pl
+            err += RIFulp(v)
+            l += v
+            err += RIFulp(l)
+            relerr = err/(h+l).abs().lower()
+            # for |x| >= 2^54, we get an additional relative error of 2^-105
+            if e >= 54:
+               relerr = (1+relerr)*(1+err0)-1
+            if relerr>maxerr:
+               print ("e=", e, "i=", i, "relerr=", relerr)
+               maxerr = relerr
+            l_over_h = l.abs().upper()/h.abs().lower()
+         if l_over_h > max_l_over_h:
+            print ("e=", e, "i=", i, "|l/h|=", l_over_h)
+            max_l_over_h = l_over_h
 
 # analyze_q1()
 # (7.81483493906268e-14, 0.989110713948377, 1.01088928605163)
@@ -211,6 +380,98 @@ def analyze_q1():
    err_res += err0 # Sollya error
    return err_res, res.lower(), res.upper()
 
+# analyze_q2()
+# ([0.98911071394938065 .. 1.0108892860506194],
+# [-2.2832336002932612e-16 .. 2.2832336002932612e-16],
+#  2.23366555026200e-26)
+# thus at output we have
+# 0.989 < qh < 1.011, |ql| < 2^-51.959
+# and the absolute error is bounded by 2.23366555026200e-26 < 2^-85.210
+# analyze_q2(small=true)
+# ([0.99864528010789177 .. 1.0013547198921083],
+# [-2.2493192300267409e-16 .. 2.2493192300267409e-16],
+# 1.25952565293889e-31)
+# thus for |h+l| <= 2^-9, the absolute error is bounded by 1.25952565293889e-31
+# < 2^-102.646
+def analyze_q2(small=false):
+   R = RealField(200)
+   if small:
+      hmax = 2^-9
+      err0 = R(2^-104.277) # Sollya error on q2 for |z| <= 2^-9
+   else:
+      assert hmax<=2^-6, "hmax<=2^-6"
+      hmax = 2^-6
+      err0 = R(2^-85.218) # Sollya error on q2
+   h = RIF(-hmax,hmax)
+   l = RIF(-2^-58,2^-58)
+   z = h+l
+   Q2 = ["1.0","0x1.62e42fefa39efp-1","0x1.abc9d45534d06p-56","0x1.ebfbdff82c58fp-3","-0x1.5e4383cf9ddf7p-57","0x1.c6b08d704a0cp-5","-0x1.6cbc55586c8f1p-59","0x1.3b2ab6fba4e77p-7","0x1.5d87fe789aec5p-10","0x1.430912f879daap-13","0x1.ffcc774b2367ap-17","0x1.62c017b9bdfe6p-20"]
+   Q2 = [RIF(R(x,16)) for x in Q2]
+   h2 = h*h
+   err_h2 = RIFulp(h2)
+   c7 = Q2[11]*h+Q2[10]
+   err_c7 = RIFulp(c7)+(Q2[11]*l).abs().upper()
+   c5 = Q2[9]+h*Q2[8]
+   err_c5 = RIFulp(c5)+(Q2[9]*l).abs().upper()
+   c5 = c7*h2+c5
+   err_c5 = err_c7*h2.abs().upper()+c7.abs().upper()*err_h2+err_c5+RIFulp(c5)
+   err_c5 += (2*c7*h*l).abs().upper()
+   qh = c5*h
+   err = err_c5*h.abs().upper()+RIFulp(qh)+(c5*l).abs().upper()
+   # fast_two_sum (qh, ql, Q2[7], *qh)
+   qh = Q2[7]+qh
+   u = RIFulp(qh)
+   ql = RIF(-u,u)
+   # by Theorem 6 from [1], the fast_two_sum error is bounded by 2 u^2 ufp(qh)
+   # which is u ulp(qh)
+   err += RIFulp(qh)*2^-53
+   # d_mul (qh, ql, *qh, *ql, h, l)
+   qh, ql, dmul_err = analyze_dmul(qh,ql,h,l)
+   err = err*z.abs().upper()+dmul_err
+   # fast_two_sum (qh, &t, Q2[5], *qh)
+   qh = Q2[5]+qh
+   u = RIFulp(qh)
+   t = RIF(-u,u)
+   err += RIFulp(qh)*2^-53
+   # *ql += t + Q2[6]
+   ql += t + Q2[6]
+   err += RIFulp(t+Q2[6]) + RIFulp(ql)
+   # d_mul (qh, ql, *qh, *ql, h, l)
+   qh, ql, dmul_err = analyze_dmul(qh,ql,h,l)
+   err = err*z.abs().upper()+dmul_err
+   # fast_two_sum (qh, &t, Q2[3], *qh)
+   qh = Q2[3]+qh
+   u = RIFulp(qh)
+   t = RIF(-u,u)
+   err += RIFulp(qh)*2^-53
+   # *ql += t + Q2[4]
+   ql += t + Q2[4]
+   err += RIFulp(t+Q2[4]) + RIFulp(ql)
+   # d_mul (qh, ql, *qh, *ql, h, l)
+   qh, ql, dmul_err = analyze_dmul(qh,ql,h,l)
+   err = err*z.abs().upper()+dmul_err
+   # fast_two_sum (qh, &t, Q2[1], *qh)
+   qh = Q2[1]+qh
+   u = RIFulp(qh)
+   t = RIF(-u,u)
+   err += RIFulp(qh)*2^-53
+   # *ql += t + Q2[2]
+   ql += t + Q2[2]
+   err += RIFulp(t+Q2[2]) + RIFulp(ql)
+   # d_mul (qh, ql, *qh, *ql, h, l)
+   qh, ql, dmul_err = analyze_dmul(qh,ql,h,l)
+   err = err*z.abs().upper()+dmul_err
+   # fast_two_sum (qh, &t, Q2[0], *qh)
+   qh = Q2[0]+qh
+   u = RIFulp(qh)
+   t = RIF(-u,u)
+   err += RIFulp(qh)*2^-53
+   # *ql += t
+   ql += t
+   err += RIFulp(ql)
+   err += err0 # Sollya error
+   return (qh, ql, err)
+
 def scale_table():
    print ("  static const double scale[] = {")
    s = "   "
@@ -221,4 +482,58 @@ def scale_table():
          s = "   "
    if s != "   ":
      print (s)
+   print ("  };")
+
+# compute the error bound for the accurate phase depending on k
+def analyze_exp2_2(small=false):
+   _, _, exp2_U = exp2_tables()
+   K = []
+   R9 = RealField(9,rnd='RNDU')
+   for k in [0..150]:
+      if small and k!=0:
+         continue
+      h = RIF(-2^-6,2^-6)
+      u = RIFulp(h)
+      l = RIF(-u,u)
+      if not small:
+         err_q2 = RR(2^-85.210)
+      else:
+         err_q2 = RR(2^-102.646)
+      maxerr = 0
+      for i in [0..32]:
+         if small and i != 16:
+            continue
+         qh = RIF(0.989,1.011)
+         ql = RIF(-2^-51.959,2^-51.959)
+         qh_old = qh
+         ql_old = ql
+         qh = RIF(exp2_U[i][0])*qh_old
+         T = RIFulp(qh) + (RIF(exp2_U[i][1])*qh_old).abs().upper()
+         R = T + (RIF(exp2_U[i][0])*ql_old).abs().upper()
+         ql = RIF(-R,R)
+         # we use Lemma 1 from [2] for the d_mul() error
+         err_dmul = T.ulp() + R.ulp() + (RIF(exp2_U[i][1])*ql_old).abs().upper()
+         qh = qh+ql
+         u = RIFulp(qh)
+         ql = RIF(-u,u)
+         err_fast_two_sum = 2^-53*RIFulp(qh) # Theorem 6 from [1]
+         err0 = RR(2^-91.120) # input error |h + l - y*log2(1+x)| < err0*(h+l)
+         err0 = min(150,k+1/2)*err0 # absolute error on h+l
+         err1 = err_q2*exp2_U[i][0] # absolute error on q2
+         err2 = err_dmul # absolute d_mul error
+         err3 = err_fast_two_sum # absolute fast_two_sum error
+         err = err0+err1+err2+err3
+         if err>maxerr:
+            maxerr = err
+      K.append(R9(maxerr))      
+      print (k, log(maxerr)/log(2.))
+   print ("  static const double Err[] = {")
+   s = "   "
+   for r in K:
+      s = s + " " + get_hex(r) + ","
+      if len(s)+11>=80:
+         print (s)
+         s = "   "
+   if s!="   ":
+      print (s)
    print ("  };")

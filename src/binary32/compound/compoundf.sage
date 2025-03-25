@@ -126,7 +126,7 @@ def x_minus_one_exact(x):
       return false
    y = x-R24(1)
    return y.exact_rational() == x.exact_rational()-1
-   
+
 # return the 'ulp' of the interval x i.e. max(ulp(t)) for t in x
 # this internal routine is used below
 def RIFulp(x):
@@ -274,7 +274,7 @@ def analyze_p2():
 # thus the maximal relative error is 3.55975363703180e-15 < 2^-47.997
 def analyze_log2p1():
    R = RealField(100)
-   err0 = R(2^-58.198) # additional relative error for x >= 2^53   
+   err0 = R(2^-58.198) # additional relative error for x >= 2^53
    # p is the interval for p1()
    p = RIF(R(-2^-5.459), R(2^-5.459))
    inv, log2inv = log2_tables()
@@ -327,7 +327,7 @@ def analyze_log2p1_accurate():
             l_over_h = RR(2^-50.523)
          else:
             # fast_two_sum (h, l, (double) e, log2inv[i][0])
-            h = RIF(e) + RIF(log2inv[i][0])   
+            h = RIF(e) + RIF(log2inv[i][0])
             u = RIFulp(h)
             l = RIF(-u,u)
             err = 2^-53*u # fast_two_sum error <= 2 u^2 ufp(h) = u ulp(h)
@@ -525,7 +525,7 @@ def analyze_exp2_2(small=false):
          err = err0+err1+err2+err3
          if err>maxerr:
             maxerr = err
-      K.append(R9(maxerr))      
+      K.append(R9(maxerr))
       print (k, log(maxerr)/log(2.))
    print ("  static const double Err[] = {")
    s = "   "
@@ -537,3 +537,151 @@ def analyze_exp2_2(small=false):
    if s!="   ":
       print (s)
    print ("  };")
+
+# get_hex(underflow_threshold_neg(R24(-1).nextabove()))
+# '0x1.8d5554p+2'
+def underflow_threshold_neg(x):
+   assert -1<x<0,"-1<x<0"
+   R = RealField(200)
+   a = R24(1)
+   b = R24(2^128).nextbelow()
+   t = R(2^-149)
+   assert t<=(1+R(x))^R(a), "t<=(1+R(x))^R(a)"
+   assert (1+R(x))^R(b)<t, "(1+R(x))^R(b)<t"
+   while a.nextabove()<b:
+      c = (a+b)/2
+      if (1+R(x))^c<t:
+         b = c
+      else:
+         a = c
+   return a
+
+# return the largest float x < 0 such that (1+x)^nextbelow(2^128) < 2^-149
+# get_hex(init_underflow_threshold_neg())
+# '-0x1.9d1da2p-122'
+def init_underflow_threshold_neg():
+   a = R24(-1).nextabove()
+   b = R24(-2^-149)
+   while a.nextabove()<b:
+      c = (a+b)/2
+      ok = true
+      try:
+         y = underflow_threshold_neg(c)
+      except AssertionError:
+         ok = false # c is too large (negative near 0)
+      if ok:
+         a = c
+      else:
+         b = c
+   return a
+
+# get_hex(underflow_threshold_pos(R24(1)))
+# '-0x1.2ap+7'
+def underflow_threshold_pos(x):
+   assert 0<x, "0<x"
+   R = RealField(200)
+   a = R24(-2^128).nextabove()
+   b = R24(1)
+   t = R(2^-149)
+   assert (1+R(x))^R(a)<t, "(1+R(x))^R(a)<t"
+   assert t<=(1+R(x))^R(b), "t<=(1+R(x))^R(b)"
+   while a.nextabove()<b:
+      c = (a+b)/2
+      if (1+R(x))^c<t:
+         a = c
+      else:
+         b = c
+   return b
+
+# find the smallest float x > 0 such that (1+x)^-nextbelow(2^128) < 2^-149
+# get_hex(init_underflow_threshold_pos())
+# '0x1.9d1da2p-122'
+def init_underflow_threshold_pos():
+   a = R24(2^-149)
+   b = R24(1)
+   while a.nextabove()<b:
+      c = (a+b)/2
+      ok = true
+      try:
+         y = underflow_threshold_pos(c)
+      except AssertionError:
+         ok = false # c is too small (near 0)
+      if ok:
+         b = c
+      else:
+         a = c
+   return b
+
+# get_hex(overflow_threshold_neg(R24(-1).nextabove()))
+# '-0x1.555554p+2'
+def overflow_threshold_neg(x):
+   assert -1<x<0,"-1<x<0"
+   R = RealField(200)
+   a = R24(-2^128).nextabove()
+   b = R24(-1)
+   t = R(2^128).nextbelow()
+   assert t<=(1+R(x))^R(a), "t<=(1+R(x))^R(a)"
+   assert (1+R(x))^R(b)<t, "(1+R(x))^R(b)<t"
+   while a.nextabove()<b:
+      c = (a+b)/2
+      if (1+R(x))^c<t:
+         b = c
+      else:
+         a = c
+   return b
+
+# return the largest float x < 0 such that (1+x)^nextabove(-2^128) > MAX_FLT
+# get_hex(init_overflow_threshold_neg())
+# '-0x1.62e432p-122'
+def init_overflow_threshold_neg():
+   a = R24(-1).nextabove()
+   b = R24(-2^-149)
+   while a.nextabove()<b:
+      c = (a+b)/2
+      ok = true
+      try:
+         y = overflow_threshold_neg(c)
+      except AssertionError:
+         ok = false # c is too large (negative near 0)
+      if ok:
+         a = c
+      else:
+         b = c
+   return a
+
+# get_hex(overflow_threshold_pos(R24(1)))
+# '0x1.fffffep+6'
+def overflow_threshold_pos(x):
+   assert x>0,"x>0"
+   R = RealField(200)
+   a = R24(1)
+   b = R24(2^128).nextbelow()
+   t = R(2^128).nextbelow()
+   assert (1+R(x))^R(a)<=t, "(1+R(x))^R(a)<=t"
+   assert t<(1+R(x))^R(b), "t<(1+R(x))^R(b)"
+   while a.nextabove()<b:
+      c = (a+b)/2
+      if (1+R(x))^c<t:
+         a = c
+      else:
+         b = c
+   return a
+
+# return the smallest float x > 0 such that (1+x)^nextbelow(2^128) > MAX_FLT
+# get_hex(init_overflow_threshold_pos())
+# '0x1.62e432p-122'
+def init_overflow_threshold_pos():
+   a = R24(2^-149)
+   b = R24(1)
+   while a.nextabove()<b:
+      c = (a+b)/2
+      ok = true
+      try:
+         y = overflow_threshold_pos(c)
+      except AssertionError:
+         ok = false # c is too small
+      if ok:
+         b = c
+      else:
+         a = c
+   return b

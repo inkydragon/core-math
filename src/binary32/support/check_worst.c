@@ -160,6 +160,7 @@ is_equal (float x, float y)
   return asuint (x) == asuint (y);
 }
 
+#if 0
 /* For |z| = 2^-126 and underflow after rounding, clear the MPFR
    underflow exception when the rounded result (with unbounded exponent)
    equals +/-2^-126 (might be set due to a bug in MPFR <= 4.2.1). */
@@ -187,6 +188,7 @@ fix_underflow (float x, float y, float z)
   mpfr_clear (t);
   mpfr_clear (u);
 }
+#endif
 
 int tests = 0, failures = 0, skipped = 0;
 

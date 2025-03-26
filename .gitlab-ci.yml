@@ -18,9 +18,11 @@ check_without_fma:
 check_dry:
   stage: test
   image: debian:latest
+  before_script:
+    - ci/00-prepare-docker.sh
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - FORCE=true DRY=--dry ./ci.sh
+    - apt-get update -qq && apt-get install -qq build-essential git
+    - FORCE=true DRY=--dry LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh
 
 check_dry_without_inex:
   stage: test
@@ -49,6 +51,6 @@ check_dry_icx:
   before_script:
     - ci/00-prepare-docker.sh
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    # MPFR 4.2.1 is installed in /usr/local
+    - apt-get update -qq && apt-get install -qq build-essential git
+    # MPFR is installed in /usr/local
     - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh

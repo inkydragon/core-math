@@ -333,6 +333,14 @@ check_random_all (void)
     check_random (getpid () + i, nthreads);
 }
 
+static void
+check_exact_midpoint (void)
+{
+  for (float x = 1.0f; x <= 100.0f; x += 1.0f)
+    for (float y = -100.0f; y <= 100.0f; y += 1.0f)
+      check (x, y);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -374,6 +382,9 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  printf ("Checking exact/midpoint values\n");
+  check_exact_midpoint ();
 
   printf ("Checking near the underflow threshold\n");
   check_corner ();

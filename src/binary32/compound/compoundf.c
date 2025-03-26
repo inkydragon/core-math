@@ -24,9 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define TRACEX 0x1.fffffep+127f
-#define TRACEY 0x1p+0f
-
 /* References:
    [1] FastTwoSum revisited, Claude-Pierre Jeannerod and Paul Zimmermann,
        Proceedings of Arith'2025, preliminary version at
@@ -502,14 +499,14 @@ static double exp2_1 (double t)
   return v.f;
 }
 
-// return non-zero if x^y is exact (and exactly representable as a float)
-// copied from powf.c, commit 8ec0730
+// return non-zero if x^y is exact or midpoint in binary32
+// adapted from powf.c, commit 8ec0730
 static int
-is_exact (float x, float y)
+is_exact_or_midpoint (float x, float y)
 {
   /* All cases such that x^y might be exact are:
      (a) |x| = 1
-     (b) y integer, 0 <= y <= 15
+     (b) y integer, 0 <= y <= 15 (because 3^16 has 26 bits)
      (c) y<0: x=1 or (x=2^e and |y|=n*2^-k with 2^k dividing e)
      (d) y>0: y=n*2^f with -4 <= f <= -1 and 1 <= n <= 15
      In cases (b)-(d), the low 16 bits of the encoding of y are zero,
@@ -525,15 +522,15 @@ is_exact (float x, float y)
   if (__builtin_expect ((v.u << 1) == 0x7f000000, 0)) // |x| = 1
     return 1;
 
-  // xmax[y] for 1<=y<=15 is the largest m such that m^y fits in 53 bits
-  static const uint32_t xmax[] = { 0, 0xffffff, 4095, 255, 63, 27, 15, 10,
-                                   7, 6, 5, 4, 3, 3, 3, 3};
+  // xmax[y] for 1<=y<=15 is the largest odd m such that m^y fits in 25 bits
+  static const uint32_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
+                                   7, 5, 5, 3, 3, 3, 3, 3};
   if (y >= 0 && isint (y)) {
     /* let x = m*2^e with m an odd integer, x^y is exact when
        - y = 0 or y = 1
        - m = 1 or -1 and -149 <= e*y < 128
        - if |x| is not a power of 2, 2 <= y <= 15 and
-         m^y should fit in 24 bits
+         m^y should fit in 25 bits
     */
     uint32_t m = v.u & 0x7fffff; // low 23 bits of significand
     int32_t e = ((v.u << 1) >> 24) - 0x96;
@@ -652,8 +649,6 @@ is_exact (float x, float y)
    x and y are the original inputs of compound. */
 static float exp2_2 (double h, double l, float x, float y)
 {
-  // int bug = x == TRACEX && y == TRACEY;
-  int bug = 0;
   double k = roundeven_finite (h); // |k| <= 150
 
   // check easy cases h+l is tiny thus 2^(h+l) rounds to 1, 1- or 1+
@@ -672,16 +667,13 @@ static float exp2_2 (double h, double l, float x, float y)
   // we add 2^-6 so that i is rounded to nearest
   int i = (v.u >> 46) - 0x10010; // 0 <= i <= 32
   // h is near (i-16)/2^5
-  if (bug) printf ("k=%.0e i=%d exp2_T[i]=%la\n", k, i, exp2_T[i]);
   h -= exp2_T[i]; // exact
   // now |h| <= 2^-6
   // 2^(h+l) = 2^k * exp2_U[i] * 2^(h+l)
   fast_two_sum (&h, &l, h, l); // renormalize
   // now |l| <= ulp(2^-6) = 2^-58
   double qh, ql;
-  if (bug) printf ("h1=%la l1=%la\n", h, l);
   q2 (&qh, &ql, h, l);
-  if (bug) printf ("qh=%la ql=%la\n", qh, ql);
   /* we have 0.989 < qh < 1.011, |ql| < 2^-51.959, and
      |qh + ql - 2^(h+l)| < 2^-85.210 */
   d_mul (&qh, &ql, exp2_U[i][0], exp2_U[i][1], qh, ql);
@@ -717,7 +709,7 @@ static float exp2_2 (double h, double l, float x, float y)
     };
     int small = k == 0 && i == 16 && __builtin_fabs (h) <= 0x1p-9;
     double err = Err[small];
-    if (bug) printf ("qh=%la ql=%la k=%e err=%la\n", qh, ql, k, err);
+
     v.f = qh + (ql - err);
     v.u += (int64_t) k << 52;
     float left = v.f;
@@ -725,24 +717,24 @@ static float exp2_2 (double h, double l, float x, float y)
     w.u += (int64_t) k << 52;
     float right = w.f;
 
-    // check whether (1+x)^y is exact
-    // we assume this can hold only when 1+x is exactly representable
-
-    if (left != right) {
-      int exact = is_exact (x + 1.0f, y);
-      if (!exact) {
-        printf ("Rounding test of accurate path failed for compound(%a,%a)\n",
-                x, y);
-        printf ("Please report the above to core-math@inria.fr\n");
-        exit (1);
-      }
-      /* exact case: the one with the more trailing zeros between v.u and
+    if (is_exact_or_midpoint (1.0f + x, y)) {
+      /* exact/midpoint case: the one with the more trailing zeros between v.u and
          w.u is the correct one, except when y=1, since for x=0x1.fffffep+127
          and y=1 we get left=0x1.fffffep+127 and right=inf */
       if (y == 1.0f) return 1.0f + x;
       int vtz = __builtin_ctz (v.u);
       int wtz = __builtin_ctz (w.u);
       return (vtz >= wtz) ? left : right;
+    }
+
+    // check whether (1+x)^y is exact
+    // we assume this can hold only when 1+x is exactly representable
+
+    if (left != right) {
+        printf ("Rounding test of accurate path failed for compound(%a,%a)\n",
+                x, y);
+        printf ("Please report the above to core-math@inria.fr\n");
+        exit (1);
     }
   }
 
@@ -752,7 +744,7 @@ static float exp2_2 (double h, double l, float x, float y)
   /* For RNDN, if qh fits exactly in 25 bits, and ql is tiny, so that
      qh + ql rounds to qh, then we might have a double-rounding issue. */
   if ((w.u << 36) == 0 && v.f == qh && ql != 0)
-    v.u += (ql > 0) ? 1 : -1; // simulate round to odd
+      v.u += (ql > 0) ? 1 : -1; // simulate round to odd
   v.u += (int64_t) k << 52; // scale v by 2^k
   // there is no underflow/overflow in the scaling by 2^k since |k| <= 150
   return v.f; // convert to float
@@ -847,8 +839,6 @@ log2p1_accurate (double *h, double *l, double x)
 static double
 accurate_path (float x, float y)
 {
-  // int bug = x == TRACEX && y == TRACEY;
-  int bug = 0;
   double h, l;
 
   log2p1_accurate (&h, &l, x);
@@ -867,15 +857,11 @@ accurate_path (float x, float y)
      bounded by 2^-48.445*2^-52 = 2^-100.445 |h|. This yields a total relative
      error bounded by (1+2^-91.123)*(1+2^-100.445)-1 < 2^-91.120. */
 
-  if (bug) printf ("h=%la l=%la\n", h, l);
-
   return exp2_2 (h, l, x, y);
 }
 
 float cr_compoundf (float x, float y)
 {
-  // int bug = x == TRACEX && y == TRACEY;
-  int bug = 0;
   /* Rules from IEEE 754-2019 for compound (x, n) with n integer:
      (a) compound (x, 0) is 1 for x >= -1 or quiet NaN
      (b) compound (-1, n) is +Inf and signals the divideByZero exception for n < 0
@@ -945,8 +931,6 @@ float cr_compoundf (float x, float y)
      2^-298 <= |t| < 2^135, thus no underflow/overflow in double is possible.
      The relative error is bounded by (1+2^-47.997)*(1+2^-52)-1 < 2^-47.909 */
 
-  if (bug) printf ("t.f=%la\n", t.f);
-
   // detect overflow/underflow
   if (__builtin_expect ((t.u << 1) >= (0x406ull<<53), 0)) { // |t| >= 128
     if (t.u >= 0x3018bull<<46) { // t <= -150
@@ -972,8 +956,6 @@ float cr_compoundf (float x, float y)
   float res = exp2_1 (t.f);
   if (__builtin_expect (res != -1.0f, 1))
     return res;
-
-  if (bug) printf ("fast path failed\n");
 
   // fast path failed
   return accurate_path (x, y);

@@ -59,4 +59,4 @@ check_dry_icx:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
     # MPFR is installed in /usr/local
-    - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include -fhonor-nans" ./ci.sh
+    - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh

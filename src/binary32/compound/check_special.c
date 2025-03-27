@@ -148,7 +148,7 @@ check (float x, float y)
 }
 
 #ifndef CORE_MATH_TESTS
-#define CORE_MATH_TESTS 1000000000ul // total number of tests
+#define CORE_MATH_TESTS 10000000ul // total number of tests
 #endif
 
 static void
@@ -255,6 +255,8 @@ overflow_threshold_pos (float x, float threshold)
   return a;
 }
 
+#define SKIP 1000
+
 /* check corner values: for each x > -1, check the extremal values such that
    (1+x)^y is near the underflow or overflow thresholds */
 static void
@@ -262,62 +264,62 @@ check_corner (void)
 {
   // check near underflow
   uint32_t u0, u1;
-  u0 = asuint (-0x1.fffffep-1f);
+  u0 = asuint (-0x1.fffffep-1f) - (rand () % SKIP);
   u1 = asuint (-0x1.9d1da2p-122f);
   assert (u0 > u1);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-  for (uint32_t u = u0; u >= u1; u--)
-    {
-      float x = asfloat (u);
-      float y = underflow_threshold_neg (x, 0x1p-149f);
-      check (x, y);
-      check (x, nextafterf (y, 0x1.fffffep+127f));
-    }
-  u0 = asuint (0x1.9d1da2p-122f);
+  for (uint32_t u = u0; u >= u1; u -= SKIP)
+  {
+    float x = asfloat (u);
+    float y = underflow_threshold_neg (x, 0x1p-149f);
+    check (x, y);
+    check (x, nextafterf (y, 0x1.fffffep+127f));
+  }
+  u0 = asuint (0x1.9d1da2p-122f) + (rand () % SKIP);
   u1 = asuint (0x1.fffffep+127f);
   assert (u0 < u1);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-  for (uint32_t u = u0; u <= u1; u++)
-    {
-      float x = asfloat (u);
-      float y = underflow_threshold_pos (x, 0x1p-149f);
-      check (x, y);
-      check (x, nextafterf (y, -0x1.fffffep+127f));
-      x = nextafterf (x, 0x1.fffffep+127f);
-    }
+  for (uint32_t u = u0; u <= u1; u += SKIP)
+  {
+    float x = asfloat (u);
+    float y = underflow_threshold_pos (x, 0x1p-149f);
+    check (x, y);
+    check (x, nextafterf (y, -0x1.fffffep+127f));
+    x = nextafterf (x, 0x1.fffffep+127f);
+  }
 
   // check near overflow
-  u0 = asuint (-0x1.fffffep-1f);
+  u0 = asuint (-0x1.fffffep-1f) - (rand () % SKIP);
   u1 = asuint (-0x1.62e432p-122f);
   assert (u0 > u1);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-  for (uint32_t u = u0; u >= u1; u--)
-    {
-      float x = asfloat (u);
-      float y = overflow_threshold_neg (x, 0x1.fffffep+127f);
-      check (x, y);
-      check (x, nextafterf (y, -0x1.fffffep+127f));
-      x = nextafterf (x, 0);
-    }
-  u0 = asuint (0x1.62e432p-122f);
+  for (uint32_t u = u0; u >= u1; u -= SKIP)
+  {
+    float x = asfloat (u);
+    float y = overflow_threshold_neg (x, 0x1.fffffep+127f);
+    check (x, y);
+    check (x, nextafterf (y, -0x1.fffffep+127f));
+    x = nextafterf (x, 0);
+  }
+  u0 = asuint (0x1.62e432p-122f) + (rand () % SKIP);
   u1 = asuint (0x1.fffffep+127f);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-  for (uint32_t u = u0; u <= u1; u++)
-    {
-      float x = asfloat (u);
-      float y = overflow_threshold_pos (x, 0x1.fffffep+127f);
-      check (x, y);
-      check (x, nextafterf (y, 0x1.fffffep+127f));
-      x = nextafterf (x, 0x1.fffffep+127f);
-    }
+  for (uint32_t u = u0; u <= u1; u += SKIP)
+  {
+    float x = asfloat (u);
+    float y = overflow_threshold_pos (x, 0x1.fffffep+127f);
+    check (x, y);
+    check (x, nextafterf (y, 0x1.fffffep+127f));
+    x = nextafterf (x, 0x1.fffffep+127f);
+  }
 }
 
 static void

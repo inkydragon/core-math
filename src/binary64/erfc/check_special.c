@@ -122,11 +122,11 @@ check_subnormal (void)
   uint64_t urange = (umax - umin) / (uint64_t) CORE_MATH_TESTS;
   /* we multiply urange by 100 since tests in the subnormal range are more
      expensive */
-  urange = 100 * urange + 1; // +1 to avoid urange=0
+  urange ++; // +1 to avoid urange=0
   printf ("Check subnormal output range\n");
   umin += getpid () % urange;
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel
+#pragma omp parallel for
 #endif
   for (uint64_t u = umin; u <= umax; u += urange)
   {

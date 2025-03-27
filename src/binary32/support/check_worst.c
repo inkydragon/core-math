@@ -160,7 +160,6 @@ is_equal (float x, float y)
   return asuint (x) == asuint (y);
 }
 
-#if 0
 /* For |z| = 2^-126 and underflow after rounding, clear the MPFR
    underflow exception when the rounded result (with unbounded exponent)
    equals +/-2^-126 (might be set due to a bug in MPFR <= 4.2.1). */
@@ -179,7 +178,9 @@ fix_underflow (float x, float y, float z)
   /* mpfr_set_flt might raise the processor underflow/overflow/inexact flags
      (https://gitlab.inria.fr/mpfr/mpfr/-/issues/2) */
   fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
+  // printf ("MPFR_FLAGS_UNDERFLOW: %d\n", mpfr_flags_test (MPFR_FLAGS_UNDERFLOW));
   mpfr_function_under_test (t, t, u, rnd2[rnd]);
+  // printf ("MPFR_FLAGS_UNDERFLOW: %d\n", mpfr_flags_test (MPFR_FLAGS_UNDERFLOW));
   /* don't call mpfr_subnormalize here since we precisely want an unbounded
      exponent */
   mpfr_abs (t, t, MPFR_RNDN); // exact
@@ -188,9 +189,8 @@ fix_underflow (float x, float y, float z)
   mpfr_clear (t);
   mpfr_clear (u);
 }
-#endif
 
-int tests = 0, failures = 0, skipped = 0;
+int tests = 0, failures = 0;
 
 static void
 check (float x, float y)
@@ -213,8 +213,7 @@ check (float x, float y)
 #ifdef CORE_MATH_CHECK_INEXACT
   int inex2 = fetestexcept (FE_INEXACT);
 #endif
-  if (z2 == -1.0f) skipped++;
-  if (z2 != -1.0f && ! is_equal (z1, z2)) {
+  if (! is_equal (z1, z2)) {
     printf("FAIL x,y=%a,%a ref=%a z=%a\n", x, y, z1, z2);
     fflush(stdout);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
@@ -226,7 +225,6 @@ check (float x, float y)
 #endif
   }
 
-#if 0
   /* When there is underflow but the result is exact, IEEE 754-2019 says the
      underflow exception should not be signaled. However MPFR raises the underflow
      exception in this case: we clear it to mimic IEEE 754-2019. */
@@ -270,7 +268,6 @@ check (float x, float y)
     exit(1);
 #endif
   }
-#endif
 
 #ifdef CORE_MATH_CHECK_INEXACT
   if ((inex1 == 0) && (inex2 != 0))
@@ -375,8 +372,7 @@ doloop(void)
   }
 
   free(items);
-  printf("%d tests passed, %d failure(s), %d skipped\n", tests, failures,
-         skipped);
+  printf("%d tests passed, %d failure(s)\n", tests, failures);
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN

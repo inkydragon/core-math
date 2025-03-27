@@ -465,8 +465,9 @@ static const double exp2_U[][2] = {
 
 /* return the correct rounding of (1+x)^y, otherwise -1.0
    where t is an approximation of y*log2(1+x) with absolute error < 2^-40.680,
-   assuming 0x1.7154759a0df53p-24 <= |t| <= 150 */
-static double exp2_1 (double t)
+   assuming 0x1.7154759a0df53p-24 <= |t| <= 150
+   exact is non-zero iff (1+x)^y is exact or midpoint */
+static double exp2_1 (double t, int exact, fexcept_t flag)
 {
   double k = roundeven_finite (t); // 0 <= |k| <= 150
   double r = t - k; // |r| <= 1/2, exact
@@ -488,26 +489,29 @@ static double exp2_1 (double t)
      < 2^-40.849. */
   b64u64_u err = {.f = 0x1.1dp-41}; // 2^-40.849 < 0x1.1dp-41
   v.u += (int64_t) k << 52; // scale v by 2^k
+
+  // in case of potential underflow, we defer to the accurate path
+  if (__builtin_expect (v.f < 0x1.00000000008e2p-126, 0))
+    return -1.0f;
+
   err.u += (int64_t) k << 52; // scale the error by 2^k too
   float lb = v.f - err.f, rb = v.f + err.f;
-  if (lb != rb) return -1.0f; // rounded test failed
-#ifdef CORE_MATH_SUPPORT_ERRNO
-  if (__builtin_expect (v.f < 0x1p-126, 0)) // underflow
-    errno = ERANGE;
-#endif
+  if (lb != rb) return -1.0f; // rounding test failed
+
+  if (__builtin_expect (exact, 0)) fesetexceptflag (&flag, FE_ALL_EXCEPT);
 
   return v.f;
 }
 
-// return non-zero if x^y is exact or midpoint in binary32
+// return non-zero if (1+x)^y is exact or midpoint in binary32
 // adapted from powf.c, commit 8ec0730
 static int
 is_exact_or_midpoint (float x, float y)
 {
-  /* All cases such that x^y might be exact are:
-     (a) |x| = 1
+  /* All cases such that (1+x)^y might be exact are:
+     (a) x = 0
      (b) y integer, 0 <= y <= 15 (because 3^16 has 26 bits)
-     (c) y<0: x=1 or (x=2^e and |y|=n*2^-k with 2^k dividing e)
+     (c) y<0: x=0 or (1+x=2^e and |y|=n*2^-k with 2^k dividing e)
      (d) y>0: y=n*2^f with -4 <= f <= -1 and 1 <= n <= 15
      In cases (b)-(d), the low 16 bits of the encoding of y are zero,
      thus we use that for an early exit test.
@@ -515,12 +519,32 @@ is_exact_or_midpoint (float x, float y)
      encoding of y are zero.) */
 
   b32u32_u v = {.f = x}, w = {.f = y};
-  if (__builtin_expect ((v.u << 1) != 0x7f000000 && // |x| <> 1
+  if (__builtin_expect ((v.u << 1) != 0 && // |0| <> 1
                         (w.u << (32 - 16)) != 0, 1))
     return 0;
 
-  if (__builtin_expect ((v.u << 1) == 0x7f000000, 0)) // |x| = 1
+  if (__builtin_expect ((v.u << 1) == 0, 0)) // x = 0
     return 1;
+
+  int32_t e = ((v.u << 1) >> 24) - 0x96; // ulp(x) = 2^e
+
+  /* Since ufp(x) = 2^(e+23), and ulp(1) = 2^-23, if e+23 < -24, thus e < -47,
+     1+x cannot be exact (for x=-2^-24, we have e=-47 and 1+x is exact).
+     Similarly, for |x| >= 2^25, thus e >= 2, 1+x cannot be exact.
+     We assume that (1+x)^y cannot be exact when 1+x is not exact. */
+
+  if (e < -47 || 2 <= e)
+    return 0;
+
+  double xd = 1.0 + (double) x;
+  x = 1.0f + x;
+
+  if (xd != (double) x)
+    return 0; // 1+x is not exact
+
+  // recompute e for 1+x
+  v.f = x;
+  e = ((v.u << 1) >> 24) - 0x96;
 
   // xmax[y] for 1<=y<=15 is the largest odd m such that m^y fits in 25 bits
   static const uint32_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
@@ -533,7 +557,6 @@ is_exact_or_midpoint (float x, float y)
          m^y should fit in 25 bits
     */
     uint32_t m = v.u & 0x7fffff; // low 23 bits of significand
-    int32_t e = ((v.u << 1) >> 24) - 0x96;
     if (e >= -149)
       m |= 0x800000;
     else // subnormal numbers
@@ -579,7 +602,6 @@ is_exact_or_midpoint (float x, float y)
   // |y| = n*2^f with n odd
 
   uint32_t m = v.u & 0x7fffff;
-  int32_t e = ((v.u << 1) >> 24) - 0x96;
   if (e >= -149)
     m |= 0x800000;
   else // subnormal numbers
@@ -647,8 +669,19 @@ is_exact_or_midpoint (float x, float y)
    We assume |h+l| < 150, |l/h| < 2^-48.445 |h|,
    and the relative error between h+l and y*log2(1+x) is < 2^-91.120.
    x and y are the original inputs of compound. */
-static float exp2_2 (double h, double l, float x, float y)
+static float exp2_2 (double h, double l, float x, float y, int exact,
+                     fexcept_t flag)
 {
+  if (y == 1.0f) {
+    fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
+    float res = 1.0f + x;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    if (res > 0x1.fffffep+127f)
+        errno = ERANGE; // overflow
+#endif
+    return res;
+  }
+
   double k = roundeven_finite (h); // |k| <= 150
 
   // check easy cases h+l is tiny thus 2^(h+l) rounds to 1, 1- or 1+
@@ -712,20 +745,22 @@ static float exp2_2 (double h, double l, float x, float y)
 
     v.f = qh + (ql - err);
     v.u += (int64_t) k << 52;
-    float left = v.f;
     w.f = qh + (ql + err);
     w.u += (int64_t) k << 52;
-    float right = w.f;
+    float left, right;
 
-    if (is_exact_or_midpoint (1.0f + x, y)) {
+    if (exact) {
       /* exact/midpoint case: the one with the more trailing zeros between v.u and
          w.u is the correct one, except when y=1, since for x=0x1.fffffep+127
          and y=1 we get left=0x1.fffffep+127 and right=inf */
-      if (y == 1.0f) return 1.0f + x;
       int vtz = __builtin_ctz (v.u);
       int wtz = __builtin_ctz (w.u);
-      return (vtz >= wtz) ? left : right;
+      fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
+      return (vtz >= wtz) ? v.f : w.f;
     }
+
+    left = v.f;
+    right = w.f;
 
     // check whether (1+x)^y is exact
     // we assume this can hold only when 1+x is exactly representable
@@ -747,6 +782,14 @@ static float exp2_2 (double h, double l, float x, float y)
       v.u += (ql > 0) ? 1 : -1; // simulate round to odd
   v.u += (int64_t) k << 52; // scale v by 2^k
   // there is no underflow/overflow in the scaling by 2^k since |k| <= 150
+  float res = v.f;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  double tiny = 0x1p-55;
+  if (res < 0x1p-126f                                 // RNDZ, RNDD
+      || (res == 0x1p-126f && v.f <= 0x1.fffffep-127) // RNDN or RNDU
+      || (res == 0x1p-126f && v.f < 0x1.ffffffp-127 && 1.0 - tiny == 1.0 + tiny))
+    errno = ERANGE; // underflow
+#endif
   return v.f; // convert to float
 }
 
@@ -833,11 +876,12 @@ log2p1_accurate (double *h, double *l, double x)
   *l += t + pl;
 }
 
+// at input, exact is non-zero iff (1+x)^y is exact
 // x,y=0x1.0f6f1ap+1,0x1.c643bp+5: 49 identical bits after round bit
 // x,y=0x1.ef272cp+15,-0x1.746ab2p+1: 55 identical bits after round bit
 // x,y=0x1.07ffcp+0,-0x1.921a8ap+4: 47 identical bits after round bit
 static double
-accurate_path (float x, float y)
+accurate_path (float x, float y, int exact, fexcept_t flag)
 {
   double h, l;
 
@@ -857,7 +901,7 @@ accurate_path (float x, float y)
      bounded by 2^-48.445*2^-52 = 2^-100.445 |h|. This yields a total relative
      error bounded by (1+2^-91.123)*(1+2^-100.445)-1 < 2^-91.120. */
 
-  return exp2_2 (h, l, x, y);
+  return exp2_2 (h, l, x, y, exact, flag);
 }
 
 float cr_compoundf (float x, float y)
@@ -875,13 +919,20 @@ float cr_compoundf (float x, float y)
   double xd = x, yd = y;
   b64u64_u tx = {.f = xd}, ty = {.f = yd};
 
-  if (__builtin_expect((tx.u & ty.u)<<1 == 0, 0)) {
+  if (__builtin_expect((tx.u & ty.u)<<1 == 0, 0)) { // x or y is 0
     if (tx.u<<1 == 0)   // compound(0,y) = 1 except for y = sNaN
       return issignalingf (y) ? x + y : 1.0f;
 
     if (ty.u<<1 == 0) { // compound (x, 0)
       if (issignalingf (x)) return x + y; // x = sNaN
-      return (x < -1.0f) ? 0.0f / 0.0f : 1.0f; // rules (g) and (a)
+      if (x < -1.0f) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+        errno = EDOM;
+#endif
+        return 0.0f / 0.0f; // rule (g)
+      }
+      else
+        return 1.0f; // rule (a)
     }
   }
 
@@ -909,7 +960,12 @@ float cr_compoundf (float x, float y)
       return (ty.u>>63) ? 1.0f/x : x;
     }
     if ((tx.u<<1) > (uint64_t)0x7ff<<53) return x + y; // x is NaN
-    if (x < -1.0f) return 0.0f / 0.0f; // x < -1.0: rule (g)
+    if (x < -1.0f) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      errno = EDOM;
+#endif
+      return 0.0f / 0.0f; // x < -1.0: rule (g)
+    }
     // now x = -1
     if (ty.u>>63) { // y < 0
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -921,6 +977,9 @@ float cr_compoundf (float x, float y)
   }
 
   // now x > -1
+
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT);
 
   double l = _log2p1 (tx.f);
   /* l approximates log2(1+x) with relative error < 2^-47.997,
@@ -953,12 +1012,22 @@ float cr_compoundf (float x, float y)
   if (__builtin_expect ((t.u << 1) <= 0x3e6715476ba97f14ull, 0))
     return (t.u >> 63) ? 1.0f - 0x1p-25f : 1.0f + 0x1p-25f;
 
-  float res = exp2_1 (t.f);
+  int exact = is_exact_or_midpoint (x, y);
+
+  float res = exp2_1 (t.f, exact, flag);
   if (__builtin_expect (res != -1.0f, 1))
+  {
+    if (exact)
+      fesetexceptflag (&flag, FE_ALL_EXCEPT);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    if (res > 0x1.fffffep+127f)
+      errno = ERANGE; // overflow
+#endif
     return res;
+  }
 
   // fast path failed
-  return accurate_path (x, y);
+  return accurate_path (x, y, exact, flag);
 }
 
 #ifndef SKIP_C_FUNC_REDEF // icx provides this function

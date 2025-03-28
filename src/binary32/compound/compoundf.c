@@ -790,7 +790,7 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
       || (res == 0x1p-126f && v.f < 0x1.ffffffp-127 && 1.0 - tiny == 1.0 + tiny))
     errno = ERANGE; // underflow
 #endif
-  return v.f; // convert to float
+  return res; // convert to float
 }
 
 /* assuming -1 < x < 2^128, and x is representable in binary32,

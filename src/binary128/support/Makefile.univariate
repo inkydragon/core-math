@@ -9,7 +9,7 @@ TYPE_UNDER_TEST := __float128
 all:: check_worst
 
 check_worst: check_worst.o $(CORE_MATH_OBJS) $(FUNCTION_UNDER_TEST)_mpfr.o
-	$(CC) $(LDFLAGS) $(OPENMP) -o $@ $^ -lmpfr -lm
+	$(CC) $(OPENMP) -o $@ $^ -lmpfr -lm $(LDFLAGS)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -I ../support -c -o $@ $<

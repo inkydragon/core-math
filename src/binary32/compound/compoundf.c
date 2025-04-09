@@ -55,6 +55,66 @@ SOFTWARE.
 typedef union {float f; uint32_t u;} b32u32_u;
 typedef union {double f; uint64_t u;} b64u64_u;
 
+// This code emulates the _mm_getcsr SSE intrinsic by reading the FPCR register.
+// fegetexceptflag accesses the FPSR register, which seems to be much slower
+// than accessing FPCR, so it should be avoided if possible.
+// Adapted from sse2neon: https://github.com/DLTcollab/sse2neon
+#if defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if defined(_MSC_VER)
+#include <arm64intr.h>
+#endif
+
+typedef struct
+{
+  uint16_t res0;
+  uint8_t  res1  : 6;
+  uint8_t  bit22 : 1;
+  uint8_t  bit23 : 1;
+  uint8_t  bit24 : 1;
+  uint8_t  res2  : 7;
+  uint32_t res3;
+} fpcr_bitfield;
+
+inline static unsigned int _mm_getcsr()
+{
+  union
+  {
+    fpcr_bitfield field;
+    uint64_t value;
+  } r;
+
+#if defined(_MSC_VER) && !defined(__clang__)
+  r.value = _ReadStatusReg(ARM64_FPCR);
+#else
+  __asm__ __volatile__("mrs %0, FPCR" : "=r"(r.value));
+#endif
+  static const unsigned int lut[2][2] = {{0x0000, 0x2000}, {0x4000, 0x6000}};
+  return lut[r.field.bit22][r.field.bit23];
+}
+#endif  // defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+
+static FLAG_T
+get_flag (void)
+{
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+  return _mm_getcsr ();
+#else
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_INEXACT);
+  return flag;
+#endif
+}
+
+static void
+set_flag (FLAG_T flag)
+{
+#ifdef __x86_64__
+  _mm_setcsr (flag);
+#else
+  fesetexceptflag (&flag, FE_INEXACT);
+#endif
+}
+
 static inline int issignalingf(float x) {
   b32u32_u u = {.f = x};
   /* To keep the following comparison simple, toggle the quiet/signaling bit,
@@ -467,7 +527,7 @@ static const double exp2_U[][2] = {
    where t is an approximation of y*log2(1+x) with absolute error < 2^-40.680,
    assuming 0x1.7154759a0df53p-24 <= |t| <= 150
    exact is non-zero iff (1+x)^y is exact or midpoint */
-static double exp2_1 (double t, int exact, fexcept_t flag)
+static double exp2_1 (double t, int exact, FLAG_T flag)
 {
   double k = roundeven_finite (t); // 0 <= |k| <= 150
   double r = t - k; // |r| <= 1/2, exact
@@ -498,7 +558,8 @@ static double exp2_1 (double t, int exact, fexcept_t flag)
   float lb = v.f - err.f, rb = v.f + err.f;
   if (lb != rb) return -1.0f; // rounding test failed
 
-  if (__builtin_expect (exact, 0)) fesetexceptflag (&flag, FE_ALL_EXCEPT);
+  if (__builtin_expect (exact, 0))
+    set_flag (flag);
 
   return v.f;
 }
@@ -670,10 +731,10 @@ is_exact_or_midpoint (float x, float y)
    and the relative error between h+l and y*log2(1+x) is < 2^-91.120.
    x and y are the original inputs of compound. */
 static float exp2_2 (double h, double l, float x, float y, int exact,
-                     fexcept_t flag)
+                     FLAG_T flag)
 {
   if (y == 1.0f) {
-    fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
+    set_flag (flag); // restore flags
     float res = 1.0f + x;
 #ifdef CORE_MATH_SUPPORT_ERRNO
     if (res > 0x1.fffffep+127f)
@@ -755,7 +816,7 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
          and y=1 we get left=0x1.fffffep+127 and right=inf */
       int vtz = __builtin_ctz (v.u);
       int wtz = __builtin_ctz (w.u);
-      fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
+      set_flag (flag); // restore flags
       return (vtz >= wtz) ? v.f : w.f;
     }
 
@@ -881,7 +942,7 @@ log2p1_accurate (double *h, double *l, double x)
 // x,y=0x1.ef272cp+15,-0x1.746ab2p+1: 55 identical bits after round bit
 // x,y=0x1.07ffcp+0,-0x1.921a8ap+4: 47 identical bits after round bit
 static double
-accurate_path (float x, float y, int exact, fexcept_t flag)
+accurate_path (float x, float y, int exact, FLAG_T flag)
 {
   double h, l;
 
@@ -978,8 +1039,7 @@ float cr_compoundf (float x, float y)
 
   // now x > -1
 
-  fexcept_t flag;
-  fegetexceptflag (&flag, FE_ALL_EXCEPT);
+  FLAG_T flag = get_flag ();
 
   double l = _log2p1 (tx.f);
   /* l approximates log2(1+x) with relative error < 2^-47.997,
@@ -1018,7 +1078,7 @@ float cr_compoundf (float x, float y)
   if (__builtin_expect (res != -1.0f, 1))
   {
     if (exact)
-      fesetexceptflag (&flag, FE_ALL_EXCEPT);
+      set_flag (flag); // restore flags
 #ifdef CORE_MATH_SUPPORT_ERRNO
     if (res > 0x1.fffffep+127f)
       errno = ERANGE; // overflow

@@ -36,6 +36,7 @@ SOFTWARE.
 #include <math.h>
 #include <ctype.h>
 #include <quadmath.h>
+#include <mpfr.h>
 
 #include "function_under_test.h"
 
@@ -53,7 +54,7 @@ FILE *instream;
 
 int transform(__float128, __float128*);
 int nextarg(__float128*);
-void test(int);
+static void test();
 
 int64_t parselong(const char *str){
   char *endptr;
@@ -71,6 +72,9 @@ int64_t parselong(const char *str){
   return val;
 }
 
+int failures = 0;
+int maxfailures = 10;
+
 int main(int argc, char *argv[]){
   static struct option opts[] = {
     { "rndn",       no_argument, 0, 'n'},
@@ -85,7 +89,6 @@ int main(int argc, char *argv[]){
   };
   instream = stdin;
   const char *fname = NULL;
-  int maxfailures = 10;
   while (1) {
     int ind = 0, c = getopt_long(argc, argv, "nudzhr:i:x:m:", opts, &ind);
     if (c == -1) break;
@@ -117,7 +120,7 @@ int main(int argc, char *argv[]){
     }
   }
 
-  test(maxfailures);
+  test();
 
   fclose(instream);
 
@@ -141,15 +144,24 @@ static inline int is_equal(__float128 x, __float128 y){
   return asuint128(x) == asuint128(y);
 }
 
-void test(int maxfailures){
-  int count = 0, failures = 0;
-  ref_init();
-  ref_fesetround(rnd);
-  fesetround(rnd1[rnd]);
-  __float128 x;
-  while (nextarg(&x)) {
+static int is_inf (__float128 x)
+{
+  b128u128_u v = {.f = x};
+  return ((v.a<<1)>>113) == 0x7fff && (v.a<<16) == 0;
+}
+
+static void check (__float128 x)
+{
     b128u128_u zr, zt;
+    mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
     zr.f = ref_function_under_test(x);
+#if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
+    mpfr_flags_t inex1 = mpfr_flags_test (MPFR_FLAGS_INEXACT);
+#endif
+    feclearexcept (FE_INEXACT | FE_UNDERFLOW | FE_OVERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    errno = 0;
+#endif
     zt.f = cr_function_under_test(x);
     if (!is_equal (zr.f, zt.f)) {
       if(++failures<maxfailures){
@@ -159,6 +171,137 @@ void test(int maxfailures){
 #endif
       }
     }
+
+  // Check for spurious/missing underflow exception
+  if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
+  {
+    printf ("Spurious underflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
+    fflush (stdout);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+  if (!fetestexcept (FE_UNDERFLOW) && mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
+  {
+    printf ("Missing underflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
+    fflush (stdout);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+
+  // Check for spurious/missing overflow exception
+  if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
+  {
+    printf ("Spurious overflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
+    fflush (stdout);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+  if (!fetestexcept (FE_OVERFLOW) && mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
+  {
+    printf ("Missing overflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
+    fflush (stdout);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+
+#ifdef CORE_MATH_CHECK_INEXACT
+  int inex2 = fetestexcept (FE_INEXACT);
+  if ((inex1 == 0) && (inex2 != 0))
+  {
+    printf ("Spurious inexact exception for x=%Qa (y=%Qa)\n", x, zr.f);
+    fflush (stdout);
+#ifdef DO_NOT_ABORT
+    return 1;
+#else
+    exit(1);
+#endif
+  }
+  if ((inex1 != 0) && (inex2 == 0))
+  {
+    printf ("Missing inexact exception for x=%Qa (y=%Qa)\n", x, zr.f);
+    fflush (stdout);
+#ifdef DO_NOT_ABORT
+    return 1;
+#else
+    exit(1);
+#endif
+  }
+#endif
+
+  // check errno
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  // If x is a normal number and y is NaN, we should have errno = EDOM.
+  int expected_edom = !is_nan (x) && is_nan (zr.f);
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%Qa (y=%Qa)\n", x, zr.f);
+      fflush (stdout);
+#ifdef DO_NOT_ABORT
+      return 1;
+#else
+      exit(1);
+#endif
+    }
+    if (!expected_edom && errno == EDOM)
+    {
+      printf ("Spurious errno=EDOM for x=%Qa (y=%Qa)\n", x, zr.f);
+      fflush (stdout);
+#ifdef DO_NOT_ABORT
+      return 1;
+#else
+      exit(1);
+#endif
+    }
+
+    /* If x is a normal number and a pole error (y exact infinity) or an
+       overflow/underflow occurs, we should have errno = ERANGE. */
+    int expected_erange = !is_nan (x) && !is_inf (x) &&
+      ((is_inf (zr.f) && inex1 == 0) ||
+       mpfr_flags_test (MPFR_FLAGS_OVERFLOW) ||
+       mpfr_flags_test (MPFR_FLAGS_UNDERFLOW));
+    if (expected_erange && errno != ERANGE)
+    {
+      printf ("Missing errno=ERANGE for x=%Qa (y=%Qa)\n", x, zr.f);
+      fflush (stdout);
+#ifdef DO_NOT_ABORT
+      return 1;
+#else
+      exit(1);
+#endif
+    }
+    if (!expected_erange && errno == ERANGE)
+    {
+      printf ("Spurious errno=ERANGE for x=%Qa (y=%Qa)\n", x, zr.f);
+      fflush (stdout);
+#ifdef DO_NOT_ABORT
+      return 1;
+#else
+      exit(1);
+#endif
+    }
+#endif
+}
+
+static void test(){
+  int count = 0;
+  ref_init();
+  ref_fesetround(rnd);
+  fesetround(rnd1[rnd]);
+  __float128 x;
+  while (nextarg(&x)) {
+    check (x);
     ++count;
   }
   printf("%d tests passed, %d failure(s)\n", count, failures);

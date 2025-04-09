@@ -32,17 +32,20 @@ typedef union {
 } b128u128_u;
 
 __float128 ref_rsqrtq(__float128 x){
+  b128u128_u u = {.f = x};
+
   /* mpfr_rec_sqrt differs from IEEE 754-2019: IEEE 754-2019 says that
      rsqrt(-0) should give -Inf, whereas mpfr_rec_sqrt(-0) gives +Inf */
-  b128u128_u u = {.f = x};
-  if(!(u.a<<1)){
-    if(u.a>>127) return -__builtin_inff128();
-    return __builtin_inff128();
+  if(!(u.a<<1)){ // case x = 0
+    if(u.a>>127) return -__builtin_inff128(); // x=-0
+    return __builtin_inff128(); // x=+0
   }
-  if((u.a<<1)>(unsigned __int128)0x7fff<<113){
-    u.a |= (unsigned __int128)1<<111;
+
+  if((u.a<<1)>(unsigned __int128)0x7fff<<113){ // sNaN/qNaN case
+    u.a |= (unsigned __int128)1<<111; // set to qNaN
     return u.f;
   }
+
   mpfr_t y;
   mpfr_init2 (y, 113);
   mpfr_set_float128 (y, x, MPFR_RNDN);

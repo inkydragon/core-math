@@ -73,8 +73,8 @@ float cr_atan2pif(float y, float x){
   b32u32_u tx = {.f = x}, ty = {.f = y};
   uint32_t ux = tx.u, uy = ty.u, ax = ux&(~0u>>1), ay = uy&(~0u>>1);
   if(__builtin_expect(ay >= (0xff<<23)||ax >= (0xff<<23), 0)){
-    if(ay > (0xff<<23)) return y + y; // nan
-    if(ax > (0xff<<23)) return x + x; // nan
+    if(ay > (0xff<<23)) return x + y; // nan
+    if(ax > (0xff<<23)) return x + y; // nan
     uint32_t yinf = ay==(0xff<<23), xinf = ax==(0xff<<23);
     if(yinf&xinf){
       if(ux>>31)
@@ -186,10 +186,3 @@ float cr_atan2pif(float y, float x){
 #endif
   return rf;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float atan2pif(float x, float y){
-  return cr_atan2pif(x, y);
-}
-#endif

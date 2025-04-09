@@ -124,7 +124,7 @@ static const struct {ushort c0; short c1;} B[] = {
   {42929, -5622}, {41522, -6786}, {39825, -7905}, {37848, -8982}, {35602, -10020}, {33097, -11020},
   {30341, -11985}, {27345, -12916}, {24115, -13816}, {20661, -14685}, {16989, -15526}, {13107, -16339},
   {9022, -17126}, {4740, -17889}};
-static const double r1[] = 
+static const double r1[] =
   {0x1p+0, 0x1.f5076p-1, 0x1.ea4bp-1, 0x1.dfc98p-1, 0x1.d5818p-1,
    0x1.cb72p-1, 0x1.c199cp-1, 0x1.b7f76p-1, 0x1.ae8ap-1,
    0x1.a5504p-1, 0x1.9c492p-1, 0x1.93738p-1, 0x1.8ace6p-1,
@@ -133,7 +133,7 @@ static const double r1[] =
    0x1.44e08p-1, 0x1.3dea6p-1, 0x1.371a8p-1, 0x1.306fep-1,
    0x1.29e9ep-1, 0x1.2387ap-1, 0x1.1d488p-1, 0x1.172b8p-1,
    0x1.11302p-1, 0x1.0b558p-1, 0x1.059bp-1, 0x1p-1};
-static const double r2[] = 
+static const double r2[] =
   {0x1p+0, 0x1.ffa74p-1, 0x1.ff4eap-1, 0x1.fef62p-1, 0x1.fe9dap-1,
    0x1.fe452p-1, 0x1.fdeccp-1, 0x1.fd946p-1, 0x1.fd3c2p-1,
    0x1.fce3ep-1, 0x1.fc8bcp-1, 0x1.fc33ap-1, 0x1.fbdbap-1,
@@ -179,9 +179,18 @@ static const double l2[][2] = {
   {0x1.e330dccce602bp-45, 0x1.4cb7034fap-6}, {0x1.2f32b5d18eefbp-49, 0x1.57cd01187p-6},
   {-0x1.269e2038315b3p-46, 0x1.62e4eacd4p-6}};
 static const double c[] = {-0x1p-1, 0x1.555555555553p-2, -0x1.fffffffffffap-3, 0x1.99999e33a6366p-3, -0x1.555559ef9525fp-3};
-      
+
 double cr_acosh(double x){
   b64u64_u ix = {.f = x};
+  if(__builtin_expect(ix.u>=0x7ff0000000000000ull, 0)){
+      u64 aix = ix.u<<1;
+      if(ix.u==0x7ff0000000000000ull || aix>((u64)0x7ff<<53)) return x + x; // +inf or nan
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      errno = EDOM;
+#endif
+      return __builtin_nan("x<1");
+  }
+
   if(__builtin_expect((int64_t)ix.u<=0x3ff0000000000000ll, 0)){
     if(ix.u==0x3ff0000000000000ull) return 0;
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -226,14 +235,6 @@ double cr_acosh(double x){
     double z = 1/(x*x);
     g = cl[0] + z*cl[1];
   } else {
-    if(__builtin_expect(ix.u>=0x7ff0000000000000ull, 0)){
-      u64 aix = ix.u<<1;
-      if(ix.u==0x7ff0000000000000ull || aix>((u64)0x7ff<<53)) return x + x; // +inf or nan
-#ifdef CORE_MATH_SUPPORT_ERRNO
-      errno = EDOM;
-#endif
-      return __builtin_nan("x<1");
-    }
     g = 0;
   }
   int ex = t.u>>52, e = ex - off;

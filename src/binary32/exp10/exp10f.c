@@ -129,7 +129,7 @@ float cr_exp10f(float x){
   }
   double a = iln102*z, ia = roundeven_finite(a), h = a - ia;
   int64_t ja = ia;
-  b64u64_u sv = {.u = tb[ja&0x1f] + ((ja>>5)<<52)};
+  b64u64_u sv = {.u = tb[ja&0x1f] + ((uint64_t)(ja>>5)<<52)};
   double h2 = h*h, r = ((b[0] + h*b[1]) + h2*(b[2] + h*(b[3])))*(sv.f);
   float ub = r, lb = r - r*1.45e-10;
   if(__builtin_expect(ub != lb, 0)){

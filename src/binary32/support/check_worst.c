@@ -112,6 +112,7 @@ readstdin(float2 **result, int *count)
         (*count)++;
     }
   }
+  free (buf);
 }
 
 typedef union {float f; uint32_t u;} b32u32_u;
@@ -160,14 +161,40 @@ is_equal (float x, float y)
   return asuint (x) == asuint (y);
 }
 
+int underflow_before; // non-zero if processor raises underflow before rounding
+
+// return non-zero if the processor raises underflow before rounding
+// (e.g., aarch64)
+static void
+check_underflow_before (void)
+{
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
+  fesetround (FE_TONEAREST);
+  feclearexcept (FE_UNDERFLOW);
+  float x = 0x1p-126f;
+  float y = __builtin_fmaf (-x, x, x);
+  if (x == y) // this is needed otherwise the compiler says y is unused
+    underflow_before = fetestexcept (FE_UNDERFLOW);
+  fesetexceptflag (&flag, FE_ALL_EXCEPT); //restore flags
+}
+
 /* For |z| = 2^-126 and underflow after rounding, clear the MPFR
    underflow exception when the rounded result (with unbounded exponent)
-   equals +/-2^-126 (might be set due to a bug in MPFR <= 4.2.1). */
+   equals +/-2^-126 (might be set due to a bug in MPFR <= 4.2.1).
+   For |z| = 2^-126 and underflow before rounding, clear the fenv.h
+   underflow exception when |f(x,y)| < 2^-126 but there is no underflow
+   after rounding (thus we mimic underflow after rounding). */
 static void
 fix_underflow (float x, float y, float z)
 {
   if (__builtin_fabsf (z) != 0x1p-126)
     return;
+  if (underflow_before) {
+    if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
+      feclearexcept (FE_UNDERFLOW);
+    return;
+  }
   mpfr_t t, u;
   mpfr_init2 (t, 24);
   mpfr_init2 (u, 24);
@@ -184,8 +211,10 @@ fix_underflow (float x, float y, float z)
   /* don't call mpfr_subnormalize here since we precisely want an unbounded
      exponent */
   mpfr_abs (t, t, MPFR_RNDN); // exact
+#if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
   if (mpfr_cmp_ui_2exp (t, 1, -126) == 0) // |o(f(x,y))| = 2^-126
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
+#endif
   mpfr_clear (t);
   mpfr_clear (u);
 }
@@ -387,19 +416,21 @@ static void
 check_signaling_nan (void)
 {
   float snan = asfloat (0x7f800001);
+  float qnan = asfloat (0x7fc00000);
+
   feclearexcept (FE_INVALID);
-  float y = cr_function_under_test (snan, 1.0f);
-  // check that foo(NaN,x) = NaN
+  float y = cr_function_under_test (snan, qnan);
+  // check that foo(sNaN,qNaN) = qNaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,x) should be NaN, got %a=%x\n",
+    fprintf (stderr, "Error, foo(sNaN,qNaN) should be NaN, got %a=%x\n",
              y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,x) should be qNaN, got sNaN=%x\n",
+    fprintf (stderr, "Error, foo(sNaN,qNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));
     exit (1);
   }
@@ -407,7 +438,55 @@ check_signaling_nan (void)
   int flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
+    printf ("Missing invalid exception for x,y=%a,%a\n", snan, qnan);
+    exit (1);
+  }
+
+  feclearexcept (FE_INVALID);
+  y = cr_function_under_test (snan, 1.0f);
+  // check that foo(NaN,1.0) = NaN
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN,1.0) should be NaN, got %a=%x\n",
+             y, asuint (y));
+    exit (1);
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN,1.0) should be qNaN, got sNaN=%x\n",
+             asuint (y));
+    exit (1);
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
     printf ("Missing invalid exception for x,y=%a,%a\n", snan, 1.0f);
+    exit (1);
+  }
+
+  feclearexcept (FE_INVALID);
+  y = cr_function_under_test (qnan, snan);
+  // check that foo(qNaN,sNaN) = qNaN
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN,sNaN) should be NaN, got %a=%x\n",
+             y, asuint (y));
+    exit (1);
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN,sNaN) should be qNaN, got sNaN=%x\n",
+             asuint (y));
+    exit (1);
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=qNaN,y=%a\n", snan);
     exit (1);
   }
 
@@ -523,6 +602,8 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  check_underflow_before ();
 
   doloop();
 

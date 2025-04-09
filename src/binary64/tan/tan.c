@@ -2252,6 +2252,10 @@ cr_tan (double x)
 
   if (__builtin_expect (e == 0x7ff, 0)) /* NaN, +Inf and -Inf. */
     {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      if ((t.u << 1) == 0x7ffull<<53) // Inf
+        errno = EDOM;
+#endif
       t.u = ~0ull;
       return t.f;
     }

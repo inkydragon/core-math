@@ -132,9 +132,15 @@ float cr_tgammaf(float x){
 #endif
     return 0x1p127f * 0x1p127f;
   }
-  /* compute k only after the overflow check, otherwise the case to integer
+  /* compute k only after the overflow check, otherwise the cast to integer
      might overflow */
-  int k = fx;
+  int32_t k;
+  if(__builtin_expect(x <= -0x1p+31, 0)) {
+    k = INT32_MIN;
+  }
+  else {
+    k = fx;
+  }
   if(__builtin_expect(fx==x, 0)){ /* x is integer */
     if(x == 0.0f){
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -149,7 +155,7 @@ float cr_tgammaf(float x){
       return 0.0f / 0.0f; /* should raise the "Invalid operation" exception */
     }
     double t0 = 1, x0 = 1;
-    for(int i=1; i<k; i++, x0 += 1.0) t0 *= x0;
+    for(int32_t i=1; i<k; i++, x0 += 1.0) t0 *= x0;
     return t0;
   }
   if(__builtin_expect(x<-42.0f, 0)){ /* negative non-integer */

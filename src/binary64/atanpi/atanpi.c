@@ -1,6 +1,6 @@
 /* Correctly-rounded atanpi of binary64 value.
 
-Copyright (c) 2023 Alexei Sibidanov and Paul Zimmermann
+Copyright (c) 2023-2025 Alexei Sibidanov and Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -33,6 +33,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <math.h> // needed for atan()
+#include <errno.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -350,38 +351,46 @@ static double __attribute__((noinline)) as_atan_refine2(double x, double a){
   return v1 + v0;
 }
 
-// deal with |x| < 2^-1022 (including 0)
+// deal with |x| < 2^-54 (including 0)
 static double
-atanpi_subnormal (double x)
+atanpi_small (double x)
 {
   double h;
   if (x == 0)
     return x;
-  if (__builtin_fabs (x) == 0x1.5cba89af1f855p-1022)
+  if (__builtin_fabs (x) == 0x1.5cba89af1f855p-1022) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    errno = ERANGE; // underflow
+#endif
     return (x > 0)
       ? __builtin_fma (-0x1p-600, 0x1p-600, 0x1.bc03df34e902cp-1024)
       :__builtin_fma (0x1p-600, 0x1p-600, -0x1.bc03df34e902cp-1024);
-  if (__builtin_fabs (x) == 0x1.59af9a1194efep-1020)
-    return (x > 0)
-      ? __builtin_fma (0x1p-600, 0x1p-600, 0x1.b824198b94a89p-1022)
-      :__builtin_fma (-0x1p-600, 0x1p-600, -0x1.b824198b94a89p-1022);
+  }
   // generic worst case
   b64u64_u v = {.f = x};
   if ((v.u & 0xfffffffffffff) == 0x59af9a1194efe) // +/-0x1.59af9a1194efe*2^e
   {
     uint64_t e = v.u >> 52;
-    v.u = ((e - 2) << 52) | 0xb824198b94a89;
+    if ((e & 0x7ff) > 2) {
+      v.u = ((e - 2) << 52) | 0xb824198b94a89;
     return (x > 0)
       ? __builtin_fma (0x1p-600, 0x1p-600, v.f)
       : __builtin_fma (-0x1p-600, 0x1p-600, v.f);
+    }
   }
   h = x * ONE_OVER_PIH;
   /* Assuming h = x*ONE_OVER_PIH - e, the correction term is
      e + x * ONE_OVER_PIL, but we need to scale values to avoid underflow. */
-  double corr = __builtin_fma (x * 0x1p55, ONE_OVER_PIH, -h * 0x1p55);
-  corr = __builtin_fma (x * 0x1p55, ONE_OVER_PIL, corr);
-  // now return h + corr * 2^-55
-  return __builtin_fma (corr, 0x1p-55, h);
+  double corr = __builtin_fma (x * 0x1p106, ONE_OVER_PIH, -h * 0x1p106);
+  corr = __builtin_fma (x * 0x1p106, ONE_OVER_PIL, corr);
+  // now return h + corr * 2^-106
+  double res = __builtin_fma (corr, 0x1p-106, h);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  if (__builtin_fabs (x) <= 0x1.921fb54442d17p-1021
+      || __builtin_fabs (res) < 0x1p-1022)
+    errno = ERANGE; // underflow
+#endif
+  return res;
 }
 
 double cr_atanpi (double x){
@@ -389,10 +398,9 @@ double cr_atanpi (double x){
   b64u64_u t = {.f = x};
   u64 at = t.u&(~(u64)0>>1);
   int64_t i = (at>>51) - 2030l;
-  if (__builtin_expect(at < 0x3f7b21c475e6362aull, 0)) {
-    // |x| < 0x1.b21c475e6362ap-8
-    if (at < 0x3c90000000000000) // |x| < 2^-54
-      return atanpi_subnormal (x);
+  if (__builtin_expect(at < 0x3f7b21c475e6362aull, 0)) { // |x| < 0.006624
+    if (at < 0x3c90000000000000ull) // |x| < 2^-54
+      return atanpi_small (x);
     if (__builtin_expect (x == 0, 0)) return x;
     static const double ch2[] = {
       -0x1.5555555555555p-2, 0x1.99999999998c1p-3, -0x1.249249176aecp-3, 0x1.c711fd121ae8p-4};
@@ -469,10 +477,3 @@ double cr_atanpi (double x){
   if(__builtin_expect(ub == lb, 1)) return ub;
   return as_atan_refine2(x, ub0);
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not have atanpi */
-double atanpi (double x){
-  return atan (x) / M_PI;
-}
-#endif

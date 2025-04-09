@@ -65964,3 +65964,7 @@
 -1
 +0x1.fffffffffffffp+1023
 -0x1.fffffffffffffp+1023
+# threshold values
+0x1.c5bf891b4ef69p-1023
+0x1.c5bf891b4ef6ap-1023
+0x1.c5bf891b4ef6bp-1023

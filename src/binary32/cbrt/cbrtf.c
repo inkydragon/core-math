@@ -119,8 +119,8 @@ float cr_cbrtf (float x){
   e += 899;
   uint32_t et = e/3, it = e%3;
   uint64_t isc = ((const uint64_t*)escale)[it];
-  isc += (int64_t)(et - 342)<<52;
-  isc |= (int64_t)sgn<<63;
+  isc += (uint64_t)(et - 342)<<52;
+  isc |= (uint64_t)sgn<<63;
   b64u64_u cvt2 = {.u = isc};
   static const double c[] =
     {0x1.2319d352ea5d5p-1, 0x1.67ad8ee258d1ap-1, -0x1.9342edf9cbad9p-2, 0x1.b6388fc510a75p-3,

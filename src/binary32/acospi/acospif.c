@@ -117,10 +117,3 @@ float cr_acospif(float x){
     return r;
   }
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float acospif(float x){
-  return cr_acospif(x);
-}
-#endif

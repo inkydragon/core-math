@@ -85,7 +85,7 @@ float cr_sinpif(float x){
   if(__builtin_expect(s<0, 0)){ // |x| >= 0x1p+17
     if(__builtin_expect(s<-6, 0)) // |x| >= 0x1p+23
       return __builtin_copysignf(0.0f, x);
-    int32_t iq = m<<(-s-1);
+    int32_t iq = (uint32_t)m<<(-s-1);
     iq &= 127;
     if(iq==0||iq==64) return __builtin_copysignf(0.0f, x);
     return S[iq];
@@ -101,9 +101,9 @@ float cr_sinpif(float x){
     return z*(0x1.921fb54442d18p+1 + z2*(-0x1.4abbce625be53p+2));
   }
   int32_t si = 25 - s;
-  if(__builtin_expect(si>=0&&(m<<si)==0,0)) return __builtin_copysignf(0.0f, x);
+  if(__builtin_expect(si>=0&&((uint32_t)m<<si)==0,0)) return __builtin_copysignf(0.0f, x);
 
-  int32_t k = m<<(31-s);
+  int32_t k = (uint32_t)m<<(31-s);
   double z = k, z2 = z*z;
   double fs = sn[0] + z2*(sn[1] + z2*sn[2]);
   double fc = cn[0] + z2*(cn[1] + z2*cn[2]);
@@ -113,10 +113,3 @@ float cr_sinpif(float x){
   double r = ts + (ts*z2)*fc + (tc*z)*fs;
   return r;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float sinpif(float x){
-  return cr_sinpif(x);
-}
-#endif

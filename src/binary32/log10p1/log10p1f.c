@@ -56,7 +56,7 @@ static __attribute__((noinline)) float as_special(float x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE;
 #endif
-    return -1.0f/0.0f; // -inf, will raise FE_DIVBYZERO
+    return -1.0f/0.0f; // -inf
   }
   if(ax > 0xff000000u) return x + x; // nan
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -161,10 +161,3 @@ float cr_log10p1f(float x){
   }
   return ub;
 }
-
-#ifndef SKIP_C_FUNC_REDEF
-/* just to compile since glibc does not contain this function */
-float log10p1f(float x){
-  return cr_log10p1f(x);
-}
-#endif

@@ -93,10 +93,10 @@ float cr_cospif(float x){
   }
   if(__builtin_expect(p>31, 0)) {
     if(__builtin_expect(p>63, 0)) return 1.0f;
-    int32_t iq = m << (p - 32);
+    int32_t iq = (uint32_t)m << (p - 32);
     return S[(iq+32)&127];
   }
-  int32_t k = m << p;
+  int32_t k = (uint32_t)m << p;
   if(__builtin_expect(k==0, 0)){
     int32_t iq = m >> (32-p);
     return S[(iq+32)&127];
@@ -110,10 +110,3 @@ float cr_cospif(float x){
   double r = ts + (ts*z2)*fc - (tc*z)*fs;
   return r;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float cospif(float x){
-  return cr_cospif(x);
-}
-#endif

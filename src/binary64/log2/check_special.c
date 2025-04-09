@@ -157,6 +157,7 @@ readstdin(double **result, int *count)
     else if (sscanf(buf, "%la", item) == 1)
       (*count)++;
   }
+  free (buf);
 }
 
 /* check scaled worst-cases from log2.wc */

@@ -142,10 +142,3 @@ float cr_exp2m1f(float x){
     return (s-1.0) + w*c0;
   }
 }
-
-/* just to compile since glibc does not contain this function */
-#ifndef SKIP_C_FUNC_REDEF
-float exp2m1f(float x){
-  return cr_exp2m1f(x);
-}
-#endif

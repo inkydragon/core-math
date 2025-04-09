@@ -1,6 +1,6 @@
 /* Correctly-rounded cosine of binary64 value for angles in half-revolutions
 
-Copyright (c) 2023 Alexei Sibidanov.
+Copyright (c) 2023-2025 Alexei Sibidanov.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -148,7 +148,7 @@ double cr_cospi(double x){
   int64_t m = (ix.u&(~0ull>>12))|((uint64_t)1<<52);
   int32_t s = 1063 - e; // 2^(40-s) <= |x| < 2^(41-s)
   if(__builtin_expect(s<0, 0)){ // |x| >= 2^41
-    if(__builtin_expect(e == 0x7ff, 0)){
+    if(__builtin_expect(e == 0x7ff, 0)){ // NaN or Inf
       if(!(ix.u << 12)){
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	errno = EDOM;
@@ -156,11 +156,11 @@ double cr_cospi(double x){
 	feraiseexcept (FE_INVALID);
 	return __builtin_nan("inf");
       }
-      return x;
+      return x + x; // NaN
     }
     s = -s - 1; // now 2^(41+s) <= |x| < 2^(42+s)
-    if(s>11) return 1.0;
-    uint64_t iq = (m<<s) + 1024;
+    if(s>11) return 1.0; // |x| >= 2^53
+    uint64_t iq = ((uint64_t)m<<s) + 1024;
     if(!(iq&2047)) return 0.0;
     double sh, sl, ch, cl; sincosn(iq, &sh, &sl, &ch, &cl);
     return sh + sl;
@@ -176,11 +176,11 @@ double cr_cospi(double x){
   }
   
   int32_t si = e-1011;
-  if(__builtin_expect(si>=0 && ((m<<si)^0x8000000000000000ll)==0, 0)) return 0.0;
+  if(__builtin_expect(si>=0 && (((uint64_t)m<<si)^0x8000000000000000ll)==0, 0)) return 0.0;
 
   uint64_t iq = ((m>>s) + 2048)&8191;
   iq = (iq + 1)>>1;
-  int64_t k = m<<(e-1000);
+  int64_t k = (uint64_t)m<<(e-1000);
   double z = k, z2 = z*z;
   double fs = sn[0] + z2*(sn[1] + z2*sn[2]);
   double fc = cn[0] + z2*cn[1];
@@ -246,10 +246,10 @@ void sincosn(int s, double *sh, double *sl, double *ch, double *cl){
      {0x1.ff753b8p-1, 0x1.8dc8b1e83ccffp-28}, {0x1.ff6bd48p-1, -0x1.c4bbb2c34804p-29}};
   
   int j = s&0x3ff, it = -((s>>10)&1);
-  j = (~it&j) - (it<<10) - (it&j);
+  j = (~it&j) - ((uint32_t)it<<10) - (it&j);
   int is = j>>5, ic = 0x20 - is, jm = j&0x1f;
   int ss = (s>>11)&1;
-  int sc = ((s+1024)>>11)&1;
+  int sc = (((uint32_t)s+1024)>>11)&1;
   
   double sbh = Sn[is][0], sbl = Sn[is][1];
   double cbh = Sn[ic][0], cbl = Sn[ic][1];
@@ -325,7 +325,7 @@ void sincosn2(int s, double *sh, double *sl, double *ch, double *cl){
      {0x1.15889c8dd385fp-10, 0x1.98094fab77b42p-67}, {0x1.2857389776587p-10, -0x1.bfdfce09aea7bp-64}};
   
   int j = s&0x3ff, it = -((s>>10)&1);
-  j = (~it&j) - (it<<10) - (it&j);
+  j = (~it&j) - ((uint32_t)it<<10) - (it&j);
   int is = j>>5, ic = 0x20 - is, jm = j&0x1f;
   int ss = (s>>11)&1;
   int sc = ((s+1024)>>11)&1;
@@ -354,10 +354,3 @@ void sincosn2(int s, double *sh, double *sl, double *ch, double *cl){
   *sh = __builtin_copysign(1.0, sgn[ss])*tsh;
   *sl = __builtin_copysign(1.0, sgn[ss])*tsl;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-double cospi(double x){
-  return cos(M_PI*x);
-}
-#endif

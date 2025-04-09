@@ -181,7 +181,7 @@ static void __attribute__((noinline)) as_sincosf_big(float x, float *sout, float
   double aa = (a[0] + z2*a[1]) + z4*(a[2] + z2*a[3]);
   double bb = (b[0] + z2*b[1]) + z4*(b[2] + z2*b[3]);
   bb *= z;
-  double s0 = tb[ia&31], c0 = tb[(ia+8)&31];
+  double s0 = tb[ia&31], c0 = tb[(ia+8u)&31];
   double s = s0 + z*(aa*c0 - bb*s0);
   double c = c0 - z*(aa*s0 + bb*c0);
   *sout = s;

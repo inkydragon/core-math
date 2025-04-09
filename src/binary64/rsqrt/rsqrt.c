@@ -1,6 +1,6 @@
 /* Correctly-rounded reciprocal square root of binary64 value.
 
-Copyright (c) 2022 Alexei Sibidanov.
+Copyright (c) 2022-2025 Alexei Sibidanov.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -42,7 +42,7 @@ SOFTWARE.
 // fegetexceptflag accesses the FPSR register, which seems to be much slower
 // than accessing FPCR, so it should be avoided if possible.
 // Adapted from sse2neon: https://github.com/DLTcollab/sse2neon
-#if defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 #if defined(_MSC_VER)
 #include <arm64intr.h>
 #endif
@@ -74,13 +74,13 @@ inline static unsigned int _mm_getcsr()
   static const unsigned int lut[2][2] = {{0x0000, 0x2000}, {0x4000, 0x6000}};
   return lut[r.field.bit22][r.field.bit23];
 }
-#endif  // defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 
 static inline int get_rounding_mode (void)
 {
   /* Warning: on __aarch64__ (for example cfarm103), FE_UPWARD=0x400000
      instead of 0x800. */
-#if defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   const unsigned flagp = _mm_getcsr ();
   return (flagp&(3<<13))>>3;
 #else
@@ -107,8 +107,8 @@ static double __attribute__((noinline)) as_rsqrt_refine(double rf, double a){
     unsigned mode = get_rounding_mode ();
     int e = (ia.u>>52)&1;
     u64 rm, am;
-    rm = (ir.u<<11|1ll<<63)>>11;
-    am = ((ia.u&(~0ull>>12))|1ll<<52)<<(5-e);
+    rm = (ir.u<<11|1ull<<63)>>11;
+    am = ((ia.u&(~0ull>>12))|1ull<<52)<<(5-e);
     u128 rt = (u128)rm*am;
     u64 rth = rt>>64, rtl = rt;
     u128 rrt = (u128)rtl*rm;
@@ -128,7 +128,7 @@ static double __attribute__((noinline)) as_rsqrt_refine(double rf, double a){
     ir.u += (rrt>>127)?0:dd;
     rrt = (rrt>>127)?rrt:prrt;
     if(__builtin_expect(mode==FE_TONEAREST, 1)){
-      rm = (ir.u<<11|1ll<<63)>>11;
+      rm = (ir.u<<11|1ull<<63)>>11;
       rt = (u128)rm*am;
       rrt += am>>2;
       rrt += rt;

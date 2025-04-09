@@ -1,6 +1,6 @@
 /* Correctly-rounded binary64 arcsine function.
 
-Copyright (c) 2022 Alexei Sibidanov.
+Copyright (c) 2022-2025 Alexei Sibidanov.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -43,7 +43,7 @@ SOFTWARE.
 // fegetexceptflag accesses the FPSR register, which seems to be much slower
 // than accessing FPCR, so it should be avoided if possible.
 // Adapted from sse2neon: https://github.com/DLTcollab/sse2neon
-#if defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 #if defined(_MSC_VER)
 #include <arm64intr.h>
 #endif
@@ -75,13 +75,13 @@ inline static unsigned int _mm_getcsr()
   static const unsigned int lut[2][2] = {{0x0000, 0x2000}, {0x4000, 0x6000}};
   return lut[r.field.bit22][r.field.bit23];
 }
-#endif  // defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 
 static inline int get_rounding_mode (void)
 {
   /* Warning: on __aarch64__ (for example cfarm103), FE_UPWARD=0x400000
      instead of 0x800. */
-#if defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   const unsigned flagp = _mm_getcsr ();
   return (flagp&(3<<13))>>3;
 #else
@@ -221,10 +221,10 @@ static double asin_acc(double x){
   const unsigned rm = get_rounding_mode ();
   b64u64_u t = {.f = x};
   int se = (((i64)t.u>>52)&0x7ff)-0x3ff; // -26 <= se
-  i64 xsign = t.u&((i64)1<<63);
+  i64 xsign = t.u&((u64)1<<63);
   double ax = __builtin_fabs(x);
   u128_u fi;
-  u64 sm = (t.u<<11)|(i64)1<<63;
+  u64 sm = (t.u<<11)|(u64)1<<63;
   u128_u sm2 = {.a = (u128)sm * sm};
   if(__builtin_expect(ax<0.0131875,0)) { // then -26 <= se <= -7
     int ss = 2*se; // -52 <= ss <= -14
@@ -243,7 +243,7 @@ static double asin_acc(double x){
     c0 += x2*c2;
     b64u64_u ic = {.f = c0*c.f + 64.0};
     int indx = ((ic.u&(~0ull>>12)) + ((i64)1<<(52-7)))>>(52-6);
-    u64 cm = (c.u<<11)|(i64)1<<63; int ce = ((i64)c.u>>52) - 0x3ff;
+    u64 cm = (c.u<<11)|(u64)1<<63; int ce = ((i64)c.u>>52) - 0x3ff;
     u128_u cm2 = {.a = (u128)cm * cm};
     const int off = 36 - 22 + 14;
     int ss = 128 - 104 + 2*se + off;
@@ -287,7 +287,7 @@ static double asin_acc(double x){
       fi.a -= Cm.a>>7;
     } else {
       i128 v = muU(sm>>-se, s[indx-1].a) - (mUU(Cm.a,s[63-indx].a)>>-ce), msk = v>>127, v2 = sqrU(v) - (msk&(v+v)); // since se<0 and ce<0, the shifts by -se and -ce are legitimate
-      v2 <<= 14;
+      v2 = (u128)v2 << 14;
       u128 p = pasin(v2);
       v += mUU(p,v)-(msk&p);
       fi.a += v;
@@ -371,9 +371,9 @@ double cr_asin(double x){
   b64u64_u t = {.f = x};
   int e = (((i64)t.u>>52)&0x7ff)-0x3ff;
   /* x = 2^e*y with 1 <= |y| < 2 */
-  i64 xsign = t.u&((i64)1<<63);
+  i64 xsign = t.u&((u64)1<<63);
   /* xsign=0 for x > 0, xsign=1 for x < 0 */
-  u64 sm = (t.u<<11)|(i64)1<<63;
+  u64 sm = (t.u<<11)|(u64)1<<63;
   /* sm contains in its high 53 bits: the implicit leading bit, and the
      the 52 explicit bits from the significand, thus |x| = 2^(e+1)*sm/2^64
      where 2^63 <= sm < 2^64 */
@@ -508,7 +508,7 @@ double cr_asin(double x){
        thus:
        y = y[i] + asin(x*cos(y[i]) - sqrt(1-x^2)*sin(y[i]))
        where x*cos(y[i]) - sqrt(1-x^2)*sin(y[i]) is small. */
-    u64 cm = (c.u<<11)|(i64)1<<63; int ce = ((i64)c.u>>52) - 0x3ff;
+    u64 cm = (c.u<<11)|(u64)1<<63; int ce = ((i64)c.u>>52) - 0x3ff;
     /* cm contains in its high bits the 53 significant bits from c,
        which approximates sqrt(1-x^2), including the implicit bit,
        ce is the corresponding exponent, such that c = 2^ce*cm/2^63.
@@ -610,7 +610,7 @@ double cr_asin(double x){
     /* fi.a/2^127 approximates pi/2/64 */
     fi.a *= (u64)(64u - indx); /* multiply pi/2/64 by i=64-indx */
     /* we add v after normalization */
-    u64 Vh = v>>5, Vl = v<<59;
+    u64 Vh = v>>5, Vl = (u64)v<<59;
     /* the maximal error 24.08 on v translates into an error of 24.08*2^59
        on Vl */
     i128 V = (u128)Vh<<64|Vl;
@@ -622,8 +622,8 @@ double cr_asin(double x){
     /* The error is bounded by 24.08*2^59 here, thus by 386*2^55.
        For reference, the original (non proven) error bounds are:
        u.a += 50l<<55 and d.a -= 27l<<55. */
-    u.a += (i64)386<<55;
-    d.a -= (i64)386<<55;
+    u.a += (u64)386<<55;
+    d.a -= (u64)386<<55;
     if( __builtin_expect(((d.bh^u.bh)>>(11-nz))&1, 0)){
       return asin_acc(x);
     }

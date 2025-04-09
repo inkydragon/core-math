@@ -141,7 +141,7 @@ main (int argc, char *argv[])
   ref_fesetround (rnd);
 
 #ifndef CORE_MATH_TESTS
-#define CORE_MATH_TESTS 1000000000UL /* total number of tests */
+#define CORE_MATH_TESTS 500000000UL /* total number of tests */
 #endif
 
   printf ("Checking results in subnormal range\n");

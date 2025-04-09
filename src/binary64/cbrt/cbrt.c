@@ -218,7 +218,7 @@ cr_cbrt (double x)
     }
   }
   b64u64_u cvt3 = {.f = y1};
-  cvt3.u += (int64_t)(et - 342 - 1023)<<52;
+  cvt3.u += (uint64_t)(et - 342 - 1023)<<52;
   int64_t m0 = cvt3.u<<30, m1 = m0>>63;
   if(__builtin_expect((uint64_t)(m0^m1)<=(1ul<<30),0)){
     b64u64_u cvt4 = {.f = y1};

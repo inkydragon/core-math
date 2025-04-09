@@ -103,6 +103,7 @@ readstdin(long double **result, int *count)
       (*count)++;
     }
   }
+  free (buf);
 }
 
 static int
@@ -153,8 +154,10 @@ fix_underflow (long double x, long double y)
   /* don't call mpfr_subnormalize here since we precisely want an unbounded
      exponent */
   mpfr_abs (t, t, MPFR_RNDN); // exact
+#if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
   if (mpfr_cmp_ui_2exp (t, 1, -16382) == 0) // |o(f(x,y))| = 2^-16382
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
+#endif
   mpfr_clear (t);
 }
 
@@ -166,7 +169,7 @@ check (long double x)
   ref_fesetround(rnd);
   mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
   long double z1 = ref_function_under_test(x);
-#ifdef CORE_MATH_CHECK_INEXACT
+#if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
   mpfr_flags_t inex1 = mpfr_flags_test (MPFR_FLAGS_INEXACT);
 #endif
   fesetround(rnd1[rnd]);

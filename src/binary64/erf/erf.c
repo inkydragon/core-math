@@ -1,6 +1,6 @@
 /* Correctly-rounded error function for binary64 value.
 
-Copyright (c) 2023 Paul Zimmermann
+Copyright (c) 2023-2025 Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -646,13 +647,12 @@ cr_erf (double x)
   b64u64_u t = {.f = z};
   uint64_t ux = t.u;
   /* erf(x) rounds to +/-1 for RNDN for |x| > 0x1.7afb48dc96626p+2 */
-  if (__builtin_expect (ux > 0x4017afb48dc96626, 0))
-    /* 0x4017afb48dc96626 == 0x1.7afb48dc96626p+2 */
+  if (__builtin_expect (ux > 0x4017afb48dc96626, 0)) // |x| > 0x1.7afb48dc96626p+2
   {
     double os = __builtin_copysign (1.0, x);
 #define MASK (uint64_t) 0x7ff0000000000000 // encoding of +Inf
     if (ux > MASK)
-      return x; /* NaN */
+      return x + x; /* NaN */
     if (ux == MASK)
       return os; /* +/-Inf */
     return os - 0x1p-54 * os;
@@ -667,13 +667,27 @@ cr_erf (double x)
     /* tiny x: erf(x) ~ 2/sqrt(pi) * x + O(x^3), where the ratio of the O(x^3)
        term to the main term is in x^2/3, thus less than 2^-123 */
     double y = CH * x; /* tentative result */
-    /* scale x by 2^53 to get out the subnormal range */
-    x *= 0x1p53;
-    a_mul (&h, &l, CH, x);
-    l = __builtin_fma (CL, x, l);
+    /* scale x by 2^106 to get out the subnormal range */
+    double sx = x * 0x1p106;
+    a_mul (&h, &l, CH, sx);
+    l = __builtin_fma (CL, sx, l);
     /* now compute the residual h + l - y */
-    l += h - y * 0x1p53; /* h-y*2^53 is exact since h and y are very close */
-    return __builtin_fma (l, 0x1p-53, y);
+    l += h - y * 0x1p106; /* h-y*2^106 is exact since h and y are very close */
+    double res = __builtin_fma (l, 0x1p-106, y);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    /* erf(x) underflows for |x| <= 0x1.c5bf891b4ef6ap-1023,
+       except for rounding away and |x| = 0x1.c5bf891b4ef6ap-1023.
+       However we cannot decide on the value of res, since for x=X0 and
+       RNDN, we get res = 2^-1022 (because the rounding value with full
+       precision is not representable) */
+    double dummy = __builtin_copysign (1.0, x);
+#define X0 0x1.c5bf891b4ef6ap-1023
+    if (__builtin_fabs (x) < X0 ||
+	(__builtin_fabs (x) == X0 &&
+	 __builtin_fma (dummy, 0x1p-53, dummy) == dummy))
+      errno = ERANGE; // underflow
+#endif
+    return res;
   }
   /* now z >= 2^-61 */
   err = cr_erf_fast (&h, &l, z);

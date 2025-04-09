@@ -1,6 +1,6 @@
 /* Correctly-rounded arc cosine of binary64 value.
 
-Copyright (c) 2024 Alexei Sibidanov.
+Copyright (c) 2024-2025 Alexei Sibidanov.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -329,7 +329,8 @@ double as_acos_refine(double x, double phi){
   e = e<0?0:e;
   e = e>52?52:e;
   u64 m = ((u64)1<<52)-((u64)1<<e);
-  if(__builtin_expect(!((t.u+((i64)1<<(e-1)))&m), 0)){
+  e = (e == 0) ? 64 : e;
+  if(__builtin_expect(!((t.u+((u64)1<<(e-1)))&m), 0)){
     if(x==-0x1.771164bfd1f84p-3 ) return 0x1.c14601daaf657p+0  - 0x1p-54;
     if(x==-0x1.4510ee8eb4e67p-1 ) return 0x1.211c0e2c2559ep+1  - 0x1p-53;
     if(x==-0x1.011c543f23a17p-2 ) return 0x1.d318c90d9e8b7p+0  - 0x1p-54;

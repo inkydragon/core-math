@@ -137,7 +137,7 @@ float cr_sinhf(float x){
   double a = iln2*z, ia = roundeven_finite(a), h = a - ia, h2 = h*h;
   b64u64_u ja = {.f = ia + 0x1.8p52};
   int64_t jp = ja.u, jm = -jp;
-  b64u64_u sp = {.u = tb[jp&31] + ((jp>>5)<<52)}, sm = {.u = tb[jm&31] + ((jm>>5)<<52)};
+  b64u64_u sp = {.u = tb[jp&31] + ((uint64_t)(jp>>5)<<52)}, sm = {.u = tb[jm&31] + ((uint64_t)(jm>>5)<<52)};
   double te = c[0] + h2*c[2], to = (c[1] + h2*c[3]);
   double rp = sp.f*(te + h*to), rm = sm.f*(te - h*to), r = rp - rm;
   float ub = r, lb = r  - 1.52e-10*r;

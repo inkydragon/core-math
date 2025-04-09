@@ -208,7 +208,7 @@ double cr_tanpi(double x){
       int32_t e = ax>>52, s = e - 1069;
       if(s>6) return __builtin_copysign(0,x);
       int64_t m = ax, sgn = (int64_t)ix.u>>63;
-      uint64_t iq = (((m^sgn)-sgn)<<s)&127;
+      uint64_t iq = ((uint64_t)((m^sgn)-sgn)<<s)&127;
       if(!(iq&31)){
 	int64_t jq = iq>>5;
 	if(jq&1){
@@ -237,7 +237,8 @@ double cr_tanpi(double x){
     }
     // now 0x1p-12 <= |x| < 0x1p+46, we have 1011 <= e <= 1068
     int32_t e = ax>>52, s = 1068 - e, s1 = e - 1011;
-    int64_t m = (ax&(~(uint64_t)0>>12))|((uint64_t)1<<52), ms = (m<<s1)>>63, sgn = (int64_t)ix.u>>63;
+    int64_t m = (ax&(~(uint64_t)0>>12))|((uint64_t)1<<52),
+      ms = (int64_t)((uint64_t)m<<s1)>>63, sgn = (int64_t)ix.u>>63;
     // m is the significand, 2^52 <= m < 2^53
     // 0 <= s1 <= 57 is a biased exponent, with s1=0 for 2^-12 <= |x| < 2^-11
     // 0 <= s <= 57 is another biased exponent, with s=0 for 2^45 <= |x| < 2^46
@@ -246,10 +247,10 @@ double cr_tanpi(double x){
     iq = (iq + 1)>>1;
     ms ^= sgn;
     int64_t sm = (m ^ sgn) - sgn; // sm = sign(x)*m
-    int64_t k = sm<<(e-1005); // 6 <= e-1005 <= 63
+    int64_t k = (uint64_t)sm<<(e-1005); // 6 <= e-1005 <= 63
     // k contains the bits of m of weight <= 2^-7
     double z = k;
-    if(__builtin_expect((k<<1)==0,0)) { // x mod 2^-8 = 0
+    if(__builtin_expect(((uint64_t)k<<1)==0,0)) { // x mod 2^-8 = 0
       if(__builtin_expect(k==0, 0)){ // x mod 2^-7 = 0
 	if(!(iq&31)){
 	  int64_t jq = sm>>(s+6);
@@ -392,10 +393,3 @@ double cr_tanpi(double x){
   if(__builtin_expect(er<=12||de>102, 0)) return as_tanpi_database(x, res);
   return res;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not provide this function */
-double tanpi(double x){
-  return tan(M_PI*x);
-}
-#endif

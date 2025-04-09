@@ -239,6 +239,7 @@ readstdin(long double **result, int *count)
       (*count)++;
     }
   }
+  free (buf);
 }
 
 /* check scaled worst-cases from log2l.wc */

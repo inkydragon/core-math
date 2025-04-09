@@ -1,6 +1,6 @@
 /* Correctly-rounded binary64 asinpi function.
 
-Copyright (c) 2022-2023 Alexei Sibidanov and Paul Zimmermann
+Copyright (c) 2022-2025 Alexei Sibidanov and Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -51,7 +51,7 @@ SOFTWARE.
 // fegetexceptflag accesses the FPSR register, which seems to be much slower
 // than accessing FPCR, so it should be avoided if possible.
 // Adapted from sse2neon: https://github.com/DLTcollab/sse2neon
-#if defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 #if defined(_MSC_VER)
 #include <arm64intr.h>
 #endif
@@ -83,13 +83,13 @@ inline static unsigned int _mm_getcsr()
   static const unsigned int lut[2][2] = {{0x0000, 0x2000}, {0x4000, 0x6000}};
   return lut[r.field.bit22][r.field.bit23];
 }
-#endif  // defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 
 static inline int get_rounding_mode (void)
 {
   /* Warning: on __aarch64__ (for example cfarm103), FE_UPWARD=0x400000
      instead of 0x800. */
-#if defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   const unsigned flagp = _mm_getcsr ();
   return (flagp&(3<<13))>>3;
 #else
@@ -200,10 +200,10 @@ static double asinpi_acc(double x){
   const unsigned rm = get_rounding_mode ();
   b64u64_u t = {.f = x};
   int se = ((t.u>>52)&0x7ff)-0x3ff;
-  i64 xsign = t.u&(1ll<<63);
+  i64 xsign = t.u&((u64)1<<63);
   double ax = __builtin_fabs(x);
   u128_u fi;
-  u64 sm = (t.u<<11)|1ll<<63;
+  u64 sm = (t.u<<11)|(u64)1<<63;
   u128_u sm2 = {.a = (u128)sm * sm};
   if(__builtin_expect(ax<0.0131875,0)) {
     int ss = 2*se;
@@ -222,7 +222,7 @@ static double asinpi_acc(double x){
     c0 += x2*c2;
     b64u64_u ic = {.f = c0*c.f + 64.0};
     int indx = ((ic.u&(~0ull>>12)) + (1ll<<(52-7)))>>(52-6);
-    u64 cm = (c.u<<11)|1ll<<63; int ce = (c.u>>52) - 0x3ff;
+    u64 cm = (c.u<<11)|(u64)1<<63; int ce = (c.u>>52) - 0x3ff;
     u128_u cm2 = {.a = (u128)cm * cm};
     const int off = 36 - 22 + 14;
     int ss = 128 - 104 + 2*se + off;
@@ -266,7 +266,7 @@ static double asinpi_acc(double x){
       fi.a -= Cm.a>>7;
     } else {
       i128 v = muU(sm>>-se, s[indx-1].a) - (mUU(Cm.a,s[63-indx].a)>>-ce), msk = v>>127, v2 = sqrU(v) - (msk&(v+v)); // since se<0 and ce<0, the shifts by -se and -ce are legitimate
-      v2 <<= 14;
+      v2 = (u128)v2 << 14;
       u128 p = pasin(v2);
       v += mUU(p,v)-(msk&p);
       fi.a += v;
@@ -326,30 +326,50 @@ static double asinpi_tiny (double x)
       : __builtin_fma (0x1p-600, 0x1p-600, -0x1.bc03df34e902cp-1022);
 
   /* exceptional case +/-0x1.5cba89af1f855p-1022 */
-  if (au == 0x15cba89af1f855llu)
+  if (au == 0x15cba89af1f855llu) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    errno = ERANGE; // underflow
+#endif
     return (x > 0)
       ? __builtin_fma (-0x1p-600, 0x1p-600, 0x1.bc03df34e902cp-1024)
       : __builtin_fma (0x1p-600, 0x1p-600, -0x1.bc03df34e902cp-1024);
+  }
 
   /* exceptional case +/-0x1.68e6482549db1p-1022 */
-  if (au == 0x168e6482549db1llu)
+  if (au == 0x168e6482549db1llu) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    errno = ERANGE; // underflow
+#endif
     return (x > 0)
       ? __builtin_fma (0x1p-600, 0x1p-600, 0x1.cb82f5da3a6b4p-1024)
       : __builtin_fma (-0x1p-600, 0x1p-600, -0x1.cb82f5da3a6b4p-1024);
+  }
 
   /* exceptional case 0x1.5cba89af1f855p-1021 */
-  if (au == 0x25cba89af1f855llu)
+  if (au == 0x25cba89af1f855llu) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    errno = ERANGE; // underflow
+#endif
     return (x > 0)
       ? __builtin_fma (-0x1p-600, 0x1p-600, 0x1.bc03df34e902cp-1023)
       : __builtin_fma (0x1p-600, 0x1p-600, -0x1.bc03df34e902cp-1023);
+  }
 
   /* we compute h before scaling, so that h is exactly representable */
   h = x * ONE_OVER_PIH;
-  x = x * 0x1p53; /* scale x */
-  l = __builtin_fma (x, ONE_OVER_PIH, -h * 0x1p53);
-  l = __builtin_fma (x, ONE_OVER_PIL, l);
+  double sx  = x * 0x1p106; /* scale x */
+  l = __builtin_fma (sx, ONE_OVER_PIH, -h * 0x1p106);
+  l = __builtin_fma (sx, ONE_OVER_PIL, l);
   /* scale back */
-  return __builtin_fma (l, 0x1p-53, h);
+  /* for RNDN/RNDU, asinpi(x) underflows for 0 < x <= 0x1.921fb54442d17p-1021,
+     for RNDZ for |x| <= 0x1.921fb54442d18p-1021, in which case |res| < 2^-1022 */
+  double res = __builtin_fma (l, 0x1p-106, h);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  if (__builtin_fabs (x) <= 0x1.921fb54442d17p-1021
+      || __builtin_fabs (res) < 0x1p-1022)
+    errno = ERANGE; // underflow
+#endif
+  return res;
 }
 
 /* special routine for 2^-53 <= |x| < 2^-26 */
@@ -461,9 +481,9 @@ double cr_asinpi(double x){
   b64u64_u t = {.f = x};
   int e = ((t.u>>52)&0x7ff)-0x3ff;
   /* x = 2^e*y with 1 <= |y| < 2 */
-  i64 xsign = t.u&(1ll<<63);
+  i64 xsign = t.u&((u64)1<<63);
   /* xsign=0 for x > 0, xsign=1 for x < 0 */
-  u64 sm = (t.u<<11)|1ll<<63;
+  u64 sm = (t.u<<11)|(u64)1<<63;
   /* sm contains in its high 53 bits: the implicit leading bit, and the
      the 52 explicit bits from the significand, thus |x| = 2^(e+1)*sm/2^64
      where 2^63 <= sm < 2^64 */
@@ -474,7 +494,7 @@ double cr_asinpi(double x){
       /* h=0x1.921fb54442d18p+0 is pi/2 rounded to nearest,
          and 0x1.1a62633145c07p-54 is pi/2-h rounded to nearest */
       return x * 0.5; // asinpi_specific
-    if (e==0x400 && m) return x; // nan
+    if (e==0x400 && m) return x + x; // nan
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = EDOM;
 #endif
@@ -553,6 +573,9 @@ double cr_asinpi(double x){
        We check the last bit (or the round bit for FE_TONEAREST) does not
        change between fi and u. */
     if( __builtin_expect(((fi.bh^u.bh)>>(11-nz))&1, 0)){
+#ifdef CORE_MATH_CHECK_INEXACT
+      feraiseexcept(FE_INEXACT);
+#endif
       return asinpi_acc (x);
     }
     e += 0x3ff;
@@ -600,7 +623,7 @@ double cr_asinpi(double x){
        thus:
        y = y[i] + asin(x*cos(y[i]) - sqrt(1-x^2)*sin(y[i]))
        where x*cos(y[i]) - sqrt(1-x^2)*sin(y[i]) is small. */
-    u64 cm = (c.u<<11)|1ll<<63; int ce = (c.u>>52) - 0x3ff;
+    u64 cm = (c.u<<11)|(u64)1<<63; int ce = (c.u>>52) - 0x3ff;
     /* cm contains in its high bits the 53 significant bits from c,
        which approximates sqrt(1-x^2), including the implicit bit,
        ce is the corresponding exponent, such that c = 2^ce*cm/2^63.
@@ -702,7 +725,7 @@ double cr_asinpi(double x){
     /* fi.a/2^127 approximates pi/2/64 */
     fi.a *= (u64)(64u - indx); /* multiply pi/2/64 by i=64-indx */
     /* we add v after normalization */
-    u64 Vh = v>>5, Vl = v<<59;
+    u64 Vh = v>>5, Vl = (u64)v<<59;
     /* the maximal error 24.08 on v translates into an error of 24.08*2^59
        on Vl */
     i128 V = (u128)Vh<<64|Vl;
@@ -744,12 +767,8 @@ double cr_asinpi(double x){
     rnd = 0;
   }
   t.u = ((fi.bh>>(11-nz))+((u64)(e-nz)<<52|rnd))|xsign;
+#ifdef CORE_MATH_CHECK_INEXACT
+  feraiseexcept(FE_INEXACT);
+#endif
   return t.f;
 }
-
-#ifndef SKIP_C_FUNC_REDEF
-/* just to compile since glibc does not have asinpi */
-double asinpi (double x){
-  return asin (x) / M_PI;
-}
-#endif

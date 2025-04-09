@@ -1,6 +1,6 @@
 /* Correctly-rounded sine function for binary64 value.
 
-Copyright (c) 2022-2023 Paul Zimmermann and Tom Hubrecht
+Copyright (c) 2022-2025 Paul Zimmermann and Tom Hubrecht
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -2039,6 +2039,10 @@ cr_sin (double x)
 
   if (__builtin_expect (e == 0x7ff, 0)) /* NaN, +Inf and -Inf. */
     {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      if ((t.u << 1) == 0x7ffull<<53) // Inf
+        errno = EDOM;
+#endif
       t.u = ~0ull;
       return t.f;
     }

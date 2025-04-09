@@ -124,10 +124,3 @@ float cr_asinpif(float x){
     return r;
   }
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float asinpif(float x){
-  return cr_asinpif(x);
-}
-#endif

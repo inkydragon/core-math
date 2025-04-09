@@ -657,9 +657,9 @@ static inline int log_1 (double *h, double *l, double x) {
   /* now 0x1.6a09e667f3bcdp-1 <= t < 0x1.6a09e667f3bcdp+0,
      and log(x) = E * log(2) + log(t) */
 
-  double r = (_INVERSE - 181)[i];
-  double l1 = (_LOG_INV - 181)[i][0];
-  double l2 = (_LOG_INV - 181)[i][1];
+  double r = _INVERSE[i-181];
+  double l1 = _LOG_INV[i-181][0];
+  double l2 = _LOG_INV[i-181][1];
 
   double z = __builtin_fma (r, t, -1.0);
 
@@ -1000,7 +1000,8 @@ exp_1 (double *eh, double *el, double rh, double rl, double s) {
 #define RHO2 0x1.62e42e709a95bp+9
 #define RHO3 0x1.62e4316ea5df9p+9
 
-  if (__builtin_expect(rh > RHO2, 0)) {
+  // use !(rh <= RHO2) instead of rh < RHO2 to catch rh = NaN too
+  if (__builtin_expect(!(rh <= RHO2), 0)) {
     if (rh > RHO3) {
       /* If rh > RHO3, we are sure there is overflow,
          For s=1 we return eh = el = DBL_MAX, which yields
@@ -1083,7 +1084,7 @@ exp_1 (double *eh, double *el, double rh, double rl, double s) {
   /* we should have 1 < M < 2047 here, since we filtered out
      potential underflow/overflow cases at the beginning of this function */
 
-  _d.u = M << 52;
+  _d.u = (uint64_t) M << 52;
   _d.f *= s;
   *eh *= _d.f;
   *el *= _d.f;
@@ -1316,7 +1317,7 @@ exact_pow (double *r, double x, double y, const dint64_t *z,
        the rounding test from the 2nd phase did succeed.
     */
     int cnt = __builtin_clzll (k);
-    dint64_t d = { .hi = k << cnt, .lo = 0, .ex = G + 63 - cnt, .sgn = 1 - z->sgn };
+    dint64_t d = { .hi = (uint64_t)k << cnt, .lo = 0, .ex = G + 63 - cnt, .sgn = 1 - z->sgn };
     add_dint (&d, z, &d); /* exact by Sterbenz theorem */
     /* multiply d by 2^116 */
     d.ex += 116;
@@ -1395,11 +1396,11 @@ is_exact (double x, double y)
   if (__builtin_expect ((v.u << 1) == 0x7fe0000000000000ull, 0)) // |x| = 1
     return 1;
 
-  // xmax[y] for 1<=y<=33 is the largest m such that m^y fits in 53 bits
+  // xmax[y] for 1<=y<=33 is the largest odd m such that m^y fits in 53 bits
   static const uint64_t xmax[] = { 0, 0xffffffffffffffff,
-                                   94906265, 208063, 9741, 1552, 456, 190, 98,
-                                   59, 39, 28, 21, 16, 13, 11, 9, 8, 7, 6, 6,
-                                   5, 5, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3 };
+                                   94906265, 208063, 9741, 1551, 455, 189, 97,
+                                   59, 39, 27, 21, 15, 13, 11, 9, 7, 7, 5, 5,
+                                   5, 5, 4, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3 };
   if (y >= 0 && is_int (y)) {
     /* let x = m*2^e with m an odd integer, x^y is exact when
        - y = 0 or y = 1

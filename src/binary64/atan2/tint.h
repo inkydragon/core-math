@@ -380,7 +380,7 @@ static inline void tint_fromd (tint_t *a, double x)
 // copied from ../exp/exp.c
 static inline double as_ldexp(double x, int64_t i){
 #ifdef __x86_64__
-    __m128i sb; sb[0] = i<<52;
+  __m128i sb; sb[0] = (uint64_t)i<<52;
 #if defined(__clang__)
     __m128d r = _mm_set_sd(x);
 #else
@@ -390,7 +390,7 @@ static inline double as_ldexp(double x, int64_t i){
     return r[0];
 #else
     d64u64 ix = {.f = x};
-    ix.u += i<<52;
+    ix.u += (uint64_t)i<<52;
     return ix.f;
 #endif
 }

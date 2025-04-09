@@ -194,7 +194,7 @@ static inline void qint_fromd (qint64_t *a, double b) {
 
   /* |b| = 2^(ex-52)*hi */
 
-  uint32_t t = __builtin_clzl (a->hh);
+  uint32_t t = (a->hh) ? __builtin_clzl (a->hh) : 0;
 
   a->sgn = b < 0.0;
   a->ex = a->ex - (t > 11 ? t - 12 : 0);

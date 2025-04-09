@@ -208,6 +208,7 @@ readstdin(long double **result, int *count)
       (*count)++;
     }
   }
+  free (buf);
 }
 
 /* for worst-cases in [0.5,2), check all values x*2^(2k) that are in

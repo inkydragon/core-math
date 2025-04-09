@@ -43,8 +43,8 @@ float cr_hypotf(float x, float y){
   b32u32_u tx = {.f = ax}, ty = {.f = ay};
   if(__builtin_expect(tx.u >= (0xffu<<23) || ty.u >= (0xffu<<23), 0)){
     // either x or y is Inf or NaN
-    int snan_x = tx.u >= (0xffu<<23) && ((int32_t) tx.u << 9) > 0;
-    int snan_y = ty.u >= (0xffu<<23) && ((int32_t) ty.u << 9) > 0;
+    int snan_x = tx.u > (0xffu<<23) && !((tx.u >> 22) & 1);
+    int snan_y = ty.u > (0xffu<<23) && !((ty.u >> 22) & 1);
     if (snan_x || snan_y)
       return x + y; // will return qNaN
     if(tx.u == (0xffu<<23)) return ax;

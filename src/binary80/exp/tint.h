@@ -1,6 +1,6 @@
 /* Fast 192-bit arithmetic routines.
 
-Copyright (c) 2023 Paul Zimmermann
+Copyright (c) 2023-2025 Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -186,7 +186,7 @@ cmp_tint_abs (const tint_t *a, const tint_t *b) {
 
 // shift right by k bits (only deal with the significand)
 static inline void
-rshift (tint_t *a, const tint_t *b, int k)
+rshift (tint_t *a, const tint_t *b, uint64_t k)
 {
   if (k == 0)
   {

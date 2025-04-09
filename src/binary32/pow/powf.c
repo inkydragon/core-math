@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
+#include <assert.h>
 #include <stdint.h>
 #include <errno.h>
 #include <fenv.h>
@@ -232,9 +234,9 @@ is_exact (float x, float y)
   if (__builtin_expect ((v.u << 1) == 0x7f000000, 0)) // |x| = 1
     return 1;
 
-  // xmax[y] for 1<=y<=15 is the largest m such that m^y fits in 53 bits
-  static const uint32_t xmax[] = { 0, 0xffffff, 4095, 255, 63, 27, 15, 10,
-                                   7, 6, 5, 4, 3, 3, 3, 3};
+  // xmax[y] for 1<=y<=15 is the largest odd m such that m^y fits in 24 bits
+  static const uint32_t xmax[] = { 0, 0xffffff, 4095, 255, 63, 27, 15, 9,
+                                   7, 5, 5, 3, 3, 3, 3, 3};
   if (y >= 0 && isint (y)) {
     /* let x = m*2^e with m an odd integer, x^y is exact when
        - y = 0 or y = 1
@@ -299,16 +301,24 @@ is_exact (float x, float y)
   e += t;
   // |x| = m*2^e with m odd
 
-  /* if y < 0 and y is not an integer, the only case where x^y might be
-     exact is when y = -n/2^k and x = 2^e with 2^k dividing e */
+  /* if y < 0, the only cases where x^y might be exact are:
+   * if y = -n*2^f with f >= 0
+   * if y = -n*2^f with f < 0, if x = 2^e with 2^(-f) dividing e
+   */
   if (y < 0)
   {
+    int32_t ez;
     if (m != 1) return 0;
-    // y = -2^f thus k = -f
-    // now e <> 0
-    t = __builtin_ctz (e);
-    if (-f > t) return 0; // 2^k does not divide e
-    int32_t ez = (-e >> (-f)) * n;
+    // now x = 2^e
+    if (f >= 0)
+      ez = ((e >= 0) ? -(e << f) : (-e << f)) * n;
+    else {
+      // y = -n*2^f thus k = -f
+      // now e <> 0
+      t = __builtin_ctz (e);
+      if (-f > t) return 0; // 2^k does not divide e
+      ez = (-e >> (-f)) * n;
+    }
     return -149 <= ez && ez < 128;
   }
 
@@ -399,12 +409,8 @@ float cr_powf(float x0, float y0){
   if(__builtin_expect (ty.u<<1 == 0, 0))
     return issignalingf (x0) ? x0 + y0 : 1.0f; // x^0 = 1 except for x = sNaN
   if(__builtin_expect ((ty.u<<1) >= (uint64_t)0x7ff<<53, 0)){ // y=Inf/NaN
-    if((tx.u<<1) == (uint64_t)0x3ff<<53) { // |x|=1
-      return -1.0;
-      return (x0 == 1.0f || (ty.u<<1) == (uint64_t)0x7ff<<53)
-        ? 1.0f : y0;
-    }
-    if((tx.u<<1) > (uint64_t)0x7ff<<53) return x0 + x0; // x=NaN
+    // the case |x|=1 was already checked above
+    if((tx.u<<1) > (uint64_t)0x7ff<<53) return x0 + y0; // x=NaN
     if((ty.u<<1) == (uint64_t)0x7ff<<53){
       if(((tx.u<<1) < ((uint64_t)0x3ff<<53)) ^ (ty.u>>63)){
 	return 0;
@@ -511,7 +517,7 @@ float cr_powf(float x0, float y0){
   if(((rr.u+off)&0xfffffff) <= 2*off)
     return as_powf_accurate2 (x0, y0, is_exact (x0, y0), flag);
   int et = ((ty.u>>52)&0x7ff) - 0x3ff;
-  uint64_t kk = ty.u<<(11+et);
+  uint64_t kk = (et >= -11) ? ty.u<<(11+et) : ty.u>>(-11-et);
   if(!(kk<<1)&&kk) rr.f = __builtin_copysign(rr.f,x);
   float res = rr.f;
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -574,7 +580,8 @@ static float as_powf_accurate2(float x0, float y0, int is_exact, FLAG_T flag){
   b64u64_u r = {.u = ((uint64_t)0x3ff+(int64_t)ee)<<52};
   b32u32_u ty = {.f = y0};
   int et = ((ty.u>>23)&0xff) - 0x7f;
-  unsigned kk = ty.u<<(8+et), isint = !(kk<<1|et>>31) || et>=23;
+  uint32_t kk = (8+et>=0) ? ty.u<<(8+et) : ty.u>>(-8-et);
+  uint32_t isint = !(kk<<1|et>>31) || et>=23;
   b64u64_u ll = {.f = el}, lh = {.f = eh};
   if(((ll.u>>(6*4-1))&((1<<29)-1)) == ((1<<29)-1)){
     if(eh<1){
@@ -644,7 +651,8 @@ static float as_powf_accurate2(float x0, float y0, int is_exact, FLAG_T flag){
   if (is_exact)
     set_flag (flag);
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  if (__builtin_fabsf (res) < 0x1p-126f && !is_exact)
+  if ((__builtin_fabsf (res) < 0x1p-126f && !is_exact) ||
+      __builtin_fabs (eh) >= 0x1p128)
     errno = ERANGE;
 #endif
   return res;

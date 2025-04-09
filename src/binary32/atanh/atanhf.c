@@ -127,7 +127,7 @@ float cr_atanhf(float x){
     }
   }
   double sgn = s[ux>>31];
-  unsigned e = ax>>24, md = ((ux<<8)|1<<31)>>(126-e), mn = -md;
+  uint32_t e = ax>>24, md = ((ux<<8)|1ul<<31)>>(126-e), mn = -md;
   int nz = __builtin_clz(mn) + 1;
   mn <<= nz;
   unsigned jn = mn>>26, jd = md>>26;

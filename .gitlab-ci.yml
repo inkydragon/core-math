@@ -7,8 +7,22 @@ check:
   before_script:
     - ci/00-prepare-docker.sh
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git
-    - EXTRA_CFLAGS="-Werror -fsanitize=undefined -fno-sanitize-recover -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - ./ci.sh
+
+check_sanitize:
+  stage: test
+  image: debian:latest
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - CFLAGS="-fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./ci.sh
+
+check_sanitize_clang:
+  stage: test
+  image: silkeh/clang:latest
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh
 
 check_without_fma:
   stage: test
@@ -28,7 +42,7 @@ check_dry:
     - apt-get update -qq && apt-get install -qq build-essential git
     - FORCE=true DRY=--dry LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh
 
-check_dry_without_inex:
+check_dry_with_O3:
   stage: test
   image: debian:latest
   before_script:
@@ -37,7 +51,7 @@ check_dry_without_inex:
     - apt-get update -qq && apt-get install -qq build-essential git
     - FORCE=true DRY=--dry CFLAGS=-O3 LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh
 
-check_dry_errno:
+check_dry_inexact_errno:
   stage: test
   image: debian:latest
   before_script:
@@ -45,6 +59,20 @@ check_dry_errno:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
     - FORCE=true DRY=--dry LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" CFLAGS="-DCORE_MATH_CHECK_INEXACT -DCORE_MATH_SUPPORT_ERRNO" ./ci.sh
+
+check_dry_inexact:
+  stage: test
+  image: debian:latest
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_CHECK_INEXACT" ./ci.sh
+
+check_dry_errno:
+  stage: test
+  image: debian:latest
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_SUPPORT_ERRNO" ./ci.sh
 
 check_dry_clang:
   stage: test
@@ -61,6 +89,6 @@ check_dry_icx:
   before_script:
     - ci/00-prepare-docker.sh
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git
-    # MPFR is installed in /usr/local
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    # MPFR-dev is installed in /usr/local
     - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh

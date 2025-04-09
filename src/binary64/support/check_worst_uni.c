@@ -100,6 +100,7 @@ readstdin(double **result, int *count)
     else if (sscanf(buf, "%la", item) == 1)
       (*count)++;
   }
+  free (buf);
 }
 
 static inline uint64_t
@@ -146,14 +147,40 @@ is_equal (double x, double y)
   return asuint64 (x) == asuint64 (y);
 }
 
+int underflow_before; // non-zero if processor raises underflow before rounding
+
+// return non-zero if the processor raises underflow before rounding
+// (e.g., aarch64)
+static void
+check_underflow_before (void)
+{
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
+  fesetround (FE_TONEAREST);
+  feclearexcept (FE_UNDERFLOW);
+  float x = 0x1p-126f;
+  float y = __builtin_fmaf (-x, x, x);
+  if (x == y) // this is needed otherwise the compiler says y is unused
+    underflow_before = fetestexcept (FE_UNDERFLOW);
+  fesetexceptflag (&flag, FE_ALL_EXCEPT); //restore flags
+}
+
 /* For |y| = 2^-1022 and underflow after rounding, clear the MPFR
    underflow exception when the rounded result (with unbounded exponent)
-   equals +/-2^-1022 (might be set due to a bug in MPFR <= 4.2.1). */
+   equals +/-2^-1022 (might be set due to a bug in MPFR <= 4.2.1).
+   For |y| = 2^-1022 and underflow before rounding, clear the fenv.h
+   underflow exception when |f(x)| < 2^-1022 but there is no underflow
+   after rounding (thus we mimic underflow after rounding). */
 static void
 fix_underflow (double x, double y)
 {
   if (__builtin_fabs (y) != 0x1p-1022)
     return;
+  if (underflow_before) {
+    if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
+      feclearexcept (FE_UNDERFLOW);
+    return;
+  }
   mpfr_t t;
   mpfr_init2 (t, 53);
   fexcept_t flag;
@@ -166,8 +193,10 @@ fix_underflow (double x, double y)
   /* don't call mpfr_subnormalize here since we precisely want an unbounded
      exponent */
   mpfr_abs (t, t, MPFR_RNDN); // exact
+#if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
   if (mpfr_cmp_ui_2exp (t, 1, -1022) == 0) // |o(f(x,y))| = 2^-1022
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
+#endif
   mpfr_clear (t);
 }
 
@@ -278,9 +307,8 @@ check (double x)
   // check errno
 #ifdef CORE_MATH_SUPPORT_ERRNO
   // If x is a normal number and y is NaN, we should have errno = EDOM.
-  if (!is_nan (x) && !is_inf (x))
-  {
-    if (is_nan (z1) && errno != EDOM)
+  int expected_edom = !is_nan (x) && is_nan (z1);
+  if (expected_edom && errno != EDOM)
     {
       printf ("Missing errno=EDOM for x=%la (y=%la)\n", x, z1);
       fflush (stdout);
@@ -290,7 +318,7 @@ check (double x)
       exit(1);
 #endif
     }
-    if (!is_nan (z1) && errno == EDOM)
+    if (!expected_edom && errno == EDOM)
     {
       printf ("Spurious errno=EDOM for x=%la (y=%la)\n", x, z1);
       fflush (stdout);
@@ -303,9 +331,10 @@ check (double x)
 
     /* If x is a normal number and a pole error (y exact infinity) or an
        overflow/underflow occurs, we should have errno = ERANGE. */
-    int expected_erange = (is_inf (z1) && inex1 == 0) ||
-      mpfr_flags_test (MPFR_FLAGS_OVERFLOW) ||
-      mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
+    int expected_erange = !is_nan (x) && !is_inf (x) &&
+      ((is_inf (z1) && inex1 == 0) ||
+       mpfr_flags_test (MPFR_FLAGS_OVERFLOW) ||
+       mpfr_flags_test (MPFR_FLAGS_UNDERFLOW));
     if (expected_erange && errno != ERANGE)
     {
       printf ("Missing errno=ERANGE for x=%la (y=%la)\n", x, z1);
@@ -326,7 +355,6 @@ check (double x)
       exit(1);
 #endif
     }
-  }
 #endif
 
   return 0;
@@ -441,6 +469,8 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  check_underflow_before ();
 
   doloop();
 

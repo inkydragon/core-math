@@ -859,10 +859,3 @@ double cr_atan2pi (double y, double x)
 
   return atan2pi_accurate (y, x);
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-double atan2pi (double y, double x){
-  return atan2 (y, x) / M_PI;
-}
-#endif

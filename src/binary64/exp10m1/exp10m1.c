@@ -1,6 +1,6 @@
 /* Correctly-rounded exp10m1 function for binary64 value.
 
-Copyright (c) 2022-2023 Paul Zimmermann, Tom Hubrecht and Claude-Pierre Jeannerod
+Copyright (c) 2022-2025 Paul Zimmermann, Tom Hubrecht and Claude-Pierre Jeannerod
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // needed to define exp10m1() since glibc does not have it
 
 // Warning: clang also defines __GNUC__
@@ -953,7 +954,7 @@ cr_exp10m1 (double x)
   {
     // x = -NaN or x <= -0x1.041704c068efp+4
     if ((ux >> 52) == 0xfff) // -NaN or -Inf
-      return (ux > 0xfff0000000000000llu) ? x : -1.0;
+      return (ux > 0xfff0000000000000llu) ? x + x: -1.0;
     // for x <= -0x1.041704c068efp+4, exp10m1(x) rounds to -1 to nearest
     return -1.0 + 0x1p-54;
   }
@@ -961,8 +962,11 @@ cr_exp10m1 (double x)
   {
     // x = +NaN or x > 0x1.34413509f79fep+8
     if ((ux >> 52) == 0x7ff) // +NaN
-      return x;
+      return x + x;
     // for x > 0x1.34413509f79fep+8, exp10m1(x) rounds to +Inf to nearest
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    errno = ERANGE; // overflow
+#endif
     return 0x1.fffffffffffffp+1023 * x;
   }
   else if (ax <= 0x3c90000000000000llu) // |x| <= 2^-54
@@ -977,25 +981,38 @@ cr_exp10m1 (double x)
       if (x == 0)
         return x;
       // exceptional cases in the subnormal range
-      if (__builtin_fabs (x) == 0x0.086c73059343cp-1022)
+      if (__builtin_fabs (x) == 0x0.086c73059343cp-1022) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	errno = ERANGE; // underflow
+#endif
         return __builtin_fma (-__builtin_copysign (0x1.001p-537, x), 0x1p-538,
                               __builtin_copysign (0x1.36568740cb56p-1026, x));
-      if (__builtin_fabs (x) == 0x0.13a7b70d0248cp-1022)
+      }
+      if (__builtin_fabs (x) == 0x0.13a7b70d0248cp-1022) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	errno = ERANGE; // underflow
+#endif
         return __builtin_fma (__builtin_copysign (0x0.fffp-537, x), 0x1p-538,
                               __builtin_copysign (0x1.6a0f9dcb97e38p-1025, x));
-      // scale x by 2^57
-      x = x * 0x1p57;
-      a_mul (&h, &l, LN10H, x);
-      l = __builtin_fma (LN10L, x, l);
+      }
+      // scale x by 2^106
+      double sx = x * 0x1p106;
+      a_mul (&h, &l, LN10H, sx);
+      l = __builtin_fma (LN10L, sx, l);
       double h2 = h + l; // round to 53-bit precision
       // scale back, hoping to avoid double rounding
-      h2 = h2 * 0x1p-57;
-      // now subtract back h2 * 2^57 from h to get the correction term
-      h = __builtin_fma (-h2, 0x1p57, h);
+      h2 = h2 * 0x1p-106;
+      // now subtract back h2 * 2^106 from h to get the correction term
+      h = __builtin_fma (-h2, 0x1p106, h);
       // add l
       h += l;
-      // add h2 + h * 2^-57
-      return __builtin_fma (h, 0x1p-57, h2);
+      // add h2 + h * 2^-106
+      /* we get underflow for |x| <= 0x1.bcb7b1526e50cp-1024 */
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      if (__builtin_fabs (x) <= 0x1.bcb7b1526e50cp-1024)
+	errno = ERANGE; // underflow
+#endif
+      return __builtin_fma (h, 0x1p-106, h2);
     }
     else // 2^-104 < |x| <= 2^-54
     {
@@ -1110,6 +1127,19 @@ cr_exp10m1 (double x)
   /* now -0x1.041704c068efp+4 < x < -2^-54
      or 2^-54 < x <= 0x1.34413509f79fep+8 */
 
+  /* 10^x-1 is exact for x integer, 1 <= x <= 15 */
+  if (__builtin_expect (ux << 15 == 0, 0)) {
+    int i = __builtin_floor (x);
+    if (x == (double) i && 1 <= i && i <= 15) {
+      static const double T[] = { 0x0p+0, 0x1.2p+3, 0x1.8cp+6, 0x1.f38p+9,
+	0x1.3878p+13, 0x1.869fp+16, 0x1.e847ep+19, 0x1.312cfep+23,
+	0x1.7d783fcp+26, 0x1.dcd64ff8p+29, 0x1.2a05f1ff8p+33, 0x1.74876e7ffp+36,
+	0x1.d1a94a1ffep+39, 0x1.2309ce53ffep+43, 0x1.6bcc41e8fffcp+46,
+	0x1.c6bf52633fff8p+49 };
+      return T[i];
+    }
+  }
+
   double err, h, l;
   err = exp10m1_fast (&h, &l, x, ax <= 0x3fb0000000000000llu);
   double left = h + (l - err);
@@ -1119,12 +1149,3 @@ cr_exp10m1 (double x)
 
   return exp10m1_accurate (x);
 }
-
-#ifndef SKIP_C_FUNC_REDEF
-// fake function as long as GNU libc does not provide it
-double exp10m1 (double x)
-{
-  // we don't use exp10 since it is not in C99 (would need _GNU_SOURCE)
-  return pow (10.0, x) - 1.0;
-}
-#endif

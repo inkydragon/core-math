@@ -175,9 +175,9 @@ double cr_sinpi(double x){
     }
     s = -s - 1;
     if(s>10) return __builtin_copysign(0.0, x);
-    uint64_t iq = m<<s;
+    uint64_t iq = (uint64_t)m<<s;
     if(!(iq&2047)) return __builtin_copysign(0.0, x);
-    double sh, sl, ch, cl; sincosn(m<<s, &sh, &sl, &ch, &cl);
+    double sh, sl, ch, cl; sincosn((uint64_t)m<<s, &sh, &sl, &ch, &cl);
     return sh + sl;
   }
 
@@ -224,7 +224,7 @@ double cr_sinpi(double x){
 
   uint64_t iq = (m>>s)&8191;
   iq = (iq + 1)>>1;
-  int64_t k = m<<(e-1000);
+  int64_t k = (uint64_t)m<<(e-1000);
   double z = k, z2 = z*z;
   double fs = sn[0] + z2*(sn[1] + z2*sn[2]);
   double fc = cn[0] + z2*cn[1];
@@ -290,7 +290,7 @@ void sincosn(int s, double *sh, double *sl, double *ch, double *cl){
      {0x1.ff753b8p-1, 0x1.8dc8b1e83ccffp-28}, {0x1.ff6bd48p-1, -0x1.c4bbb2c34804p-29}};
   
   int j = s&0x3ff, it = -((s>>10)&1);
-  j = (~it&j) - (it<<10) - (it&j);
+  j = (~it&j) - ((uint32_t)it<<10) - (it&j);
   int is = j>>5, ic = 0x20 - is, jm = j&0x1f;
   int ss = (s>>11)&1;
   int sc = ((s+1024)>>11)&1;
@@ -369,7 +369,7 @@ void sincosn2(int s, double *sh, double *sl, double *ch, double *cl){
      {0x1.15889c8dd385fp-10, 0x1.98094fab77b42p-67}, {0x1.2857389776587p-10, -0x1.bfdfce09aea7bp-64}};
   
   int j = s&0x3ff, it = -((s>>10)&1);
-  j = (~it&j) - (it<<10) - (it&j);
+  j = (~it&j) - ((uint32_t)it<<10) - (it&j);
   int is = j>>5, ic = 0x20 - is, jm = j&0x1f;
   int ss = (s>>11)&1;
   int sc = ((s+1024)>>11)&1;
@@ -398,10 +398,3 @@ void sincosn2(int s, double *sh, double *sl, double *ch, double *cl){
   *sh = __builtin_copysign(1.0, sgn[ss])*tsh;
   *sl = __builtin_copysign(1.0, sgn[ss])*tsl;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not provide this function */
-double sinpi(double x){
-  return sin(M_PI*x);
-}
-#endif

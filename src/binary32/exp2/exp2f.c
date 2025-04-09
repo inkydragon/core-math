@@ -116,7 +116,7 @@ float cr_exp2f(float x){
   double offd = 0x1.8p46, xd = x, h = xd - ((xd + offd) - offd), h2 = h*h;
   b32u32_u u = {.f = x + 0x1.8p17f};
   b64u64_u sv = tb[u.u&0x3f];
-  sv.u += (int64_t)(u.u>>6)<<52;
+  sv.u += (uint64_t)(u.u>>6)<<52;
   static const double b[] = {1, 0x1.62e42fef4c4e7p-1, 0x1.ebfd1b232f475p-3, 0x1.c6b19384ecd93p-5};
   double r = sv.f*((b[0] + h*b[1]) + h2*(b[2] + h*b[3])), eps = 0x1.3d8p-33;
   float ub = r, lb = r - r*eps;

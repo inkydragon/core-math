@@ -24,6 +24,10 @@
 0xa.a086149580676a7p+15593
 0xd.6fe53f73d74707dp+13631
 -0x0.475bece8f82d90fp-16385
+# the following inputs failed with revision 51092d9 (reported by Vedran Novaković)
+0x1.0000000194877bd6p-1
+0x1.0000000194877bd8p-1
+0x1.0000000194877bdap-1
 # worst cases computed by bacsel in [0.5,2) with at least 54 identical bits
 # after the round bit (-m 55 in bacsel)
 0x1.0000000000000002p-2

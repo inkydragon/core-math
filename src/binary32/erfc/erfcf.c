@@ -119,7 +119,7 @@ float cr_erfcf(float x){
   const double iln2 = 0x1.71547652b82fep+0, ln2h = 0x1.62e42fefap-8, ln2l = 0x1.cf79abd6f5dc8p-47;
   b64u64_u jt = {.f = __builtin_fma(x2, iln2, -(1024+0x1p-8))};
   int64_t j = (int64_t)(jt.u<<12)>>48;
-  b64u64_u S = {.u = ((j>>7)+(0x3ff|sgn<<11))<<52};
+  b64u64_u S = {.u = (uint64_t)((j>>7)+(0x3ff|sgn<<11))<<52};
   static const double ch[] = {-0x1.ffffffffff333p-2, 0x1.5555555556a14p-3, -0x1.55556666659b4p-5, 0x1.1111074cc7b22p-7};
   double d = (x2 + ln2h*j) + ln2l*j, d2 = d*d, e0 = E[j&127];
   double f = d + d2*((ch[0] + d*ch[1]) + d2*(ch[2]+d*ch[3]));

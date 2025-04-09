@@ -137,7 +137,8 @@ is not raised when the result is exact.
 The support of errno is provided with -DCORE_MATH_SUPPORT_ERRNO
 (not activated by default). The value of errno is set to ERANGE in
 case of overflow or of underflow (following the "underflow after
-rounding" rule).
+rounding" rule). The value of errno is set to EDOM in case of domain
+error. When the input is NaN or Inf, errno is not changed.
 
 ## Notes
 

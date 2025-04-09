@@ -126,10 +126,3 @@ float cr_tanpif(float x){
   double z4 = z2*z2, r = (z-z*z2)*((cn[0]+z2*cn[1])+z4*(cn[2]+z2*cn[3]))/(((cd[0]+z2*cd[1])+z4*(cd[2]+z2*cd[3]))*(0.25-z2));
   return r;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float tanpif(float x){
-  return cr_tanpif(x);
-}
-#endif

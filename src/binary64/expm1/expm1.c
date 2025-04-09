@@ -124,7 +124,7 @@ static inline double opolyddd(double x, int n, const double c[][2], double *l){
 
 static inline double as_ldexp(double x, i64 i){
 #ifdef __x86_64__
-  __m128i sb; sb[0] = i<<52;
+  __m128i sb; sb[0] = (u64)i<<52;
 #if defined(__clang__)
   __m128d r = _mm_set_sd(x);
 #else
@@ -134,7 +134,7 @@ static inline double as_ldexp(double x, i64 i){
   return r[0];
 #else
   b64u64_u ix = {.f = x};
-  ix.u += i<<52;
+  ix.u += (u64)i<<52;
   return ix.f;
 #endif
 }
@@ -310,7 +310,7 @@ static double __attribute__((noinline)) as_expm1_accurate(double x){
     if((ix.u&(~(u64)0>>12))==0) {
       if(!(ix.u<<1)) return as_expm1_database(x,v0);
       b64u64_u v = {.f = v2};
-      i64 d = ((((i64)ix.u>>63)^((i64)v.u>>63))<<1) + 1;
+      i64 d = ((u64)(((i64)ix.u>>63)^((i64)v.u>>63))<<1) + 1;
       ix.u += d;
       v1 = ix.f;
     }
@@ -334,7 +334,7 @@ static double __attribute__((noinline)) as_expm1_accurate(double x){
     fh = muldd(dxh,dxl, fh,fl, &fl);
     fh = muldd(fh,fl, th,tl, &fl);
     fh = fastsum(th,tl, fh,fl, &fl);
-    b64u64_u off = {.u = (2048+1023-ie)<<52};
+    b64u64_u off = {.u = (u64)(2048+1023-ie)<<52};
     double e;
     if(__builtin_expect(ie<53, 1))
       fh = fasttwosum(off.f, fh, &e);
@@ -409,7 +409,7 @@ double cr_expm1(double x){
     double p = (ch[0] + dx*ch[1]) + dx2*(ch[2] + dx*ch[3]);
     double fh = th, tx = th*dx, fl = tl + tx*p;
     double eps = 1.64e-19*th;
-    b64u64_u off = {.u = (2048+1023-ie)<<52};
+    b64u64_u off = {.u = (u64)(2048+1023-ie)<<52};
     double e;
     if(__builtin_expect(ie<53, 1)){
       fh = fasttwosum(off.f, fh, &e);

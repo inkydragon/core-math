@@ -1,6 +1,6 @@
 /* Correctly-rounded exp2m1 function for binary64 value.
 
-Copyright (c) 2022-2023 Paul Zimmermann, Tom Hubrecht and Claude-Pierre Jeannerod
+Copyright (c) 2022-2025 Paul Zimmermann, Tom Hubrecht and Claude-Pierre Jeannerod
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // needed to define exp2m1() since glibc does not have it yet
 
 // Warning: clang also defines __GNUC__
@@ -848,7 +849,7 @@ cr_exp2m1 (double x)
   {
     // x = -NaN or x <= -54
     if ((ux >> 52) == 0xfff) // -NaN or -Inf
-      return (ux > 0xfff0000000000000llu) ? x : -1.0;
+      return (ux > 0xfff0000000000000llu) ? x + x : -1.0;
     // for x <= -54, exp2m1(x) rounds to -1 to nearest
     return -1.0 + 0x1p-54;
   }
@@ -856,9 +857,14 @@ cr_exp2m1 (double x)
   {
     // x = +NaN or x >= 1024
     if ((ux >> 52) == 0x7ff) // +NaN
-      return x;
-    // for x >= 1024, exp2m1(x) rounds to +Inf to nearest
-    return 0x1.fffffffffffffp+1023 * x;
+      return x + x;
+    /* for x >= 1024, exp2m1(x) rounds to +Inf to nearest,
+       but for RNDZ/RNDD, we should have no overflow for x=1024 */
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    if (x > 1024.0 || (1.0 - 0x1p-54 == 1.0))
+      errno = ERANGE; // overflow
+#endif
+    return 0x1.fffffffffffffp+1023 + x * 0x1.fffffffffffffp+960;
   }
   else if (ax <= 0x3cc0527dbd87e24dllu) // |x| <= 0x1.0527dbd87e24dp-51
     /* then the second term of the Taylor expansion of 2^x-1 at x=0 is
@@ -874,19 +880,30 @@ cr_exp2m1 (double x)
       // special case for 0
       if (x == 0)
         return x;
-      // scale x by 2^53
-      x = x * 0x1p53;
+      // scale x by 2^106
+      x = x * 0x1p106;
       a_mul (&h, &l, LN2H, x);
       l = __builtin_fma (LN2L, x, l);
       double h2 = h + l; // round to 53-bit precision
       // scale back, hoping to avoid double rounding
-      h2 = h2 * 0x1p-53;
-      // now subtract back h2 * 2^53 from h to get the correction term
-      h = __builtin_fma (-h2, 0x1p53, h);
+      h2 = h2 * 0x1p-106;
+      // now subtract back h2 * 2^106 from h to get the correction term
+      h = __builtin_fma (-h2, 0x1p106, h);
       // add l
       h += l;
-      // add h2 + h * 2^-53
-      return __builtin_fma (h, 0x1p-53, h2);
+      /* add h2 + h * 2^-106. Warning: when h=0, 2^-106*h2 might be exact,
+         thus no underflow will be raised. We have underflow for
+         0 < x <= 0x1.71547652b82fep-1022 for RNDZ, and for
+         0 < x <= 0x1.71547652b82fdp-1022 for RNDN/RNDU. */
+      double res = __builtin_fma (h, 0x1p-106, h2);
+      if (ax <= 0x171547652b82fdllu || __builtin_fabs (res) < 0x1p-1022)
+      {
+        volatile double __attribute__((unused)) dummy = res * res;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	errno = ERANGE; // underflow
+#endif
+      }
+      return res;
     }
     else // 2^-104 < |x| <= 0x1.0527dbd87e24dp-51
     {
@@ -983,6 +1000,15 @@ cr_exp2m1 (double x)
   /* now -54 < x < -0x1.0527dbd87e24dp-51
      or 0x1.0527dbd87e24dp-51 < x < 1024 */
 
+  /* 2^x-1 is exact for x integer, -53 <= x <= 53 */
+  if (__builtin_expect (ux << 17 == 0, 0)) {
+    int i = __builtin_floor (x);
+    if (x == (double) i && -53 <= i && i <= 53) {
+      return (i >= 0) ? ((uint64_t) 1 << i) - 1
+	: -1.0 + __builtin_ldexp (1.0, i);
+    }
+  }
+
   double err, h, l;
   err = exp2m1_fast (&h, &l, x, ax <= 0x3fc0000000000000llu);
   double left = h + (l - err);
@@ -992,11 +1018,3 @@ cr_exp2m1 (double x)
 
   return exp2m1_accurate (x);
 }
-
-#ifndef SKIP_C_FUNC_REDEF
-// fake function as long as GNU libc does not provide it
-double exp2m1 (double x)
-{
-  return exp2 (x) - 1.0;
-}
-#endif

@@ -99,6 +99,7 @@ readstdin(double **result, int *count)
     else if (sscanf(buf, "%la", item) == 1)
       (*count)++;
   }
+  free (buf);
 }
 
 static inline uint64_t
@@ -145,14 +146,40 @@ is_equal (double x, double y)
   return asuint64 (x) == asuint64 (y);
 }
 
+int underflow_before; // non-zero if processor raises underflow before rounding
+
+// return non-zero if the processor raises underflow before rounding
+// (e.g., aarch64)
+static void
+check_underflow_before (void)
+{
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
+  fesetround (FE_TONEAREST);
+  feclearexcept (FE_UNDERFLOW);
+  float x = 0x1p-126f;
+  float y = __builtin_fmaf (-x, x, x);
+  if (x == y) // this is needed otherwise the compiler says y is unused
+    underflow_before = fetestexcept (FE_UNDERFLOW);
+  fesetexceptflag (&flag, FE_ALL_EXCEPT); //restore flags
+}
+
 /* For |y1| = 2^-1022 or |y2| = 2^-1022, clear the MPFR
    underflow exception when the rounded result (with unbounded exponent)
-   equals +/-2^-1022 (might be set due to a bug in MPFR <= 4.2.1). */
+   equals +/-2^-1022 (might be set due to a bug in MPFR <= 4.2.1).
+   For |y1| = 2^-1022 or |y2| = 2^-1022 and underflow before rounding,
+   clear the fenv.h underflow exception when |f(x)| < 2^-1022 but there is no
+   underflow after rounding (thus we mimic underflow after rounding). */
 static void
 fix_underflow (double x, double y1, double y2)
 {
   if (__builtin_fabs (y1) != 0x1p-1022 && __builtin_fabs (y2) != 0x1p-1022)
     return;
+  if (underflow_before) {
+    if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
+      feclearexcept (FE_UNDERFLOW);
+    return;
+  }
   mpfr_t t, u;
   mpfr_init2 (t, 53);
   mpfr_init2 (u, 53);
@@ -167,6 +194,7 @@ fix_underflow (double x, double y1, double y2)
      exponent */
   mpfr_abs (t, t, MPFR_RNDN); // exact
   mpfr_abs (u, u, MPFR_RNDN); // exact
+#if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
   /* Check if we have the issue for one of y1 or y2,
      while the other one does not underflow. */
   if (mpfr_cmp_ui_2exp (t, 1, -1022) == 0 && // |o(f1(x))| = 2^-1022
@@ -175,6 +203,7 @@ fix_underflow (double x, double y1, double y2)
   if (mpfr_cmp_ui_2exp (u, 1, -1022) == 0 && // |o(f2(x))| = 2^-1022
       mpfr_cmp_ui_2exp (t, 1, -1022) >= 0)
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
+#endif
   mpfr_clear (t);
   mpfr_clear (u);
 }
@@ -188,7 +217,7 @@ check (double x)
   ref_fesetround(rnd);
   mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
   ref_function_under_test(x, &s1, &c1);
-#ifdef CORE_MATH_CHECK_INEXACT
+#if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
   mpfr_flags_t inex1 = mpfr_flags_test (MPFR_FLAGS_INEXACT);
 #endif
   fesetround(rnd1[rnd]);
@@ -476,6 +505,8 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  check_underflow_before ();
 
   check_signaling_nan ();
 

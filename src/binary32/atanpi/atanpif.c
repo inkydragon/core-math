@@ -102,10 +102,3 @@ float cr_atanpif(float x){
   if (gt) r = __builtin_copysign(0.5, z) - r;
   return r;
 }
-
-#ifndef SKIP_C_FUNC_REDEF // icx provides this function
-/* just to compile since glibc does not contain this function */
-float atanpif(float x){
-  return cr_atanpif(x);
-}
-#endif

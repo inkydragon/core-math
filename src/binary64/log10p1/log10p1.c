@@ -1,6 +1,6 @@
 /* Correctly rounded log10(1+x) for binary64 values.
 
-Copyright (c) 2022-2023 INRIA and CERN.
+Copyright (c) 2022-2025 INRIA and CERN.
 Authors: Paul Zimmermann and Tom Hubrecht.
 
 This file is part of the CORE-MATH project
@@ -27,6 +27,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <math.h> // for log2
+#include <errno.h>
 #include "dint.h"
 
 typedef union { double f; uint64_t u; } d64u64;
@@ -573,7 +574,10 @@ static void
 p_1a (double *h, double *l, double z)
 {
   double z2h, z2l;
-  a_mul (&z2h, &z2l, z, z);
+  if (__builtin_expect (__builtin_fabs (z) >= 0x1p-255, 1))
+    a_mul (&z2h, &z2l, z, z);
+  else // avoid spurious underflow
+    z2h = z2l = 0;
   double z4h = z2h * z2h;
   double p910 = __builtin_fma (Pa[10], z, Pa[9]);
   double p78 = __builtin_fma (Pa[8], z, Pa[7]);
@@ -605,9 +609,10 @@ cr_log_fast (double *h, double *l, int e, d64u64 v)
   int i = m >> cm[c];
   double y = v.f * cy[c];
 #define OFFSET 362
-  double r = (_INVERSE - OFFSET)[i];
-  double l1 = (_LOG_INV - OFFSET)[i][0];
-  double l2 = (_LOG_INV - OFFSET)[i][1];
+  // clang sanitizer reports a failure with (_INVERSE-OFFSET)[i]
+  double r = _INVERSE[i-OFFSET];
+  double l1 = _LOG_INV[i-OFFSET][0];
+  double l2 = _LOG_INV[i-OFFSET][1];
   double z = __builtin_fma (r, y, -1.0); /* exact */
   /* evaluate P(z), for |z| < 0.00212097167968735 */
   double ph, pl;
@@ -675,12 +680,21 @@ cr_log10p1_accurate_tiny (double x)
 {
   double h, l;
   /* first scale x to avoid truncation of l in the underflow region */
-  x = x * 0x1p53;
-  s_mul (&h, &l, x, INVLOG10H, INVLOG10L);
-  double res = (h + l) * 0x1p-53; // expected result
-  l = __builtin_fma (-res, 0x1p53, h) + l;
-  // the correction to apply to res is l*2^-53
-  return __builtin_fma (l, 0x1p-53, res);
+  double sx = x * 0x1p106;
+  s_mul (&h, &l, sx, INVLOG10H, INVLOG10L);
+  double res = (h + l) * 0x1p-106; // expected result
+  l = __builtin_fma (-res, 0x1p106, h) + l;
+  // the correction to apply to res is l*2^-106
+  /* For RNDN, we have underflow for |x| <= 0x1.26bb1bbb55515p-1021,
+     and for rounding away, for |x| < 0x1.26bb1bbb55515p-1021. */
+#ifdef CORE_MATH_SUPPORT_ERRNO
+#define X0 0x1.26bb1bbb55515p-1021
+  double dummy = __builtin_copysign (1.0, x);
+  if (__builtin_fabs (x) < X0 ||
+      (__builtin_fabs (x) == X0 && __builtin_fma (dummy, 0x1p-53, dummy) == dummy))
+    errno = ERANGE; // underflow
+#endif
+  return __builtin_fma (l, 0x1p-106, res);
 }
 
 /* the following is a degree-17 polynomial approximating log10p1(x) for
@@ -1247,21 +1261,6 @@ cr_log10p1_accurate (double x)
   else
     fast_two_sum (&xh, &xl, 1.0, x);
 
-  /* log10p1(x) is exact when 1+x = 10^e, thus when 10^e-1 is exactly
-     representable. This can only occur when xl=0 here, and 1 <= e <= 15. */
-  if (xl == 0 && __builtin_round (x) == x)
-  {
-    int e = 0;
-    uint64_t u = __builtin_round (x);
-    while ((u % 10) == 0)
-      {
-        u /= 10;
-        e += 1;
-      }
-    if (u == 1)
-      return (double) e;
-  }
-
   dint_fromd (&X, xh);
   log_2 (&Y, &X);
 
@@ -1345,8 +1344,12 @@ cr_log10p1_fast (double *h, double *l, double x, int e, d64u64 v)
 
   /* (xh,xl) <- 1+x */
   double xh, xl;
-  if (x > 1.0)
-    fast_two_sum (&xh, &xl, x, 1.0);
+  if (x > 1.0) {
+    if (x < 0x1p53)
+      fast_two_sum (&xh, &xl, x, 1.0);
+    else // avoid spurious overflow in x + 1.0
+      xh = x, xl = 1.0;
+  }
   else
     fast_two_sum (&xh, &xl, 1.0, x);
 
@@ -1356,7 +1359,11 @@ cr_log10p1_fast (double *h, double *l, double x, int e, d64u64 v)
   cr_log_fast (h, l, e, v);
 
   /* log(xh+xl) = log(xh) + log(1+xl/xh) */
-  double c = xl / xh;
+  double c;
+  if (__builtin_expect (xh <= 0x1p1022, 1))
+    c = xl / xh;
+  else
+    c = 0; // avoid spurious underflow in xl / xh
   /* Since |xl| < ulp(xh), we have |xl| < 2^-52 |xh|,
      thus |c| < 2^-52, and since |log(1+x)-x| < x^2 for |x| < 0.5,
      we have |log(1+c)-c)| < c^2 < 2^-104. */
@@ -1408,52 +1415,34 @@ cr_log10p1 (double x)
     if (x <= -1.0) /* we use the fact that NaN < -1 is false */
     {
       /* log10p(x<-1) is NaN, log2p(-1) is -Inf and raises DivByZero */
-      if (x < -1.0)
+      if (x < -1.0) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	errno = EDOM;
+#endif
         return 0.0 / 0.0;
-      else
+      }
+      else { // x=-1
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	errno = ERANGE;
+#endif
         return 1.0 / -0.0;
+      }
     }
-    return x; /* +/-0, NaN or +Inf */
+    return x + x; /* +/-0, NaN or +Inf */
   }
 
-  /* check x=10^n-1 for 0 <= n <= 15, where log10p1(x) is exact,
+  /* check x=10^n-1 for 1 <= n <= 15, where log10p1(x) is exact,
      and we shouldn't raise the inexact flag */
-  d64u64 t = {.f = x + 1.0};
-  if (__builtin_expect ((t.u << 46) == 0, 0))
-  {
+  if (__builtin_expect (3 <= e && e <= 49, 1)) {
+    /* T[e] is zero if there is no value of the form 10^n-1 in the range
+       [2^e, 2^(e+1)), otherwise it is this (unique) value. */
     static const double T[] = {
-      0x0p+0,
-      -1,
-      0x1.2p+3,
-      0x1.8cp+6,
-      -1,
-      0x1.f38p+9,
-      -1,
-      0x1.3878p+13,
-      0x1.869fp+16,
-      -1,
-      0x1.e847ep+19,
-      -1,
-      0x1.312cfep+23,
-      0x1.7d783fcp+26,
-      -1,
-      0x1.dcd64ff8p+29,
-      -1,
-      0x1.2a05f1ff8p+33,
-      0x1.74876e7ffp+36,
-      -1,
-      0x1.d1a94a1ffep+39,
-      -1,
-      0x1.2309ce53ffep+43,
-      0x1.6bcc41e8fffcp+46,
-      -1,
-      0x1.c6bf52633fff8p+49,
-    };
-    static const double U[] = { 0, -1, 1, 2, -1, 3, -1, 4, 5, -1, 6, -1, 7, 8,
-                               -1, 9, -1, 10, 11, -1, 12, -1, 13, 14, -1, 15 };
-    int i = (t.u >> 53) - 511;
-    if (T[i] == x)
-      return U[i];
+      0x0p+0, 0x0p+0, 0x0p+0, 0x1.2p+3, 0x0p+0, 0x0p+0, 0x1.8cp+6, 0x0p+0, 0x0p+0, 0x1.f38p+9, 0x0p+0, 0x0p+0, 0x0p+0, 0x1.3878p+13, 0x0p+0, 0x0p+0, 0x1.869fp+16, 0x0p+0, 0x0p+0, 0x1.e847ep+19, 0x0p+0, 0x0p+0, 0x0p+0, 0x1.312cfep+23, 0x0p+0, 0x0p+0, 0x1.7d783fcp+26, 0x0p+0, 0x0p+0, 0x1.dcd64ff8p+29, 0x0p+0, 0x0p+0, 0x0p+0, 0x1.2a05f1ff8p+33, 0x0p+0, 0x0p+0, 0x1.74876e7ffp+36, 0x0p+0, 0x0p+0, 0x1.d1a94a1ffep+39, 0x0p+0, 0x0p+0, 0x0p+0, 0x1.2309ce53ffep+43, 0x0p+0, 0x0p+0, 0x1.6bcc41e8fffcp+46, 0x0p+0, 0x0p+0, 0x1.c6bf52633fff8p+49};
+    // U[e] is the integer n such that T[e] = 10^n-1 when T[e] is not zero
+    static const int U[] = {
+      0, 0, 0, 1, 0, 0, 2, 0, 0, 3, 0, 0, 0, 4, 0, 0, 5, 0, 0, 6, 0, 0, 0, 7, 0, 0, 8, 0, 0, 9, 0, 0, 0, 10, 0, 0, 11, 0, 0, 12, 0, 0, 0, 13, 0, 0, 14, 0, 0, 15};
+    if (x == T[e])
+      return U[e];
   }
 
   /* now x > -1 */
@@ -1574,11 +1563,3 @@ static inline double dint_tod(dint64_t *a) {
 
   return r.f * e.f;
 }
-
-#ifndef SKIP_C_FUNC_REDEF
-// since GNU does not provide log10p1, we use a fake function as reference
-double log10p1 (double x)
-{
-  return log10 (1.0 + x);
-}
-#endif

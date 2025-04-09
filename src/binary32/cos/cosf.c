@@ -167,7 +167,7 @@ static float __attribute__((noinline)) as_cosf_big(float x){
   double z2 = z*z, z4 = z2*z2;
   double aa = (a[0] + z2*a[1]) + z4*(a[2] + z2*a[3]);
   double bb = (b[0] + z2*b[1]) + z4*(b[2] + z2*b[3]);
-  double s0 = tb[(ia+8)&31], c0 = tb[ia&31];
+  double s0 = tb[(ia+8u)&31], c0 = tb[ia&31];
   double r = c0 + z*(aa*s0 - bb*(z*c0));
   b64u64_u tr = {.f = r}; u64 tail = (tr.u + 6)&(~(u64)0>>36);
   if(__builtin_expect(tail<=12, 0)) return as_cosf_database(x, r);

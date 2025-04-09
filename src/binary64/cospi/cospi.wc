@@ -37984,3 +37984,5 @@
 -1
 +0x1.fffffffffffffp+1023
 -0x1.fffffffffffffp+1023
+# exercise undefined behavior with clang sanitizer
+0x1.5f4721c0fffffp+52

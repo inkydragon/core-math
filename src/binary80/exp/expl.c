@@ -521,7 +521,7 @@ fastpath(long double x, redinfo* ri, bool* need_accurate) {
 
 	// represent the mantissa of the low part in two's complement format,
 	// where 1l<<52 represents the implicit leading bit
-	int64_t ml = (tl.u & ~(0xfffl<<52)) | (1l<<52), sgnl = -(tl.u >> 63);
+	int64_t ml = (tl.u & ~(0xfffull<<52)) | (1l<<52), sgnl = -(tl.u >> 63);
 	ml = (ml ^ sgnl) - sgnl;
 	int64_t mlt;
 	// we have to shift ml by 11 bits to the left to align with mh below,
@@ -535,11 +535,11 @@ fastpath(long double x, redinfo* ri, bool* need_accurate) {
 			ml >>= sh - 64;
 	} else {
 		mlt = ml>>sh; // high part of ml, overlapping with mh
-		ml <<= 64-sh; // low part of ml
+		ml = (uint64_t)ml<<(64-sh); // low part of ml
 	}
 
 	// construct the mantissa of the long double number
-	uint64_t mh = (th.u<<11) | (1l<<63);
+	uint64_t mh = (th.u<<11) | (1ull<<63);
 	// We use a kind of floating representation where m = mh||ml is the
 	// mantissa (whose leading 1 has weight 2^exponent) and
 	// extra_exponent is the exponent.
@@ -556,7 +556,7 @@ fastpath(long double x, redinfo* ri, bool* need_accurate) {
 		// the low part is negative and
 		// can unset the msb so shift the number back
 		mh = (mh << 1) | ((uint64_t)ml >> 63);
-		ml <<= 1;
+		ml = (uint64_t)ml<<1;
 		extra_exponent--;
 		eps <<= 1;
 	}
@@ -615,7 +615,7 @@ fastpath(long double x, redinfo* ri, bool* need_accurate) {
 
 	// Given the signedness, this test expresses that ml >= -eps and that
 	// ml <= eps.	This holds true because eps fits in 128-87=41 bits.
-	bool b1 = (uint64_t)(ml + eps) <= (uint64_t)(2*eps);
+	bool b1 = (uint64_t)ml + eps <= (uint64_t)(2*eps);
 
 	// Denormals *inside* the computation don't seem to pause a problem
 	// given the error analysis (we used absolute bounds mostly)
@@ -655,7 +655,7 @@ void tint_mul2exp(tint_t* r, int64_t a, int64_t exp) {
 		cp_tint(r, &ZERO);
 	}
 
-	int clz = __builtin_clzl(a);
+	int clz = (a) ? __builtin_clzll(a) : 0;
 	r->ex = exp - clz + 64;
 	r->h  = (uint64_t)a << clz;
 	r->m  = r->l = 0;

@@ -543,9 +543,9 @@ cr_log10_fast (double *h, double *l, int e, d64u64 v)
   uint64_t em = 0x10000000000000 + m;
   int i = em >> (43 + c);
 #define OFFSET 362
-  double r = (_INVERSE - OFFSET)[i];
-  double l1 = (_LOG_INV - OFFSET)[i][0];
-  double l2 = (_LOG_INV - OFFSET)[i][1];
+  double r = _INVERSE[i-OFFSET];
+  double l1 = _LOG_INV[i-OFFSET][0];
+  double l2 = _LOG_INV[i-OFFSET][1];
   double z = __builtin_fma (r, y, -1.0); /* exact */
   /* evaluate P(z), for |z| < 0.00212097167968735 */
   double ph; /* will hold the value of P(z)-z */

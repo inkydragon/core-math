@@ -1098,11 +1098,3 @@ cr_acospi (double x)
     return u.x/v.x;
   }
 }
-
-#ifndef SKIP_C_FUNC_REDEF
-/* just to compile since glibc does not provide this function */
-double acospi (double x)
-{
-  return acos (x) / M_PI;
-}
-#endif

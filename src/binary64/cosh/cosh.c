@@ -254,10 +254,11 @@ double cr_cosh(double x){
     if(lb == ub) return lb;
     return as_cosh_zero(x);
   }
-  int64_t il = ((int64_t)jt.u<<14)>>40, jl = -il;
+  int64_t il = ((uint64_t)jt.u<<14)>>40, jl = -il;
   int64_t i1 = il&0x3f, i0 = (il>>6)&0x3f, ie = il>>12;
   int64_t j1 = jl&0x3f, j0 = (jl>>6)&0x3f, je = jl>>12;
-  b64u64_u sp = {.u = (1022 + ie)<<52}, sm = {.u = (1022 + je)<<52};
+  b64u64_u sp = {.u = (uint64_t)(1022 + ie)<<52},
+           sm = {.u = (uint64_t)(1022 + je)<<52};
   double t0h = t0[i0][1], t0l = t0[i0][0];
   double t1h = t1[i1][1], t1l = t1[i1][0];
   double th = t0h*t1h, tl = t0h*t1l + t1h*t0l + __builtin_fma(t0h,t1h,-th);

@@ -362,7 +362,8 @@ double cr_log1p(double x){
 	}
       }
     }
-    i64 j = t.u - 0x3fe6a00000000000ll, j1 = (j>>(52-6))&0x3f, je = (j>>52), eoff = je<<52;
+    i64 j = t.u - 0x3fe6a00000000000ll, j1 = (j>>(52-6))&0x3f, je = (j>>52),
+      eoff = (u64)je<<52;
     b64u64_u rs = {.f = rf[j1]};
     if(__builtin_expect(je<1022, 1)){
       rs.u -= eoff;
@@ -439,7 +440,7 @@ static double __attribute__((noinline)) as_log1p_refine(double x, double a){
 	t.f = 1 + x;
       dt.u = 0;
     }
-    t.u -= (int64_t)je<<52;
+    t.u -= (u64)je<<52;
 
     double t12 = rt[0][j1]*rt[1][j2], t34 = rt[2][j3]*rt[3][j4];
     double th = t12*t34, tl = __builtin_fma(t12,t34,-th);
@@ -448,7 +449,7 @@ static double __attribute__((noinline)) as_log1p_refine(double x, double a){
     double xl, xh = fasttwosum(dh-1, dl, &xl);
     xh = fastsum(xh, xl, sh, sl, &xl);
     if(dt.u){
-      dt.u -= (int64_t)je<<52;
+      dt.u -= (u64)je<<52;
       double ddh = th*dt.f, ddl = __builtin_fma(th,dt.f,-ddh) + tl*dt.f;
       xh = fastsum(xh, xl, ddh, ddl, &xl);
     }

@@ -40,42 +40,35 @@ SOFTWARE.
 /* __builtin_roundeven was introduced in gcc 10:
    https://gcc.gnu.org/gcc-10/changes.html,
    and in clang 17 */
-#if (defined(__GNUC__) && __GNUC__ >= 10) || (defined(__clang__) && __clang_major__ >= 17)
-#define HAS_BUILTIN_ROUNDEVEN
-#endif
-
-#if !defined(HAS_BUILTIN_ROUNDEVEN) && (defined(__GNUC__) || defined(__clang__)) && (defined(__AVX__) || defined(__SSE4_1__) || (__ARM_ARCH >= 8))
-inline double __builtin_roundeven(double x){
-   double ix;
-#if defined __AVX__
-   __asm__("vroundsd $0x8,%1,%1,%0":"=x"(ix):"x"(x));
-#elif __ARM_ARCH >= 8
-   __asm__ ("frintn %d0, %d1":"=w"(ix):"w"(x));
-#else /* __SSE4_1__ */
-   __asm__("roundsd $0x8,%1,%0":"=x"(ix):"x"(x));
-#endif
-   return ix;
-}
-#define HAS_BUILTIN_ROUNDEVEN
-#endif
-
-#ifndef HAS_BUILTIN_ROUNDEVEN
-#include <math.h>
+#if ((defined(__GNUC__) && __GNUC__ >= 10) || (defined(__clang__) && __clang_major__ >= 17)) && (defined(__aarch64__) || defined(__x86_64__) || defined(__i386__))
+# define roundeven_finite(x) __builtin_roundeven (x)
+#else
 /* round x to nearest integer, breaking ties to even */
 static double
-__builtin_roundeven (double x)
+roundeven_finite (double x)
 {
-  double y = round (x); /* nearest, away from 0 */
-  if (fabs (y - x) == 0.5)
+  double ix;
+# if (defined(__GNUC__) || defined(__clang__)) && (defined(__AVX__) || defined(__SSE4_1__) || (__ARM_ARCH >= 8))
+#  if defined __AVX__
+   __asm__("vroundsd $0x8,%1,%1,%0":"=x"(ix):"x"(x));
+#  elif __ARM_ARCH >= 8
+   __asm__ ("frintn %d0, %d1":"=w"(ix):"w"(x));
+#  else /* __SSE4_1__ */
+   __asm__("roundsd $0x8,%1,%0":"=x"(ix):"x"(x));
+#  endif
+# else
+  ix = __builtin_round (x); /* nearest, away from 0 */
+  if (__builtin_fabs (ix - x) == 0.5)
   {
-    /* if y is odd, we should return y-1 if x>0, and y+1 if x<0 */
+    /* if ix is odd, we should return ix-1 if x>0, and ix+1 if x<0 */
     union { double f; uint64_t n; } u, v;
-    u.f = y;
-    v.f = (x > 0) ? y - 1.0 : y + 1.0;
+    u.f = ix;
+    v.f = ix - __builtin_copysign (1.0, x);
     if (__builtin_ctz (v.n) > __builtin_ctz (u.n))
-      y = v.f;
+      ix = v.f;
   }
-  return y;
+# endif
+  return ix;
 }
 #endif
 
@@ -602,16 +595,16 @@ static __attribute__((noinline)) double as_tgamma_accurate(double x){
   b64u64_u res = {.f = fh + fl};
   int64_t re = (res.u >> 52)&0x7ff;
   if(re + eoff <= 0){ // subnormal case
-    res.u -= (int64_t)(eoff+re-1)<<52;
-    res.u &= 0xffful<<52;
+    res.u -= (uint64_t)(eoff+re-1)<<52;
+    res.u &= 0xfffull<<52;
     double l;
     fh = fasttwosum(res.f, fh, &l);
     fl += l;
     res.f = fh + fl;
-    res.u &= ~(0x7fful<<52);
+    res.u &= ~(0x7ffull<<52);
     raise_underflow ();
   } else {
-    res.u += (int64_t)eoff<<52;
+    res.u += (uint64_t)eoff<<52;
   }
   if(ub!=lb) return as_tgamma_database(x, res.f);
   return res.f;
@@ -620,8 +613,8 @@ static __attribute__((noinline)) double as_tgamma_accurate(double x){
 double cr_tgamma(double x){
   b64u64_u t = {.f = x};
   uint64_t ax = t.u<<1;
-  if(__builtin_expect(ax>=(0x7fful<<53), 0)){ /* x=NaN or +/-Inf */
-    if(ax==(0x7fful<<53)){ /* x=+/-Inf */
+  if(__builtin_expect(ax>=(0x7ffull<<53), 0)){ /* x=NaN or +/-Inf */
+    if(ax==(0x7ffull<<53)){ /* x=+/-Inf */
       if(t.u>>63){ /* x=-Inf */
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	errno = EDOM;
@@ -698,7 +691,7 @@ double cr_tgamma(double x){
   }
 
   double fx = __builtin_floor(x);
-  /* compute k only after the overflow check, otherwise the case to integer
+  /* compute k only after the overflow check, otherwise the cast to integer
      might overflow */
   int64_t k = fx;
   if(__builtin_expect(fx==x, 0)){ /* x is integer */
@@ -755,14 +748,14 @@ double cr_tgamma(double x){
       int re = (th.u>>52)&0x7ff;
       if(re-e<=0){ // subnormal case
 	th.u += (int64_t)(e-re+1)<<52; // 1 <= e-re+1 <= 53
-	th.u &= 0xffful<<52;
+	th.u &= 0xfffull<<52;
 	double l;
 	rh = fasttwosum(th.f, rh, &l);
 	rl += l;
 	double ub = rh + (rl + eps), lb = rh + (rl - eps);
 	if(ub != lb) return as_tgamma_accurate(x);
 	th.f = ub;
-	th.u &= ~(0x7fful<<52); // make subnormal
+	th.u &= ~(0x7ffull<<52); // make subnormal
         raise_underflow ();
       } else {
 	double ub = rh + (rl + eps), lb = rh + (rl - eps);
@@ -801,7 +794,7 @@ double cr_tgamma(double x){
     0x1.c9e94992c88c1p-9, 0x1.90ba7276a0c19p-11, 0x1.49cfed9d63c8bp-13, 0x1.ec018849c245bp-16,
     0x1.65e5a18d31c17p-18, 0x1.ca1890add8727p-21, 0x1.378b3b91f9033p-23, 0x1.432cdb3640fcap-26,
     0x1.f239fc9cf2155p-29, 0x1.e3ea4e1366932p-33};
-  double m = z - 3.5, i = __builtin_roundeven(m);
+  double m = z - 3.5, i = roundeven_finite(m);
   double d = z - (i + 3.5);
   double d2 = d*d, d4 = d2*d2;
   double fl = d*((c[10] + d*c[11]) + d2*(c[12] + d*c[13]) + d4*((c[14] + d*c[15]) + d2*(c[16] + d*c[17])));
@@ -947,7 +940,7 @@ static double as_sinpid(double x, double *l){
   x -= 0.5;
   x = __builtin_fabs(x);
   x *= 128;
-  double ix = __builtin_roundeven(x), d = ix-x, d2 = d*d;
+  double ix = roundeven_finite(x), d = ix-x, d2 = d*d;
   int ky = ix, kx = 64-ky;
   
   double sh = st[kx][1], sl = st[kx][0];
@@ -1009,7 +1002,7 @@ static double as_expd(double x, double *l, int *e){
   const double ln2h = 0x1.71547652b82fep+10, ln2l = 0x1.777d0ffda0d24p-46;
   double xh = x, xl = *l; 
   xh = muldd(xh,xl, ln2h,ln2l, &xl);
-  double ix = __builtin_roundeven(xh);
+  double ix = roundeven_finite(xh);
   xh = fasttwosum(xh-ix, xl, &xl);
   int k = ix, i0 = (k>>5)&31, i1 = k&31;
   *e = k>>10;

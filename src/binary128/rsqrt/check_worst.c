@@ -144,11 +144,13 @@ static inline int is_equal(__float128 x, __float128 y){
   return asuint128(x) == asuint128(y);
 }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
 static int is_inf (__float128 x)
 {
   b128u128_u v = {.f = x};
   return ((v.a<<1)>>113) == 0x7fff && (v.a<<16) == 0;
 }
+#endif
 
 static void check (__float128 x)
 {

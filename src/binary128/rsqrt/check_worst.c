@@ -152,6 +152,40 @@ static int is_inf (__float128 x)
 }
 #endif
 
+/* We have to write some special code to print errors since:
+   (1) the printf hook for quadmath is not installed everywhere,
+       thus printf ("%Qa", ...) does not work everywhere
+   (2) quadmath_snprintf can only print a single quad,
+       but quadmath_snprintf (..., "x=%Qa", x) does not work
+*/
+static void
+error (char *err, __float128 x, __float128 y)
+{
+  char buf[256];
+  int n;
+  n = snprintf (buf, sizeof buf, "%s", err);
+  n += snprintf (buf + n, sizeof buf - n, " for x=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", x);
+  n += snprintf (buf + n, sizeof buf - n, " (y=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", y);
+  n += snprintf (buf + n, sizeof buf - n, ")");
+  printf ("%s\n", buf);
+}
+
+static void
+error2 (__float128 x, __float128 y, __float128 z)
+{
+  char buf[256];
+  int n;
+  n = snprintf (buf, sizeof buf, "FAIL x=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", x);
+  n += snprintf (buf + n, sizeof buf - n, " ref=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", y);
+  n += snprintf (buf + n, sizeof buf - n, " z=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", z);
+  printf ("%s\n", buf);
+}
+
 static void check (__float128 x)
 {
     b128u128_u zr, zt;
@@ -167,9 +201,9 @@ static void check (__float128 x)
     zt.f = cr_function_under_test(x);
     if (!is_equal (zr.f, zt.f)) {
       if(++failures<maxfailures){
-        printf("FAIL x=%Qa ref=%Qa z=%Qa\n", x, zr.f, zt.f);
+        error2 (x, zr.f, zt.f);
 #ifndef DO_NOT_ABORT
-          exit (1);
+        exit (1);
 #endif
       }
     }
@@ -177,8 +211,7 @@ static void check (__float128 x)
   // Check for spurious/missing underflow exception
   if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
-    printf ("Spurious underflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
-    fflush (stdout);
+    error ("Spurious underflow exception", x, zr.f);
 #ifdef DO_NOT_ABORT
     return;
 #else
@@ -187,8 +220,7 @@ static void check (__float128 x)
   }
   if (!fetestexcept (FE_UNDERFLOW) && mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
-    printf ("Missing underflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
-    fflush (stdout);
+    error ("Missing underflow exception", x, zr.f);
 #ifdef DO_NOT_ABORT
     return;
 #else
@@ -199,8 +231,7 @@ static void check (__float128 x)
   // Check for spurious/missing overflow exception
   if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
-    printf ("Spurious overflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
-    fflush (stdout);
+    error ("Spurious overflow exception", x, zr.f);
 #ifdef DO_NOT_ABORT
     return;
 #else
@@ -209,8 +240,7 @@ static void check (__float128 x)
   }
   if (!fetestexcept (FE_OVERFLOW) && mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
-    printf ("Missing overflow exception for x=%Qa (y=%Qa)\n", x, zr.f);
-    fflush (stdout);
+    error ("Missing overflow exception", x, zr.f);
 #ifdef DO_NOT_ABORT
     return;
 #else
@@ -222,8 +252,7 @@ static void check (__float128 x)
   int inex2 = fetestexcept (FE_INEXACT);
   if ((inex1 == 0) && (inex2 != 0))
   {
-    printf ("Spurious inexact exception for x=%Qa (y=%Qa)\n", x, zr.f);
-    fflush (stdout);
+    error ("Spurious inexact exception", x, zr.f);
 #ifdef DO_NOT_ABORT
     return 1;
 #else
@@ -232,8 +261,7 @@ static void check (__float128 x)
   }
   if ((inex1 != 0) && (inex2 == 0))
   {
-    printf ("Missing inexact exception for x=%Qa (y=%Qa)\n", x, zr.f);
-    fflush (stdout);
+    error ("Missing inexact exception", x, zr.f);
 #ifdef DO_NOT_ABORT
     return 1;
 #else
@@ -248,8 +276,7 @@ static void check (__float128 x)
   int expected_edom = !is_nan (x) && is_nan (zr.f);
   if (expected_edom && errno != EDOM)
     {
-      printf ("Missing errno=EDOM for x=%Qa (y=%Qa)\n", x, zr.f);
-      fflush (stdout);
+      error ("Missing errno=EDOM", x, zr.f);
 #ifdef DO_NOT_ABORT
       return 1;
 #else
@@ -258,8 +285,7 @@ static void check (__float128 x)
     }
     if (!expected_edom && errno == EDOM)
     {
-      printf ("Spurious errno=EDOM for x=%Qa (y=%Qa)\n", x, zr.f);
-      fflush (stdout);
+      error ("Spurious errno=EDOM", x, zr.f);
 #ifdef DO_NOT_ABORT
       return 1;
 #else
@@ -275,8 +301,7 @@ static void check (__float128 x)
        mpfr_flags_test (MPFR_FLAGS_UNDERFLOW));
     if (expected_erange && errno != ERANGE)
     {
-      printf ("Missing errno=ERANGE for x=%Qa (y=%Qa)\n", x, zr.f);
-      fflush (stdout);
+      error ("Missing errno=ERANGE", x, zr.f);
 #ifdef DO_NOT_ABORT
       return 1;
 #else
@@ -285,8 +310,7 @@ static void check (__float128 x)
     }
     if (!expected_erange && errno == ERANGE)
     {
-      printf ("Spurious errno=ERANGE for x=%Qa (y=%Qa)\n", x, zr.f);
-      fflush (stdout);
+      error ("Spurious errno=ERANGE", x, zr.f);
 #ifdef DO_NOT_ABORT
       return 1;
 #else

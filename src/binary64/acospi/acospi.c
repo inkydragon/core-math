@@ -942,11 +942,8 @@ cr_acospi (double x)
     // avoid spurious underflow:
     // for |x| <= 0x1.921fb54442d18p-54, acospi(x) rounds to 0.5 to nearest
     if (__builtin_expect (k < 0x3c9921fb, 0))
-    {
-      if (__builtin_expect (k == 0 && u.i[LOW] == 0, 0)) return 0.5; // x = 0
       // acospi(x) ~ 1/2 - x/pi
-      return 0.5 - __builtin_copysign (0x1p-55, x);
-    }
+      return __builtin_fma (-0x1p-55, x, 0.5);
     /* approximate acos(x) by p(x-xmid), where [0,0.75) is split
        into 192 sub-intervals */
     v.x = 1.0 + absx; /* 1 <= v.x < 2 */

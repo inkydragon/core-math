@@ -123,8 +123,12 @@ check_invalid (void)
 {
   double snan = asfloat64 (0x7ff0000000000001ull);
   double minsnan = asfloat64(0xfff0000000000001ull);
+
   double plusInf = asfloat64(0x7ff0000000000000ull);
   double minInf = asfloat64(0xfff0000000000000ull);
+
+  double qnan = asfloat64(0x7ff1000000000000ull);
+  double minqnan = asfloat64(0xfff1000000000000ull);
 
   feclearexcept (FE_INVALID);
   // Check sNan
@@ -178,11 +182,11 @@ check_invalid (void)
 #endif
   }
   // check the invalid exception was set
-  int flag0 = fetestexcept (FE_INVALID);
-  if (!flag0)
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
   {
     printf ("Missing invalid exception for x=-sNaN\n");
-    #ifndef DO_NOT_ABORT
+#ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
@@ -199,8 +203,8 @@ check_invalid (void)
 #endif
   }
   // check the invalid exception was set
-  int flag1 = fetestexcept (FE_INVALID);
-  if (!flag1)
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
   {
     printf ("Missing invalid exception for x=+Inf\n");
 #ifndef DO_NOT_ABORT
@@ -220,10 +224,70 @@ check_invalid (void)
 #endif
   }
   // check the invalid exception was set
-  int flag2 = fetestexcept (FE_INVALID);
-  if (!flag2)
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
   {
     printf ("Missing invalid exception for x=-Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check qNan
+  feclearexcept (FE_INVALID);
+  y = cr_cos(qnan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=qNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check -qNaN
+  feclearexcept (FE_INVALID);
+  y = cr_cos(minqnan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-qNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(-qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=-qNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

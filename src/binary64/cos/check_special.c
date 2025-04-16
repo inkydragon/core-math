@@ -217,7 +217,7 @@ check_invalid (void)
   y = cr_cos(minInf);
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(+Inf) should be NaN, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(-Inf) should be NaN, got %la=%"PRIx64"\n",
              y, asuint64 (y));
 #ifndef DO_NOT_ABORT
       exit (1);

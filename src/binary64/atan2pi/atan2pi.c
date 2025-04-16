@@ -36,11 +36,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <math.h> // needed to provide atan2pi() since glibc does not have it
 #include <errno.h>
-#include <fenv.h>
-
-/* Variable d'erreur */
-#define TRACEX -0x1p-126
-#define TRACEY -0x1p-969
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -48,7 +43,6 @@ SOFTWARE.
 #endif
 
 #pragma STDC FENV_ACCESS ON
-#pragma fenv_access(on)
 
 typedef union { double f; uint64_t u; } d64u64;
 
@@ -215,9 +209,6 @@ static const tint_t Q[30] = {
 static double __attribute__((noinline))
 atan2pi_accurate (double y, double x)
 {
-  int bug = (y == TRACEX) && (x == TRACEY);
-  if(bug)
-    printf("bug (accurate)\n");
   double absy = __builtin_fabs (y), absx = __builtin_fabs (x);
   int inv = absy > absx;
   if (absy == absx)
@@ -577,31 +568,19 @@ static inline void d_mul(double *hi, double *lo, double ah, double al,
   t = __builtin_fma(al, bh, s);
   *lo = __builtin_fma(ah, bl, t);
 }
-//fetestexcept(FE_UNDERFLOW)
+
 /* Fast path: return err such that |h + l - atan2pi(y,x)| < err*h.
    Assumes 2^-969 < |x|, |y| <= 2^1022 and 2^-969 <= |y/x| <= 2^969
    (conditions needed for fast_div). */
 static double atan2pi_fast (double *h, double *l, double y, double x)
 {
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 1\n");
-  }
-  int bug = (y == TRACEX) && (x == TRACEY);
-  if(bug)
-    printf("bug (fast)\n");
   d64u64 vy = {.f = y}, vx = {.f = x};
   uint64_t ay = vy.u << 1, ax = vx.u << 1;
   int inv = ay > ax, negx = vx.u >> 63, negz = (vy.u ^ vx.u) >> 63;
   if (inv) { double t = y; y = x; x = t; }
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 2\n");
-  }
   // now |y| <= |x|
   double zh, zl;
   if (__builtin_expect (ax == ay, 0)) { // avoid spurious inexact
-    if(fetestexcept(FE_UNDERFLOW)){
-      printf("petite erreur 3\n");
-    }
     if (y == x)
       *h = (x > 0) ? 0.25 : -0.75;
     else
@@ -609,13 +588,7 @@ static double atan2pi_fast (double *h, double *l, double y, double x)
     *l = 0;
     return 0; // exact
   }
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 4\n");
-  }
   fast_div (&zh, &zl, y, x);
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 5\n");
-  }
   // for |zh| < 2^e, we have |zl| < 2^(e-48.999)
   /* since |y| <= |x| and fast_div ensures |zl| < 2^-47.999 with relative
      error < 2^-98.41, we have |zh+zl| < 1 + 2^-98.41, thus
@@ -625,9 +598,6 @@ static double atan2pi_fast (double *h, double *l, double y, double x)
   // the rational approximation is only for z > 0, it is not antisymmetric
   double sz = 1.0;
   if (zh < 0) { zh = -zh; zl = -zl; sz = -1.0; }
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 6\n");
-  }
 
   // now approximate atan(zh+zl) for 0 <= zh+zl < 1
   int i = __builtin_trunc (64.0 * zh); // 0 <= i <= 64
@@ -635,21 +605,9 @@ static double atan2pi_fast (double *h, double *l, double y, double x)
   zh -= Xfast[i];
 #define P9 0x1.c6e5d41706f0dp-4 // degree-9 coefficient for i=0
   double z = zh + zl, t;
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 7\n");
-  }
   *h = (i == 0) ? __builtin_fma (P9, z * z, p[9]) : p[9];
-  if(bug)
-    printf("%la, i=%d\n", z, i);
-
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 8\n");
-  }
   for (int j = 6; j >= 2; j--)
     *h = __builtin_fma (*h, z, p[2+j]); // degree j
-  if(fetestexcept(FE_UNDERFLOW)){
-    printf("petite erreur 9\n");
-  }
   // degree 1: h + l <- h * (zh + zl) + p[2] + p[3]
   s_mul (h, l, *h, zh, zl);
   fast_two_sum (h, &t, p[2], *h);
@@ -829,9 +787,6 @@ static double atan2pi_fast (double *h, double *l, double y, double x)
 // atan(y/x)
 double cr_atan2pi (double y, double x)
 {
-  int bug = (y == TRACEX) && (x == TRACEY);
-  if(bug)
-    printf("bug (cr)\n");
   d64u64 uy = {.f = y}, ux = {.f = x};
   uint64_t ay = uy.u & MASK, ax = ux.u & MASK;
   int ey = ay >> 52, ex = ax >> 52;
@@ -891,8 +846,11 @@ double cr_atan2pi (double y, double x)
   /* atan2pi_fast requires 2^-969 <= |x|, |y| <= 2^1022
      and 2^-969 <= |y/x| < 2^969 */
   // 2^-969 <= |x| <= 2^1022 translates into 54 <= ex <= 2044
+  /* |ey - ex| <= 341 avoids spurious underflow in the fast path,
+     since we multiply a term of order z by another of order z^2,
+     where z = min(|y/x|,|x/y|) */
   if (__builtin_expect (54 <= ex && ex <= 2044 && 54 <= ey && ey <= 2044 &&
-                        -968 <= ey - ex && ey - ex <= 968, 1))
+                        -341 <= ey - ex && ey - ex <= 341, 1))
   {
     double h, l, err;
     err = atan2pi_fast (&h, &l, y, x);

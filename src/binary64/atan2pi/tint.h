@@ -387,7 +387,7 @@ tint_tod (const tint_t *a, uint64_t err, double y, double x)
         (~mm == 0 && (low == 0x3ff || low == 0x7ff) && ~ll < err))
     {
       printf ("Unexpected worst-case found, please report to core-math@inria.fr:\n");
-      printf ("Worst-case of atan2 found: y,x=%la,%la\n", y, x);
+      printf ("Worst-case of atan2pi found: y,x=%la,%la\n", y, x);
       exit (1);
     }
   if (ex <= -1022) // subnormal case
@@ -435,12 +435,16 @@ static inline void inv_tint (tint_t *r, const tint_t *A)
   tint_t q[1];
   double a = tint_tod (A, 0, 0, 0); // exact
   // To simplify the error analysis, we assume 0.5 <= a < 1
-  int subnormal = __builtin_fabs (a) < 0x1p-1022;
-  if (subnormal)
-    a *= 0x1p53;
+  static const double scale[] = {0.25, 0x1p53};
+  static const int lscale[] = {-2, 53}; // log2(scale[])
+  int i = __builtin_fabs (a) < 1.0;
+  a *= scale[i];
+  /* If |a| < 1, we scale to a' = a*2^53, so that |a'| is in the
+     range [2^-1021, 2^-969], and 1/a' does not overflow nor overflow.
+     Otherwise we scale to a' = a/4, so that 1/4 < |a'| < 2^1022, and 1/a'
+     does not underflow nor overflow. */
   tint_fromd (r, 1.0 / a); // accurate to about 53 bits
-  if (subnormal)
-    r->ex += 53;
+  r->ex += lscale[i];
   /* We have 1 <= r <= 2, with |r - 1/a| < ulp(r) = 2^-52. */
   /* We use Newton's iteration: r1 = r0 + r0*(1-a*r0).
      Let e0 = 1-a*r0 and e1 = 1-a*r1 then we have e1 = e0^2.

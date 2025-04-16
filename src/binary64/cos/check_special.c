@@ -52,7 +52,10 @@ int verbose = 0;
 
 static unsigned int Seed[MAX_THREADS];
 
-typedef union { double f; uint64_t i; } d64u64;
+typedef union { 
+  double f; 
+  uint64_t i; 
+} d64u64;
 
 static inline uint64_t
 asuint64 (double f)
@@ -119,8 +122,12 @@ static void
 check_invalid (void)
 {
   double snan = asfloat64 (0x7ff0000000000001ull);
+  double minsnan = asfloat64(0xfff0000000000001ull);
+  double plusInf = asfloat64(0x7ff0000000000000ull);
+  double minInf = asfloat64(0xfff0000000000000ull);
 
   feclearexcept (FE_INVALID);
+  // Check sNan
   double y = cr_cos (snan);
   // check that foo(NaN) = NaN
   if (!is_nan (y))
@@ -145,7 +152,81 @@ check_invalid (void)
   if (!flag)
   {
     printf ("Missing invalid exception for x=sNaN\n");
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
+  }
+
+  // Check -sNan
+  feclearexcept (FE_INVALID);
+  y = cr_cos(minsnan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-sNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(-sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  int flag0 = fetestexcept (FE_INVALID);
+  if (!flag0)
+  {
+    printf ("Missing invalid exception for x=-sNaN\n");
+    #ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check +Inf
+  feclearexcept (FE_INVALID);
+  y = cr_cos(plusInf);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(+Inf) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  int flag1 = fetestexcept (FE_INVALID);
+  if (!flag1)
+  {
+    printf ("Missing invalid exception for x=+Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check -Inf
+  feclearexcept (FE_INVALID);
+  y = cr_cos(minInf);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(+Inf) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  int flag2 = fetestexcept (FE_INVALID);
+  if (!flag2)
+  {
+    printf ("Missing invalid exception for x=-Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
 }
 

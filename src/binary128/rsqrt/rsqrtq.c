@@ -241,20 +241,29 @@ __float128 cr_rsqrtq(__float128 x){
     i32 ns = -15;
     if(u.b[1]){
       ns += __builtin_clzll(u.b[1]);
-      } else {
+    } else {
       if(u.b[0]) {
 	ns += __builtin_clzll(u.b[0]) + 64;
-      } else
+      } else {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	errno = ERANGE; // pole error
+#endif
 	return __builtin_inff128(); // x = +0
+      }
     }
     e = 1 - ns;
     u.a <<= ns; // normalize mantissa
     u.b[1] ^= (u64)(ns&1)<<48; // set proper last bit of exponent
   }
   if(__builtin_expect(e>=0x7fff, 0)){// other special cases: NAN, inf, negative numbers
-    if(!(u.a<<1)) return -__builtin_inff128(); // x = -0
+    if(!(u.a<<1)){ // x = -0
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      errno = ERANGE; // pole error
+#endif
+      return -__builtin_inff128();
+    }
     if(u.a==(u128)0x7fff<<112) return 0; // x = +Inf
-    if(u.a<=(u128)0xffff<<112){
+    if(u.a<=(u128)0xffff<<112 && u.a>(u128)0x8000<<112){ // -inf <= x < -0
       // x < 0
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = EDOM;

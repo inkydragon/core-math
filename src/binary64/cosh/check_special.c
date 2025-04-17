@@ -126,61 +126,56 @@ is_inf (double x)
 
 static void
 check_invalid (void){
-  double plusInf = asfloat64(0x7ff0000000000000ull);
-  double minInf = asfloat64(0xfff0000000000000ull);
-  /* Check glibc errors values : +- 0xf.ffffffffffff8p+1020*/
-  double specialVal = asfloat64(0x7fefffffffffffffull);
-  double minSpecialVal = asfloat64(0xffefffffffffffffull);
+  double T[] = {asfloat64(0x7ff0000000000000ull), // +Inf
+    0x1.fffffffffffffp+1023, // DBL_MAX
+    0x1.633ce8fb9f87cp+9,
+    0x1.633ce8fb9f87dp+9,
+    0x1.633ce8fb9f87ep+9,
+    0x1.633ce8fb9f87fp+9};
 
-  // Check +Inf
-  feclearexcept (FE_INVALID);
-  double y = cr_cosh(plusInf);
-  if (!is_inf (y))
-  {
-    fprintf (stderr, "Error, foo(+Inf) should be +Inf, got %la=%"PRIx64"\n",
-             y, asuint64 (y));
-#ifndef DO_NOT_ABORT
-    exit (1);
-#endif
-  }
-  // check the invalid exception was not set
-  int flag = fetestexcept (FE_INVALID);
-  if (flag)
-  {
-    printf ("Spurious invalid exception for x=+Inf\n");
-#ifndef DO_NOT_ABORT
-    exit (1);
-#endif
-  }
-
-  // Check -Inf
-  feclearexcept (FE_INVALID);
-  y = cr_cosh(minInf);
-  if (!is_inf (y))
-  {
-    fprintf (stderr, "Error, foo(-Inf) should be +Inf, got %la=%"PRIx64"\n",
-             y, asuint64 (y));
+  for (unsigned long i = 0; i < sizeof(T)/sizeof(T[0]); i++) {
+    feclearexcept (FE_INVALID);
+    double x = T[i];
+    double y = cr_cosh (x);
+    if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
+    {
+      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+               x, y, asuint64 (y));
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
-  }
-  // check the invalid exception was not set
-  flag = fetestexcept (FE_INVALID);
-  if (flag)
-  {
-    printf ("Spurious invalid exception for x=-Inf\n");
+    }
+    // check the invalid exception was not set
+    int flag = fetestexcept (FE_INVALID);
+    if (flag)
+    {
+      printf ("Spurious invalid exception for x=%la\n", x);
 #ifndef DO_NOT_ABORT
-    exit (1);
+      exit (1);
 #endif
+    }
+
+    // Check -x
+    feclearexcept (FE_INVALID);
+    y = cr_cosh (-x);
+    if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
+    {
+      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+               x, y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    // check the invalid exception was not set
+    flag = fetestexcept (FE_INVALID);
+    if (flag)
+    {
+      printf ("Spurious invalid exception for x=%la\n", x);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
   }
-
-    // Check 0x7fefffffffffffffull
-    feclearexcept (FE_INVALID);
-    y = cr_cosh(specialVal);
-
-    // Check 0xffefffffffffffffull
-    feclearexcept (FE_INVALID);
-    y = cr_cosh(minSpecialVal);
 }
 
 int

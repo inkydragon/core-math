@@ -61,7 +61,7 @@ check_dry_inexact:
 
 check_dry_errno:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:

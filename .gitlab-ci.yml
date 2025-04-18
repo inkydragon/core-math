@@ -41,14 +41,14 @@ check_dry_with_O3:
   image: debian:testing
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - FORCE=true DRY=--dry CFLAGS=-O3 ./ci.sh
+    - FORCE=true DRY=--dry CFLAGS="-O3 -march=x86-64-v2" ./ci.sh
 
 check_dry_inexact_errno:
   stage: test
   image: debian:testing
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_CHECK_INEXACT -DCORE_MATH_SUPPORT_ERRNO" ./ci.sh
+    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_CHECK_INEXACT -DCORE_MATH_SUPPORT_ERRNO -march=x86-64-v2" ./ci.sh
 
 check_dry_inexact:
   stage: test
@@ -57,7 +57,7 @@ check_dry_inexact:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
-    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_CHECK_INEXACT" ./ci.sh
+    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_CHECK_INEXACT -march=x86-64-v2" ./ci.sh
 
 check_dry_errno:
   stage: test

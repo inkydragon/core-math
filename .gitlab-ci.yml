@@ -73,7 +73,7 @@ check_dry_clang:
   stage: test
   image: silkeh/clang:latest
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev libquadmath0
     - CORE_MATH_NO_OPENMP=1 FORCE=true DRY=--dry CC=clang ./ci.sh
 
 check_dry_icx:
@@ -82,6 +82,6 @@ check_dry_icx:
   before_script:
     - ci/00-prepare-docker.sh
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev libquadmath0
     # MPFR-dev is installed in /usr/local
     - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh

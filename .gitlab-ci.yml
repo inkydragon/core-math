@@ -66,7 +66,7 @@ check_dry_errno:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
-    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_SUPPORT_ERRNO -march=native" ./ci.sh
+    - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_SUPPORT_ERRNO -O3 -march=native" ./ci.sh
 
 check_dry_clang:
   stage: test

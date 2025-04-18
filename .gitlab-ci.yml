@@ -31,28 +31,28 @@ check_without_fma:
 
 check_dry:
   stage: test
-  image: debian:latest
+  image: debian:testing
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     - FORCE=true DRY=--dry ./ci.sh
 
 check_dry_with_O3:
   stage: test
-  image: debian:latest
+  image: debian:testing
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     - FORCE=true DRY=--dry CFLAGS=-O3 ./ci.sh
 
 check_dry_inexact_errno:
   stage: test
-  image: debian:latest
+  image: debian:testing
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     - FORCE=true DRY=--dry CFLAGS="-DCORE_MATH_CHECK_INEXACT -DCORE_MATH_SUPPORT_ERRNO" ./ci.sh
 
 check_dry_inexact:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:

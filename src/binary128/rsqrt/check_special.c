@@ -31,6 +31,7 @@ SOFTWARE.
 #include <fenv.h>
 #include <math.h>
 #include <unistd.h>
+#include <quadmath.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -68,10 +69,24 @@ static inline int is_equal(__float128 x, __float128 y){
   return ux.a == uy.a;
 }
 
+static void
+error2 (__float128 x, __float128 y, __float128 z)
+{
+  char buf[256];
+  int n;
+  n = snprintf (buf, sizeof buf, "FAIL x=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", x);
+  n += snprintf (buf + n, sizeof buf - n, " ref=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", y);
+  n += snprintf (buf + n, sizeof buf - n, " z=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", z);
+  printf ("%s\n", buf);
+}
+
 static void check(__float128 x){
   __float128 y1 = ref_rsqrtq(x), y2 = cr_rsqrtq(x);
   if(!is_equal(y1, y2)) {
-    printf("FAIL x=%Qa ref=%Qa z=%Qa\n", x, y1, y2);
+    error2 (x, y1, y2);
     fflush(stdout);
   }
 }

@@ -173,9 +173,16 @@ main (int argc, char *argv[])
       perror("mmap");
       exit(3);
     }
-    for (unsigned int i = 0; i < count * SAMPLE_SIZE / sizeof(TYPE_UNDER_TEST); i++) {
+#ifdef CORE_MATH_BIVARIATE
+    for (int i = 0; i < count; i++) {
+      randoms[2*i+0] = random_under_test_0();
+      randoms[2*i+1] = random_under_test_1();
+    }
+#else
+    for (int i = 0; i < count; i++) {
       randoms[i] = random_under_test();
     }
+#endif
     msync(randoms, count * SAMPLE_SIZE, MS_SYNC);
     munmap(randoms, count * SAMPLE_SIZE);
     close(fd);

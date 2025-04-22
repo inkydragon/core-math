@@ -73,12 +73,11 @@ else
     SKIP80=1
 fi
 
-if [ "$CC" == "cc" ] || [ "$CC" == "gcc" ]; then
+if $CC -E $CFLAGS ci/quadmath_test.c -o /dev/null &> /dev/null; then
    echo "Compiler supports libquadmath"
-   SKIPQ=0
 else
    echo "Compiler lacks libquadmath support"
-   SKIPQ=1 # skip binary128 functions since compiler does not have libquadmath
+   SKIPQ=1
 fi
 
 for FUNCTION in "${FUNCTIONS_EXHAUSTIVE[@]}"; do

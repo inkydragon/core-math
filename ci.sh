@@ -30,12 +30,16 @@ check () {
     else
         doit=1
     fi
-		if [ "$doit" == "1" ] && [ "$SKIP128" == "1" ] && $CC -E src/*/*/$FUNCTION.c | grep -q  __int128; then
+    if [ "$doit" == "1" ] && [ "$SKIP128" == "1" ] && $CC -E src/*/*/$FUNCTION.c | grep -q  __int128; then
         echo "__int128 support is needed for" $FUNCTION "but is not available"
         doit=0
     fi
     if [ "$doit" == "1" ] && [ "$SKIP80" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binary80; then
         echo "binary80 support is needed for" $FUNCTION "but is not available"
+        doit=0
+    fi
+    if [ "$doit" == "1" ] && [ "$SKIPQ" == "1" ] && [ "`basename $FUNCTION q`" != "$FUNCTION" ]; then
+        echo "libquadmath is needed for" $FUNCTION "but is not available"
         doit=0
     fi
 
@@ -67,6 +71,14 @@ if $CC -E $CFLAGS ci/ldbl80test.c -o /dev/null &> /dev/null; then
 else
     echo "long double is not binary80"
     SKIP80=1
+fi
+
+if [ "$CC" == "cc" ] || [ "$CC" == "gcc" ]; then
+   echo "Compiler supports libquadmath"
+   SKIPQ=0
+else
+   echo "Compiler lacks libquadmath support"
+   SKIPQ=1 # skip binary128 functions since compiler does not have libquadmath
 fi
 
 for FUNCTION in "${FUNCTIONS_EXHAUSTIVE[@]}"; do

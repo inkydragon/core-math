@@ -110,5 +110,18 @@ then
 		echo "end interface"
 	done
 fi
+# Please uncomment the lines below if your Fortran compiler supports the REAL128 kind.
+# echo "! quad unary functions"
+# for I in rsqrt
+# do
+# 	echo "interface"
+# 	echo "   pure function cr_${I}q(x) bind(c,name='cr_${I}q')"
+# 	echo "     use, intrinsic :: iso_fortran_env, only: real128"
+# 	echo "     implicit none"
+# 	echo "     real(kind=real128), intent(in), value :: x"
+# 	echo "     real(kind=real128) :: cr_${I}q"
+# 	echo "   end function cr_${I}q"
+# 	echo "end interface"
+# done
 echo "end module core_math"
 unset I

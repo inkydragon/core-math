@@ -216,7 +216,7 @@ static inline u64 rsqrt9(u64 m){
   u64 indx = m>>58; // subrange index 
   u64 c3 = c[indx][3], c0 = c[indx][0], c1 = c[indx][1], c2 = c[indx][2];
   c0 <<= 31; // to 64 bit with the space for the implicit bit
-  c0 |= 1ul<<63; // add implicit bit
+  c0 |= 1ull<<63; // add implicit bit
   c1 <<= 25; // to 64 bit format
   u64 d = (m<<6)>>32; // local coordinate in the subrange [0, 2^32]
   u64 d2 = ((u64)(d*d))>>32; // square of the local coordinate
@@ -277,21 +277,21 @@ __float128 cr_rsqrtq(__float128 x){
   }
   e += 121; // bias in case of denormal number
   unsigned q2 = e/2, i = e&1;
-  i64 e2 = (0x5ffdul-q2+60)<<48;
+  i64 e2 = (0x5ffdull-q2+60)<<48;
   u.a <<= 16;
   if(__builtin_expect(!u.a, 0)) { // no inexact exception
     if(~e&1){
-      u.b[1] = e2 + (2ul<<48); // place exponent
+      u.b[1] = e2 + (2ull<<48); // place exponent
       return u.f;
     }
   }
   
-  const u64 rsqrt_2[] = {~0ul,0xb504f333f9de6484}; // 2^64/sqrt(2)
+  const u64 rsqrt_2[] = {~0ull,0xb504f333f9de6484ull}; // 2^64/sqrt(2)
   u64 rx = u.b[1], r = rsqrt9(rx);
   u128 r2 = (u128)r*rsqrt_2[i];
   unsigned shft = 4-i;
   u.a >>= shft;
-  u.b[1] |= 1ul<<(60+i);
+  u.b[1] |= 1ull<<(60+i);
   r = r2>>64;
   u128 R2 = (u128)r*r;
   i64 h = mhUU(R2, u.a), ds = mhui(r, h);
@@ -314,13 +314,13 @@ __float128 cr_rsqrtq(__float128 x){
     k0.a += t0.a;
     if(k0.a<t0.a) k1.a++;
     k1.a += t1.a;
-    v.b[0] &= ~0ul<<15;
+    v.b[0] &= ~0ull<<15;
     i64 side = k1.bs[1]>>63;
     if(msk) v.b[0] -= 1<<15;
     if(side) v.b[0] += 1<<14;
     v.b[0] |= 1;
   }
-  unsigned frac = v.b[0]&0x7ffful; // fractional part
+  unsigned frac = v.b[0]&0x7fffull; // fractional part
   u64 rnd = 0; 
   if(__builtin_expect(nrst, 1)){
     rnd = frac>>14;  // round to nearest tie to even

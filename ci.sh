@@ -73,7 +73,7 @@ else
     SKIP80=1
 fi
 
-if $CC -E $CFLAGS ci/quadmath_test.c -o /dev/null &> /dev/null; then
+if $CC -c $CFLAGS ci/quadmath_test.c -o /dev/null &> /dev/null; then
    echo "Compiler supports libquadmath"
 else
    echo "Compiler lacks libquadmath support"

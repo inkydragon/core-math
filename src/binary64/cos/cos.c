@@ -2035,8 +2035,9 @@ cr_cos (double x)
       if ((t.u << 1) == 0x7ffull<<53) // Inf
         errno = EDOM;
 #endif
-      t.u = ~0ull;
-      return t.f; // return qNaN
+      if ((t.u << 1) == 0x7ffull<<53) // Inf
+        return 0.0 / 0.0; // raise invalid flag
+      return x + x; // return qNaN
     }
 
   /* now x is a regular number */

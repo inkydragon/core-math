@@ -8,7 +8,8 @@ check:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - ./ci.sh
+    # x86-64-v2 is needed for rsqrtq
+    - EXTRA_CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_sanitize:
   stage: test
@@ -35,7 +36,7 @@ check_without_fma:
 
 check_dry:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:
@@ -44,7 +45,7 @@ check_dry:
 
 check_dry_with_O3:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:
@@ -53,7 +54,7 @@ check_dry_with_O3:
 
 check_dry_inexact_errno:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:
@@ -62,7 +63,7 @@ check_dry_inexact_errno:
 
 check_dry_inexact:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:
@@ -71,7 +72,7 @@ check_dry_inexact:
 
 check_dry_errno:
   stage: test
-  image: debian:latest
+  image: debian:testing
   before_script:
     - ci/00-prepare-docker.sh
   script:
@@ -93,6 +94,6 @@ check_dry_icx:
   before_script:
     - ci/00-prepare-docker.sh
   script:
-    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - apt-get update -qq && apt-get install -qq build-essential git
     # MPFR-dev is installed in /usr/local
     - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh

@@ -36690,3 +36690,10 @@
 -0x1.31840d36c73e2p+848
 0x1.2f11f1e10984cp+856
 -0x1.2f11f1e10984cp+856
+# glibc tests values
+0xf.ffffffffffff8p+1020
+-0xf.ffffffffffff8p+1020
+# threshold values
+0x1.633ce8fb9f87cp+9
+0x1.633ce8fb9f87dp+9
+0x1.633ce8fb9f87ep+9

@@ -32,6 +32,7 @@ SOFTWARE.
 #include <math.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <inttypes.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -51,14 +52,15 @@ int verbose = 0;
 
 static unsigned int Seed[MAX_THREADS];
 
+typedef union { 
+  double f; 
+  uint64_t i; 
+} d64u64;
+
 static inline uint64_t
 asuint64 (double f)
 {
-  union
-  {
-    double f;
-    uint64_t i;
-  } u = {f};
+  d64u64 u = {.f = f};
   return u.i;
 }
 
@@ -67,10 +69,10 @@ typedef union {double f; uint64_t u;} b64u64_u;
 static double
 get_random (int tid)
 {
-  b64u64_u v;
-  v.u = rand_r (Seed + tid);
-  v.u |= (uint64_t) rand_r (Seed + tid) << 31;
-  v.u |= (uint64_t) rand_r (Seed + tid) << 62;
+  d64u64 v;
+  v.i = rand_r (Seed + tid);
+  v.i |= (uint64_t) rand_r (Seed + tid) << 31;
+  v.i |= (uint64_t) rand_r (Seed + tid) << 62;
   return v.f;
 }
 
@@ -95,6 +97,84 @@ check (double x)
     printf ("FAIL x=%la ref=%la z=%la\n", x, y1, y2);
     fflush (stdout);
     exit (1);
+  }
+}
+
+static inline double
+asfloat64 (uint64_t i)
+{
+  d64u64 u = {.i = i};
+  return u.f;
+}
+
+/* define our own is_nan function to avoid depending from math.h */
+static inline int
+is_nan (double x)
+{
+  uint64_t u = asuint64 (x);
+  uint64_t e = u >> 52;
+  return (e == 0x7ff || e == 0xfff) && (u << 12) != 0;
+}
+
+static inline int
+is_inf (double x)
+{
+  uint64_t u = asuint64 (x);
+  uint64_t e = u >> 52;
+  return (e == 0x7ff || e == 0xfff) && (u << 12) == 0;
+}
+
+static void
+check_invalid (void){
+  double T[] = {asfloat64(0x7ff0000000000000ull), // +Inf
+    0x1.fffffffffffffp+1023, // DBL_MAX
+    0x1.633ce8fb9f87cp+9,
+    0x1.633ce8fb9f87dp+9,
+    0x1.633ce8fb9f87ep+9,
+    0x1.633ce8fb9f87fp+9};
+
+  for (unsigned long i = 0; i < sizeof(T)/sizeof(T[0]); i++) {
+    feclearexcept (FE_INVALID);
+    double x = T[i];
+    double y = cr_cosh (x);
+    if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
+    {
+      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+               x, y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    // check the invalid exception was not set
+    int flag = fetestexcept (FE_INVALID);
+    if (flag)
+    {
+      printf ("Spurious invalid exception for x=%la\n", x);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+
+    // Check -x
+    feclearexcept (FE_INVALID);
+    y = cr_cosh (-x);
+    if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
+    {
+      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+               x, y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    // check the invalid exception was not set
+    flag = fetestexcept (FE_INVALID);
+    if (flag)
+    {
+      printf ("Spurious invalid exception for x=%la\n", x);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
   }
 }
 
@@ -141,6 +221,8 @@ main (int argc, char *argv[])
     }
   ref_init ();
   ref_fesetround (rnd);
+
+  check_invalid ();
 
 #ifndef CORE_MATH_TESTS
 #define CORE_MATH_TESTS 1000000000UL /* total number of tests */

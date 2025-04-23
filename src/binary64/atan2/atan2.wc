@@ -27944,3 +27944,6 @@
 0x1.fffffffffffffp-790,-0x1.0000000000001p-733
 0x1p-1022,0x1p+53
 -0x1p-1022,0x1p+53
+# test inputs from the GNU libc
+0x1p+0,0x1.23456789p-1000
+0x1p+0,0xf.ffffffffffff8p-1004

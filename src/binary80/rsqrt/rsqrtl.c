@@ -164,7 +164,7 @@ long double cr_rsqrtl (long double x){
   
   u64 a = v.m;
   unsigned j=(a>>(64-7))&63, dj = (a>>(64-7-32));
-  u64 sc = (e&1)?0x100000000ul:0xb504f335ul; // scale factors 1 and 1/sqrt(2)
+  u64 sc = (e&1)?0x100000000ull:0xb504f335ull; // scale factors 1 and 1/sqrt(2)
   u64 c0 = T[j][0], c1 = T[j][1], c2 = T[j][2], c3 = T[j][3]; // polynomial coefficients
   // get an initial approximation r with ~30 bits precision
   u64 dj2 = dj*(u64)dj>>32, r = sc*((c0 - (dj*c1>>37)) + (dj2*(c2 - (dj*c3>>37))>>42))>>32, r2 = r*r;
@@ -183,7 +183,7 @@ long double cr_rsqrtl (long double x){
     // known just use 128 bit of the tail to evaluate the correctly
     // rounded result
     r = v.m + ((dr>>25)&1); // initial estimation (round-to-nearest)
-    if(r<(1ul<<62)) r = ~0ul; // if the estimation is in the next binade bring it back
+    if(r<(1ull<<62)) r = ~0ull; // if the estimation is in the next binade bring it back
     u128 Ra = r*(u128)a;
     u64 Rah = Ra>>64, Ral = Ra;
     u128 Hh = Rah*(u128)r;
@@ -224,7 +224,7 @@ long double cr_rsqrtl (long double x){
       v.m = r + ru;
     }
     if(__builtin_expect(!v.m, 0)){ // check that the result goes to the next binade
-      v.m = 1ul<<63;
+      v.m = 1ull<<63;
       v.e ++;
     }
     return v.f;

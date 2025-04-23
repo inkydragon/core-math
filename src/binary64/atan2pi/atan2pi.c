@@ -846,8 +846,11 @@ double cr_atan2pi (double y, double x)
   /* atan2pi_fast requires 2^-969 <= |x|, |y| <= 2^1022
      and 2^-969 <= |y/x| < 2^969 */
   // 2^-969 <= |x| <= 2^1022 translates into 54 <= ex <= 2044
+  /* |ey - ex| <= 341 avoids spurious underflow in the fast path,
+     since we multiply a term of order z by another of order z^2,
+     where z = min(|y/x|,|x/y|) */
   if (__builtin_expect (54 <= ex && ex <= 2044 && 54 <= ey && ey <= 2044 &&
-                        -968 <= ey - ex && ey - ex <= 968, 1))
+                        -341 <= ey - ex && ey - ex <= 341, 1))
   {
     double h, l, err;
     err = atan2pi_fast (&h, &l, y, x);

@@ -209,7 +209,7 @@ static inline void d_mul(double *hi, double *lo, double ah, double al,
 }
 
 // INVLOG2 = 1/log(2) * (1 + eps1) with |eps1| < 2^-55.976
-#define INVLOG2 0x1.71547652b82fep+0 
+#define INVLOG2 0x1.71547652b82fep+0
 // LOG2 = log(2) * (1 + eps) with |eps| < 2^-54.730
 #define LOG2 0x1.62e42fefa39efp-1
 
@@ -224,7 +224,7 @@ static double p1 (double z)
   static const double P[] = {0, 0x1.71547652b82fep0, -0x1.71547652b8d11p-1,
     0x1.ec709dc3a5014p-2, -0x1.715475b144983p-2, 0x1.2776c3fda300ep-2,
     -0x1.ec990162358cep-3, 0x1.a645337c29e27p-3};
-    
+
   double z2 = z * z;
   double c5 = __builtin_fma (P[6], z, P[5]);
   double c3 = __builtin_fma (P[4], z, P[3]);
@@ -429,28 +429,8 @@ static double _log2p1 (double x)
   /* for x > 0, 1+x is exact when 2^-29 <=  x < 2^53
      for x < 0, 1+x is exact when -1 < x <= 2^-30 */
 
-  if (__builtin_expect (__builtin_fabs (x) < 0x1p-29, 0)) { // |x| < 2^-29
-    /* |log2(1+x) - 1/log(2) * (x - x^2/2)| < 2^-59.584 * |log2(1+x)|
-       (cf compoundf.sollya) */
-    double t = x - (x * x) * 0.5;
-    /* since x is epresentable in binary32, x*x is exact, and so is (x * x) * 0.5.
-       Thus the only error in the computation of t is the final rounding, which
-       is bounded by ulp(t): t = (x - x^2/2) * (1 + eps2) with |eps2| < 2^-52
-    */
-    return INVLOG2 * t;
-    /* since INVLOG2 = 1/log(2) * (1 + eps1) and
-       and   t = (x - x^2/2) * (1 + eps2)
-       let u = o(INVLOG2 * t) then u = INVLOG2 * t * (1 + eps3) with |eps3|<2^-53
-       thus u = 1/log(2) * (x - x^2/2) * (1 + eps1)*(1 + eps2)*(1 + eps3)
-              = 1/log(2) * (x - x^2/2) * (1 + eps4) with |eps4| < 2^-50.954
-       Now Sollya says the relative error by approximating log2(1+x) by
-       1/log(2) * (x - x^2/2) for |x| < 2^-29 is bounded by 2^-59.584
-       (file compoundf.sollya), thus:
-       u = log2(1+x) * (1+eps4)*(1+eps5) with |eps5| < 2^-59.584
-         = log2(1+x) * (1+eps6) with |eps6| < 2^-50.950 */
-  }
-
-  double u = (x >= 0x1p53) ? x : 1.0 + x;
+  //  double u = (x >= 0x1p53) ? x : 1.0 + x;
+  double u = 1.0 + x;
   /* For x < 0x1p53, x + 1 is exact thus u = x+1.
      For x >= 2^53, we estimate log2(x) instead of log2(1+x),
      since log2(1+x) = log2(x) + log2(1+1/x),
@@ -903,7 +883,7 @@ log2p1_accurate (double *h, double *l, double x)
   *h *= scale[e + 29];
   *l *= scale[e + 29];
   // now |h| < sqrt(2) and |l| <= ulp(h) <= 2^-52
-  
+
   // now 1 + x ~ 2^e * (h + l) thus log2(1+x) ~ e + log2(h+l)
 
   v.f = 2.0 + *h; // add 2 so that v.f is always in the binade [2, 4)
@@ -921,7 +901,7 @@ log2p1_accurate (double *h, double *l, double x)
      (1+2^-91.196)*(1+2^-105)-1 < 2^-91.195. */
   double ph, pl;
   p2 (&ph, &pl, zh, zl);
-  // ph + pl approximates log2(1+zh+zl) with relative error < 2^-93.471 
+  // ph + pl approximates log2(1+zh+zl) with relative error < 2^-93.471
 
   /* since |log2inv[i][0]| < 1 and e is integer, the precondition of
      fast_two_sum is fulfilled: either |e| >= 1, or e=0 and fast_two_sum
@@ -965,26 +945,15 @@ accurate_path (float x, float y, int exact, FLAG_T flag)
   return exp2_2 (h, l, x, y, exact, flag);
 }
 
-float cr_compoundf (float x, float y)
-{
-  /* Rules from IEEE 754-2019 for compound (x, n) with n integer:
-     (a) compound (x, 0) is 1 for x >= -1 or quiet NaN
-     (b) compound (-1, n) is +Inf and signals the divideByZero exception for n < 0
-     (c) compound (-1, n) is +0 for n > 0
-     (d) compound (+/-0, n) is 1
-     (e) compound (+Inf, n) is +Inf for n > 0
-     (f) compound (+Inf, n) is +0 for n < 0
-     (g) compound (x, n) is qNaN and signals the invalid exception for x < -1
-     (h) compound (qNaN, n) is qNaN for n <> 0.
-  */
-  double xd = x, yd = y;
-  b64u64_u tx = {.f = xd}, ty = {.f = yd};
+__attribute__((noinline)) float as_compoundf_special(float x, float y){
+  b32u32_u nx = {.f = x}, ny = {.f = y};
+  uint32_t ax = nx.u<<1, ay = ny.u<<1;
 
-  if (__builtin_expect((tx.u & ty.u)<<1 == 0, 0)) { // x or y is 0
-    if (tx.u<<1 == 0)   // compound(0,y) = 1 except for y = sNaN
+  if (__builtin_expect(ax == 0 || ay == 0, 0)) { // x or y is 0
+    if (ax == 0)   // compound(0,y) = 1 except for y = sNaN
       return issignalingf (y) ? x + y : 1.0f;
 
-    if (ty.u<<1 == 0) { // compound (x, 0)
+    if (ay == 0) { // compound (x, 0)
       if (issignalingf (x)) return x + y; // x = sNaN
       if (x < -1.0f) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -997,38 +966,52 @@ float cr_compoundf (float x, float y)
     }
   }
 
-  if(__builtin_expect ((ty.u<<1) >= (uint64_t)0x7ff<<53, 0)){ // y=Inf/NaN
+  const b32u32_u mone = {.f = -1.0f};
+  if(__builtin_expect (ay >= 0xffu<<24, 0)){ // y=Inf/NaN
     // the case x=0 was already checked above
-    if((tx.u<<1) > (uint64_t)0x7ff<<53) return x + y; // x=NaN
-    if((ty.u<<1) == (uint64_t)0x7ff<<53) { // y=+/-Inf
-      int sy = ty.u>>63; // sign bit of y
-      if (x < -1.0f) return 0.0f / 0.0f; // rule (g)
-      if (x < 0 && sy == 0)
-	return 0;
-      if (0 < x && sy != 0)
-        return 0;
-      return __builtin_inf();
+    if(ax > 0xffu<<24) return x + y; // x=NaN
+    if(ay == 0xffu<<24) { // y = +/-Inf
+      if (nx.u > mone.u) return 0.0f / 0.0f; // rule (g)
+      int sy = ny.u>>31; // sign bit of y
+      if (nx.u == mone.u){
+	if(sy == 0)
+	  return 0.0f; // Rule (c)
+	else
+	  return __builtin_inff(); // Rule (b)
+      }
+      if (x < 0.0f){
+	if(sy == 0)
+	  return 0.0f;
+	else
+	  return __builtin_inff();
+      }
+      if (x > 0.0f){
+	if(sy != 0)
+	  return 0.0f;
+	else
+	  return __builtin_inff();
+      }
+      return 1.0f;
     }
     return x + y; // case y=NaN
   }
 
-  uint64_t minus_one = 0xbff0000000000000ull; // encoding of -1
-  if (__builtin_expect (tx.u >= minus_one || tx.u >> 52 == 0x7ff, 0)){
+  if (__builtin_expect (nx.u >= mone.u || nx.u >= 0xffu<<23, 0)){
     // x is Inf, NaN or <= -1
-    if ((tx.u<<1) == (uint64_t)0x7ff<<53){ // x is +Inf or -Inf
-      if (x < -1.0f) return 0.0f / 0.0f; // x = -Inf, rule (g)
+    if (ax == 0xffu<<24){ // x is +Inf or -Inf
+      if (nx.u>>31) return 0.0f / 0.0f; // x = -Inf, rule (g)
       // (1 + Inf)^y = +Inf for y > 0, +0 for y < 0
-      return (ty.u>>63) ? 1.0f/x : x;
+      return (ny.u>>31) ? 1.0f/x : x;
     }
-    if ((tx.u<<1) > (uint64_t)0x7ff<<53) return x + y; // x is NaN
-    if (x < -1.0f) {
+    if (ax > 0xffu<<24) return x + y; // x is NaN
+    if (nx.u > mone.u) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = EDOM;
 #endif
       return 0.0f / 0.0f; // x < -1.0: rule (g)
     }
     // now x = -1
-    if (ty.u>>63) { // y < 0
+    if (ny.u>>31) { // y < 0
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE;
 #endif
@@ -1036,15 +1019,74 @@ float cr_compoundf (float x, float y)
     } else // y > 0
       return 0.0f;
   }
+  return 0.0f;
+}
 
+float cr_compoundf (float x, float y)
+{
+  /* Rules from IEEE 754-2019 for compound (x, n) with n integer:
+     (a) compound (x, 0) is 1 for x >= -1 or quiet NaN
+     (b) compound (-1, n) is +Inf and signals the divideByZero exception for n < 0
+     (c) compound (-1, n) is +0 for n > 0
+     (d) compound (+/-0, n) is 1
+     (e) compound (+Inf, n) is +Inf for n > 0
+     (f) compound (+Inf, n) is +0 for n < 0
+     (g) compound (x, n) is qNaN and signals the invalid exception for x < -1
+     (h) compound (qNaN, n) is qNaN for n <> 0.
+  */
+  const b32u32_u mone = {.f = -1.0f};
+  b32u32_u nx = {.f = x}, ny = {.f = y};
+  if (__builtin_expect(nx.u >= mone.u, 0) ) return as_compoundf_special(x,y); // x <= -1
   // now x > -1
 
-  FLAG_T flag = get_flag ();
+  uint32_t ax = nx.u<<1, ay = ny.u<<1;
+  if (__builtin_expect(ax == 0 || ax >= 0xffu<<24 || ay == 0 || ay >= 0xffu<<24, 0) ) return as_compoundf_special(x,y); // x=+-0 || x=+-inf/nan || y=+-0 || y=+-inf/nan
 
-  double l = _log2p1 (tx.f);
+  // evaluate (1+x)^y explicitly for integer y in [-16,16] range and |x|<2^64
+  if(__builtin_expect(__builtin_floorf(y) == y && ay <= 0x83000000u && ax<=0xbefffffeu, 1)){
+    if(ax <= 0x62000000u) return 1.0f + y*x; // does it work for |x|<2^-29 and |y|<=16?
+    int ky = ((ay&~(0xff<<24))|1<<24)>>(151-(ay>>24));
+    double s = 1.0 + x, p = 1;
+    double s2 = s*s, s4 = s2*s2, s8 = s4*s4, s16 = s8*s8;
+    double sn[] = {1,s,s2,s4,s8,s16};
+    p *= sn[ky&1];
+    p *= sn[ky&2];
+    p *= sn[((ky>>2)&1)*3];
+    p *= sn[(ky>>1)&4];
+    p *= sn[((ky>>4)&1)*5];
+    return (ny.u>>31)?1/p:p;
+  }
+
+  double xd = x, yd = y;
+  b64u64_u tx = {.f = xd}, ty = {.f = yd};
+
+  volatile FLAG_T flag = get_flag ();
+  double l;
+  if (__builtin_expect (ax < 0x62000000u, 0)) { // |x| < 2^-29
+    /* |log2(1+x) - 1/log(2) * (x - x^2/2)| < 2^-59.584 * |log2(1+x)|
+       (cf compoundf.sollya) */
+    double t = xd - (xd * xd) * 0.5;
+    /* since x is epresentable in binary32, x*x is exact, and so is (x * x) * 0.5.
+       Thus the only error in the computation of t is the final rounding, which
+       is bounded by ulp(t): t = (x - x^2/2) * (1 + eps2) with |eps2| < 2^-52
+    */
+    l = INVLOG2 * t;
+    /* since INVLOG2 = 1/log(2) * (1 + eps1) and
+       and   t = (x - x^2/2) * (1 + eps2)
+       let u = o(INVLOG2 * t) then u = INVLOG2 * t * (1 + eps3) with |eps3|<2^-53
+       thus u = 1/log(2) * (x - x^2/2) * (1 + eps1)*(1 + eps2)*(1 + eps3)
+       = 1/log(2) * (x - x^2/2) * (1 + eps4) with |eps4| < 2^-50.954
+       Now Sollya says the relative error by approximating log2(1+x) by
+       1/log(2) * (x - x^2/2) for |x| < 2^-29 is bounded by 2^-59.584
+       (file compoundf.sollya), thus:
+       u = log2(1+x) * (1+eps4)*(1+eps5) with |eps5| < 2^-59.584
+       = log2(1+x) * (1+eps6) with |eps6| < 2^-50.950 */
+  } else {
+    l = _log2p1 (tx.f);
+  }
   /* l approximates log2(1+x) with relative error < 2^-47.997,
      and 2^-149 <= |l| < 128 */
-  
+
   b64u64_u t = {.f = l * ty.f};
   /* since 2^-149 <= |l| < 128 and 2^-149 <= |y| < 2^128, we have
      2^-298 <= |t| < 2^135, thus no underflow/overflow in double is possible.

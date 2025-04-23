@@ -419,6 +419,18 @@ check (testcase ts)
     }
   }
 #endif
+
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  z1 = cr_function_under_test(ts.x, ts.y);
+  if (!fetestexcept (FE_UNDERFLOW)) {
+    printf ("Underflow exception was reset for x,y=%la,%la (z=%la)\n",
+            ts.x, ts.y, z1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit(1);
+#endif
+  }
 }
 
 void

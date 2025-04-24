@@ -228,8 +228,8 @@ atan2_accurate (double y, double x)
       if (underflow)
         errno = ERANGE; // underflow
 #endif
-      if (!underflow)
-          fesetexceptflag (&flag, FE_UNDERFLOW);
+      if (!fetestexcept (FE_UNDERFLOW))
+        fesetexceptflag (&flag, FE_UNDERFLOW);
       return t;
     }
     res = (y > 0) ? PI_H + PI_L : -PI_H - PI_L;
@@ -248,7 +248,7 @@ atan2_accurate (double y, double x)
         if (underflow)
           errno = ERANGE; // underflow
 #endif
-        if (!underflow)
+        if (!fetestexcept (FE_UNDERFLOW))
           fesetexceptflag (&flag, FE_UNDERFLOW);
         return __builtin_fma (t, -0x1p-54, t);
       }
@@ -261,7 +261,7 @@ atan2_accurate (double y, double x)
         if (underflow)
           errno = ERANGE; // underflow
 #endif
-        if (!underflow)
+        if (!fetestexcept (FE_UNDERFLOW))
           fesetexceptflag (&flag, FE_UNDERFLOW);
         return res;
       }
@@ -383,8 +383,6 @@ atan2_accurate (double y, double x)
   }
   res = tint_tod (z, err, y, x);
  end:
-  if (!underflow)
-    fesetexceptflag (&flag, FE_UNDERFLOW); // restore underflow flag
 #ifdef CORE_MATH_SUPPORT_ERRNO
   else
     errno = ERANGE; // underflow

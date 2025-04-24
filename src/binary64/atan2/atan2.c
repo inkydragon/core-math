@@ -228,7 +228,8 @@ atan2_accurate (double y, double x)
       if (underflow)
         errno = ERANGE; // underflow
 #endif
-      //printf("(232) x = %la  y = %la\n", y, x);
+      if (!underflow)
+          fesetexceptflag (&flag, FE_UNDERFLOW);
       return t;
     }
     res = (y > 0) ? PI_H + PI_L : -PI_H - PI_L;
@@ -247,7 +248,8 @@ atan2_accurate (double y, double x)
         if (underflow)
           errno = ERANGE; // underflow
 #endif
-        //printf("(252) x = %la  y = %la\n", y, x);
+        if (!underflow)
+          fesetexceptflag (&flag, FE_UNDERFLOW);
         return __builtin_fma (t, -0x1p-54, t);
       }
       /* Now |y| < 2^-969, since x >= 2^-1074, then t <= 2^105, thus we can
@@ -259,8 +261,8 @@ atan2_accurate (double y, double x)
         if (underflow)
           errno = ERANGE; // underflow
 #endif
-        printf("(265) x = %la  y = %la\n", y, x);
-        fesetexceptflag (&flag, FE_UNDERFLOW);
+        if (!underflow)
+          fesetexceptflag (&flag, FE_UNDERFLOW);
         return res;
       }
     }
@@ -389,7 +391,8 @@ atan2_accurate (double y, double x)
 #endif
   fesetexceptflag (&flag, FE_OVERFLOW); // restore overflow flag
   feraiseexcept (FE_INEXACT); // always inexact
-  //printf("(394) x = %la  y = %la\n", y, x);
+  if (!underflow)
+    fesetexceptflag (&flag, FE_UNDERFLOW);
   return res;
 }
 

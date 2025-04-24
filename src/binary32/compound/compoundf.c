@@ -794,8 +794,8 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
       /* exact/midpoint case: the one with the more trailing zeros between v.u and
          w.u is the correct one, except when y=1, since for x=0x1.fffffep+127
          and y=1 we get left=0x1.fffffep+127 and right=inf */
-      int vtz = __builtin_ctz (v.u);
-      int wtz = __builtin_ctz (w.u);
+      int vtz = __builtin_ctzll (v.u);
+      int wtz = __builtin_ctzll (w.u);
       set_flag (flag); // restore flags
       return (vtz >= wtz) ? v.f : w.f;
     }

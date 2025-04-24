@@ -34,6 +34,15 @@ check_without_fma:
     - apt-get update -qq && apt-get install -qq build-essential git
     - EXTRA_CFLAGS="-march=x86-64 -Werror -fsanitize=undefined -fno-sanitize-recover -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
+check_core2:
+  stage: test
+  image: debian:latest
+  before_script:
+    - ci/00-prepare-docker.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git
+    - EXTRA_CFLAGS="-O3 -march=core2 -Werror -fsanitize=undefined -fno-sanitize-recover -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+
 check_dry:
   stage: test
   image: debian:testing

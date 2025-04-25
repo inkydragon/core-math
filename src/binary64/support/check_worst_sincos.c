@@ -376,6 +376,66 @@ check (double x)
   }
 #endif
 
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  s1 = cr_function_under_test(x);
+  if (!fetestexcept (FE_UNDERFLOW)){
+    printf ("Underflow exception was reset for x=%la (z=%la)\n",
+      x, s1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  s1 = cr_function_under_test(x);
+  if (!fetestexcept (FE_DIVBYZERO)){
+    printf ("Division by zero exception was reset for x=%la (z=%la)\n",
+      x, s1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check inexact flag is not reset
+  feraiseexcept (FE_INEXACT);
+  s1 = cr_function_under_test(x);
+  if (!fetestexcept (FE_INEXACT)){
+    printf ("Inexact exception was reset for x=%la (z=%la)\n",
+      x, s1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check invalid flag is not reset
+  feraiseexcept (FE_INVALID);
+  s1 = cr_function_under_test(x);
+  if (!fetestexcept (FE_INVALID)){
+    printf ("Invalid exception was reset for x=%la (z=%la)\n",
+      x, s1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check overflow flag is not reset
+  feraiseexcept (FE_OVERFLOW);
+  s1 = cr_function_under_test(x);
+  if (!fetestexcept (FE_OVERFLOW)){
+    printf ("Overflow exception was reset for x=%la (z=%la)\n",
+      x, s1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
   return 0;
 }
 

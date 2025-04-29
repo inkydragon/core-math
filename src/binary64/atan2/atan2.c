@@ -199,12 +199,13 @@ static double __attribute__((noinline))
 atan2_accurate (double y, double x)
 {
   fexcept_t flag;
+  fenv_t env;
   fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
+  feholdexcept(&env);
   int underflow;
   double res;
   /* First check when t=y/x is small and exact and x > 0, since for
      |t| <= 0x1.d12ed0af1a27fp-27, atan(t) rounds to t (to nearest). */
-  feclearexcept (FE_UNDERFLOW); // clear underflow flag
   double t = y / x;
 
   /* If t = y/x did underflow for x > 0, then atan(y/x) will underflow
@@ -228,8 +229,7 @@ atan2_accurate (double y, double x)
       if (underflow)
         errno = ERANGE; // underflow
 #endif
-      if (!fetestexcept (FE_UNDERFLOW))
-        fesetexceptflag (&flag, FE_UNDERFLOW);
+      feupdateenv(&env);
       return t;
     }
     res = (y > 0) ? PI_H + PI_L : -PI_H - PI_L;
@@ -248,8 +248,7 @@ atan2_accurate (double y, double x)
         if (underflow)
           errno = ERANGE; // underflow
 #endif
-        if (!fetestexcept (FE_UNDERFLOW))
-          fesetexceptflag (&flag, FE_UNDERFLOW);
+        feupdateenv(&env);
         return __builtin_fma (t, -0x1p-54, t);
       }
       /* Now |y| < 2^-969, since x >= 2^-1074, then t <= 2^105, thus we can
@@ -261,8 +260,7 @@ atan2_accurate (double y, double x)
         if (underflow)
           errno = ERANGE; // underflow
 #endif
-        if (!fetestexcept (FE_UNDERFLOW))
-          fesetexceptflag (&flag, FE_UNDERFLOW);
+        feupdateenv(&env);
         return res;
       }
     }
@@ -383,6 +381,7 @@ atan2_accurate (double y, double x)
   }
   res = tint_tod (z, err, y, x);
  end:
+  feupdateenv(&env);
   fesetexceptflag (&flag, FE_OVERFLOW); // restore overflow flag
   feraiseexcept (FE_INEXACT); // always inexact
   if (!underflow)

@@ -145,11 +145,11 @@ check_invalid (void)
     exit (1);
 #endif
   }
-  // check the invalid exception was set
+  // check the invalid exception was not set
   int flag = fetestexcept (FE_INVALID);
-  if (!flag)
+  if (flag)
   {
-    printf ("Missing invalid exception for x=qNaN\n");
+    printf ("Spurious invalid exception for x=qNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

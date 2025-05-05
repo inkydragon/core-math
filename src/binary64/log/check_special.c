@@ -124,6 +124,8 @@ check_invalid (void)
   printf("Checking invalid\n");
   double qnan = asfloat64(0x7ff1000000000000ull);
   double minqnan = asfloat64(0xfff1000000000000ull);
+  double sNan = asfloat64(0x7ff0000000000001ull);
+  double minsNan = asfloat64(0xfff0000000000001ull);
 
   // Check qNan
   feclearexcept (FE_INVALID);
@@ -175,11 +177,72 @@ check_invalid (void)
     exit (1);
 #endif
   }
+  // check the invalid exception was not set
+  flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Spurious invalid exception for x=-qNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+
+  // Check sNan
+  feclearexcept (FE_INVALID);
+  y = cr_log(sNan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit appeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
   // check the invalid exception was set
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x=-qNaN\n");
+    printf ("Missing invalid exception for x=sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check -sNan
+  feclearexcept (FE_INVALID);
+  y = cr_log(minsNan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-sNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(-sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=-sNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

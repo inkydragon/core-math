@@ -152,6 +152,7 @@ double cr_rsqrt(double x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE; // pole error
 #endif
+      feraiseexcept (FE_DIVBYZERO);
       return __builtin_inf(); // case x = +0
     }
   } else if(__builtin_expect(ix.u >= 0x7ffull<<52, 0)){ // NaN, Inf, x <= 0
@@ -159,6 +160,7 @@ double cr_rsqrt(double x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE; // pole error
 #endif
+      feraiseexcept (FE_DIVBYZERO);
       return -__builtin_inf(); // x=-0
     }
     if(ix.u > 0xfff0000000000000ull) return x + x; // -NaN

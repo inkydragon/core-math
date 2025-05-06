@@ -122,8 +122,8 @@ static void
 check_invalid (void)
 {
   printf("Checking invalid\n");
-  double qnan = asfloat64(0x7ff1000000000000ull);
-  double minqnan = asfloat64(0xfff1000000000000ull);
+  double qnan = asfloat64(0x7ff8000000000000ull);
+  double minqnan = asfloat64(0xfff8000000000000ull);
   double sNan = asfloat64(0x7ff0000000000001ull);
   double minsNan = asfloat64(0xfff0000000000001ull);
 

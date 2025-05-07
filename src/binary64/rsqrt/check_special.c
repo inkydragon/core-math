@@ -95,9 +95,9 @@ check (double x)
   }
 }
 
-typedef union { 
-  double f; 
-  uint64_t i; 
+typedef union {
+  double f;
+  uint64_t i;
 } d64u64;
 
 static double
@@ -140,7 +140,7 @@ check_invalid (void)
   int flag = fetestexcept (FE_DIVBYZERO);
   if(!flag)
   {
-    printf("Missing divided by zero exception for x=+0\n");
+    printf("Missing divide by zero exception for x=+0\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -164,7 +164,7 @@ check_invalid (void)
   flag = fetestexcept (FE_DIVBYZERO);
   if(!flag)
   {
-    printf("Missing divided by zero exception for x=-0\n");
+    printf("Missing divide by zero exception for x=-0\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

@@ -52,9 +52,9 @@ int verbose = 0;
 
 static unsigned int Seed[MAX_THREADS];
 
-typedef union { 
-  double f; 
-  uint64_t i; 
+typedef union {
+  double f;
+  uint64_t i;
 } d64u64;
 
 static inline uint64_t

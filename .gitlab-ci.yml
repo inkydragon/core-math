@@ -106,3 +106,12 @@ check_dry_icx:
     - apt-get update -qq && apt-get install -qq build-essential git
     # MPFR-dev is installed in /usr/local
     - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh
+
+perf_test:
+  stage: test
+  image: debian:latest
+  before_script:
+    - ci/00-prepare-docker.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ci/perf_test.sh

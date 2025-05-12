@@ -482,7 +482,7 @@ check_signaling_nan (void)
     printf ("Missing invalid exception for x=sNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
-#endif 
+#endif
   }
   // check also sNaN with the sign bit set
   snan = asfloat64 (0xfff0000000000001ull);
@@ -508,7 +508,7 @@ check_signaling_nan (void)
     printf ("Missing invalid exception for x=-sNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
-#endif 
+#endif
   }
 
   double qnan = asfloat64 (0x7ff8000000000001ull);
@@ -534,7 +534,7 @@ check_signaling_nan (void)
     printf ("Missing invalid exception for x=qNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
-#endif 
+#endif
   }
   // check also qNaN with the sign bit set
   qnan = asfloat64 (0xfff8000000000001ull);
@@ -560,7 +560,7 @@ check_signaling_nan (void)
     printf ("Missing invalid exception for x=qNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
-#endif 
+#endif
   }
 }
 

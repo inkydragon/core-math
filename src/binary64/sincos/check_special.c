@@ -32,6 +32,7 @@ SOFTWARE.
 #include <math.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <errno.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -74,6 +75,22 @@ get_random (int tid)
   return v.f;
 }
 
+static inline double
+asfloat64 (uint64_t i)
+{
+  b64u64_u u = {.u = i};
+  return u.f;
+}
+
+/* define our own is_nan function to avoid depending from math.h */
+static inline int
+is_nan (double x)
+{
+  uint64_t u = asuint64 (x);
+  uint64_t e = u >> 52;
+  return (e == 0x7ff || e == 0xfff) && (u << 12) != 0;
+}
+
 static void
 check (double x)
 {
@@ -108,6 +125,113 @@ check (double x)
     fflush (stdout);
     exit (1);
   }
+}
+
+static void
+check_invalid (void)
+{
+
+  double inf = asfloat64 (0x7ff0000000000000ull);
+  double minInf = asfloat64 (0xfff0000000000000ull);
+  double sNan = asfloat64 (0x7ff0000000000001ull);
+  double minsNan = asfloat64 (0xfff0000000000001ull);
+  double s, c;
+
+  // check Inf
+  feclearexcept (FE_INVALID);
+  cr_sincos (inf, &s, &c);
+  // check the invalid exception was set
+  int flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check EDOM
+  // If Inf is a normal number and s or c is NaN, we should have errno = EDOM.
+  int expected_edom = !is_nan (inf) && (is_nan (s) || is_nan (c));
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", inf, s, c);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit(1);
+#endif
+    }
+
+  // Check minInf
+  feclearexcept (FE_INVALID);
+  cr_sincos (minInf, &s, &c);
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=-Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check EDOM
+  // If -Inf is a normal number and s or c is NaN, we should have errno = EDOM.
+  expected_edom = !is_nan (minInf) && (is_nan (s) || is_nan (c));
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", minInf, s, c);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit(1);
+#endif
+    }
+
+  // Check sNaN
+  feclearexcept (FE_INVALID);
+  cr_sincos (sNan, &s, &c);
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check EDOM
+  // If sNaN is a normal number and s or c is NaN, we should have errno = EDOM.
+  expected_edom = !is_nan (sNan) && (is_nan (s) || is_nan (c));
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", sNan, s, c);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit(1);
+#endif
+    }
+
+  // Check -sNaN
+  feclearexcept (FE_INVALID);
+  cr_sincos (minsNan, &s, &c);
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=-sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check EDOM
+  // If -sNaN is a normal number and s or c is NaN, we should have errno = EDOM.
+  expected_edom = !is_nan (minsNan) && (is_nan (s) || is_nan (c));
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", minsNan, s, c);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit(1);
+#endif
+    }
 }
 
 int
@@ -153,6 +277,8 @@ main (int argc, char *argv[])
     }
   ref_init ();
   ref_fesetround (rnd);
+
+  check_invalid ();
 
 #define N 1000000000UL /* total number of tests */
 

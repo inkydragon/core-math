@@ -135,6 +135,8 @@ check_invalid (void)
   double minInf = asfloat64 (0xfff0000000000000ull);
   double sNan = asfloat64 (0x7ff0000000000001ull);
   double minsNan = asfloat64 (0xfff0000000000001ull);
+  double qNan = asfloat64 (0x7ff8000000000000ull);
+  double minqNan = asfloat64 (0xfff8000000000000ull);
   double s, c;
 
   // check Inf
@@ -227,6 +229,54 @@ check_invalid (void)
   if (expected_edom && errno != EDOM)
     {
       printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", minsNan, s, c);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit(1);
+#endif
+    }
+
+  // Check qNaN
+  feclearexcept (FE_INVALID);
+  cr_sincos (qNan, &s, &c);
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Missing invalid exception for x=qNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check EDOM
+  // If qNaN is a normal number and s or c is NaN, we should have errno = EDOM.
+  expected_edom = !is_nan (qNan) && (is_nan (s) || is_nan (c));
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", qNan, s, c);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit(1);
+#endif
+    }
+
+  // Check -qNaN
+  feclearexcept (FE_INVALID);
+  cr_sincos (minqNan, &s, &c);
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Missing invalid exception for x=-qNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check EDOM
+  // If -qNaN is a normal number and s or c is NaN, we should have errno = EDOM.
+  expected_edom = !is_nan (minqNan) && (is_nan (s) || is_nan (c));
+  if (expected_edom && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", minqNan, s, c);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit(1);

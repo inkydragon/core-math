@@ -191,6 +191,8 @@ has_symbol () {
     [ "$(nm "$LIBM" | while read a b c; do if [ "$c" = "$f" ]; then echo OK; return; fi; done | wc -l)" -ge 1 ]
 }
 
+echo CFLAGS=$CFLAGS LDFLAGS=$LDFLAGS
+
 if [ -n "$BACKUP_LIBM" ]; then
     export LIBM="$BACKUP_LIBM"
     if has_symbol; then

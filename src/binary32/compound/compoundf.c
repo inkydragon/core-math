@@ -1045,7 +1045,7 @@ float cr_compoundf (float x, float y)
   // evaluate (1+x)^y explicitly for integer y in [-16,16] range and |x|<2^64
   if(__builtin_expect(__builtin_floorf(y) == y && ay <= 0x83000000u && ax<=0xbefffffeu, 1)){
     if(ax <= 0x62000000u) return 1.0f + y*x; // does it work for |x|<2^-29 and |y|<=16?
-    int ky = ((ay&~(0xff<<24))|1<<24)>>(151-(ay>>24));
+    int ky = ((ay&~(0xffull<<24))|1<<24)>>(151-(ay>>24));
     double s = 1.0 + x, p = 1;
     double s2 = s*s, s4 = s2*s2, s8 = s4*s4, s16 = s8*s8;
     double sn[] = {1,s,s2,s4,s8,s16};

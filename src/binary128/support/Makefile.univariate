@@ -2,7 +2,7 @@
 
 include ../../generic/support/Makefile.checkstd
 
-CFLAGS += -W -Wall $(ROUNDING_MATH)
+CFLAGS += -W -Wall $(ROUNDING_MATH) -DCORE_MATH_F128
 
 TYPE_UNDER_TEST := __float128
 

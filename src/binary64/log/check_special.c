@@ -31,6 +31,7 @@ SOFTWARE.
 #include <fenv.h>
 #include <math.h>
 #include <unistd.h>
+#include <inttypes.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -50,14 +51,12 @@ int verbose = 0;
 
 static unsigned int Seed[MAX_THREADS];
 
+typedef union { double f; uint64_t i; } d64u64;
+
 static inline uint64_t
 asuint64 (double f)
 {
-  union
-  {
-    double f;
-    uint64_t i;
-  } u = {f};
+  d64u64 u = {.f = f};
   return u.i;
 }
 
@@ -94,16 +93,160 @@ check (double x)
   }
 }
 
-typedef union {double f; uint64_t u;} b64u64_u;
 
 static double
 get_random (int tid)
 {
-  b64u64_u v;
-  v.u = rand_r (Seed + tid);
-  v.u |= (uint64_t) rand_r (Seed + tid) << 31;
-  v.u |= (uint64_t) rand_r (Seed + tid) << 62;
+  d64u64 v;
+  v.i = rand_r (Seed + tid);
+  v.i |= (uint64_t) rand_r (Seed + tid) << 31;
+  v.i |= (uint64_t) rand_r (Seed + tid) << 62;
   return v.f;
+}
+
+static inline double
+asfloat64 (uint64_t i)
+{
+  d64u64 u = {.i = i};
+  return u.f;
+}
+
+// When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
+static inline int issignaling(double x) {
+  d64u64 _x = {.f = x};
+
+  return !(_x.i & (1ull << 51));
+}
+
+static void
+check_invalid (void)
+{
+  printf("Checking invalid\n");
+  double qnan = asfloat64(0x7ff8000000000000ull);
+  double minqnan = asfloat64(0xfff8000000000000ull);
+  double sNan = asfloat64(0x7ff0000000000001ull);
+  double minsNan = asfloat64(0xfff0000000000001ull);
+
+  // Check qNan
+  feclearexcept (FE_INVALID);
+  double y = cr_log(qnan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was not set
+  int flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Spurious invalid exception for x=qNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check -qNaN
+  feclearexcept (FE_INVALID);
+  y = cr_log(minqnan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-qNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(-qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was not set
+  flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Spurious invalid exception for x=-qNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+
+  // Check sNan
+  feclearexcept (FE_INVALID);
+  y = cr_log(sNan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit appeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check -sNan
+  feclearexcept (FE_INVALID);
+  y = cr_log(minsNan);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-sNaN) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(-sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=-sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
 }
 
 int
@@ -150,6 +293,8 @@ main (int argc, char *argv[])
 
   ref_init();
   ref_fesetround (rnd);
+
+  check_invalid ();
 
 #ifndef CORE_MATH_TESTS
 #define CORE_MATH_TESTS 1000000000UL /* total number of tests */

@@ -531,7 +531,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if(flag)
   {
-    printf ("Missing invalid exception for x=qNaN\n");
+    printf ("Spurious invalid exception for x=qNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -557,7 +557,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if(flag)
   {
-    printf ("Missing invalid exception for x=qNaN\n");
+    printf ("Spurious invalid exception for x=qNaN\n");
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

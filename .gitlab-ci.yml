@@ -95,7 +95,8 @@ check_dry_clang:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
-    - CORE_MATH_NO_OPENMP=1 FORCE=true DRY=--dry CC=clang LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh
+    # clang has -Wshift-sign-overflow
+    - CORE_MATH_NO_OPENMP=1 FORCE=true DRY=--dry CC=clang LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include -Wshift-sign-overflow" ./ci.sh
 
 check_dry_icx:
   stage: test
@@ -106,3 +107,12 @@ check_dry_icx:
     - apt-get update -qq && apt-get install -qq build-essential git
     # MPFR-dev is installed in /usr/local
     - FORCE=true DRY=--dry CC=icx LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include" ./ci.sh
+
+perf_test:
+  stage: test
+  image: debian:testing
+  before_script:
+    - ci/00-prepare-docker.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - ci/perf_test.sh

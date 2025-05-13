@@ -91,6 +91,15 @@ typedef union {
   __float128 f;
 } b128u128_u;
 
+#if (defined(__x86_64__) && (defined(__APPLE__) || defined(_WIN32)))
+static inline __float128 local_nanq(const char *tagp){
+  b128u128_u u;
+  u.a = ~(u128)0u;
+  return u.f;
+}
+#define __builtin_nanf128(tagp) local_nanq(tagp)
+#endif
+
 static inline i64 mhui(u64 y, i64 x){
   return ((u128)(u64)x*(u128)y>>64) - ((x>>63)&y);
 }

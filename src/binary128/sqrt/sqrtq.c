@@ -90,6 +90,15 @@ typedef union {
   __float128 f;
 } b128u128_u;
 
+#if (defined(__x86_64__) && (defined(__APPLE__) || defined(_WIN32)))
+static inline __float128 local_nanq(const char *tagp){
+  b128u128_u u;
+  u.a = ~(u128)0u;
+  return u.f;
+}
+#define __builtin_nanf128(tagp) local_nanq(tagp)
+#endif
+
 // get high part of unsigned 64x64 bit multiplication
 static inline u64 mhuu(u64 _a, u64 _b){
   return ((u128)_a*_b)>>64;
@@ -263,15 +272,15 @@ __float128 cr_sqrtq(__float128 x) {
   e+=1; // adjust parity
   i32 q2 = e>>1, i = e&1;
   // exponent of the final result
-  i64 e2 = (q2+8191ul-1)<<48;
+  i64 e2 = (q2+8191ull-1)<<48;
 
   u.a <<= 16;
-  const u64 rsqrt_2[] = {~0ul,0xb504f333f9de6484}; // 2^64/sqrt(2)
+  const u64 rsqrt_2[] = {~0ull,0xb504f333f9de6484ull}; // 2^64/sqrt(2)
   u64 rx = u.b[1], r = rsqrt9(rx);
   u128 r2 = (u128)r*rsqrt_2[i];// + r;
   unsigned shft = 2-i;
   u.a >>= shft;
-  u.b[1] |= 1ul<<(62+i);
+  u.b[1] |= 1ull<<(62+i);
   r = r2>>64;
   u128 sx = mhuU(r, u.a);
   i128 h  = mhuU(r, sx)<<2, ds = mhIU(h, sx);
@@ -303,14 +312,14 @@ __float128 cr_sqrtq(__float128 x) {
       } else {
 	t1.a += t0.a;
 	i64 side = t1.bs[1]>>63; // select what is closer m or m+-1
-	v.b[0] &= ~0ul<<15; // wipe the fractional bits
-	v.a -= ((sgn&side)|(~sgn&1l))<<(15+side);
+	v.b[0] &= ~0ull<<15; // wipe the fractional bits
+	v.a -= ((sgn&side)|(~sgn&1ll))<<(15+side);
 	v.a |= 1;  // add sticky bit since we cannot have an exact mid-point situation
       }
     }
   }
 
-  unsigned frac = v.b[0]&0x7ffful; // fractional part
+  unsigned frac = v.b[0]&0x7fffull; // fractional part
   u64 rnd;
   if(__builtin_expect(nrst, 1)){
     rnd = frac>>14;  // round to nearest tie to even

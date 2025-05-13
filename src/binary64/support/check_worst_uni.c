@@ -484,6 +484,7 @@ check_signaling_nan (void)
     exit (1);
 #endif
   }
+  feclearexcept (FE_INVALID);
   // check also sNaN with the sign bit set
   snan = asfloat64 (0xfff0000000000001ull);
   y = cr_function_under_test (snan);
@@ -511,7 +512,8 @@ check_signaling_nan (void)
 #endif
   }
 
-  double qnan = asfloat64 (0x7ff8000000000001ull);
+  feclearexcept (FE_INVALID);
+  double qnan = asfloat64 (0x7ff8000000000000ull);
   y = cr_function_under_test (qnan);
   // check that foo(NaN) = NaN
   if (!is_nan (y))
@@ -536,8 +538,9 @@ check_signaling_nan (void)
     exit (1);
 #endif
   }
+  feclearexcept (FE_INVALID);
   // check also qNaN with the sign bit set
-  qnan = asfloat64 (0xfff8000000000001ull);
+  qnan = asfloat64 (0xfff8000000000000ull);
   y = cr_function_under_test (qnan);
   // check that foo(NaN) = NaN
   if (!is_nan (y))

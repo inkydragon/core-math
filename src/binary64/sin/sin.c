@@ -2045,6 +2045,9 @@ cr_sin (double x)
         return 0.0 / 0.0;
       }
 #endif
+      if ((t.u << 1) != 0x7ff8ull<<49){
+        return 0.0 / 0.0;
+      }
       t.u = ~0ull;
       return t.f;
     }

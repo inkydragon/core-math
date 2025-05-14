@@ -1412,6 +1412,10 @@ cr_log10p1 (double x)
   if (__builtin_expect (e == 0x400 || x == 0 || x <= -1.0, 0))
     /* case NaN/Inf, +/-0 or x <= -1 */
   {
+    static const d64u64 minf = {.u = 0xffful << 52};
+    if (e == 0x400 && x != minf.f){ /* NaN or + Inf*/
+      return x + x;
+    }
     if (x <= -1.0) /* we use the fact that NaN < -1 is false */
     {
       /* log10p(x<-1) is NaN, log2p(-1) is -Inf and raises DivByZero */
@@ -1428,7 +1432,7 @@ cr_log10p1 (double x)
         return 1.0 / -0.0;
       }
     }
-    return x + x; /* +/-0, NaN or +Inf */
+    return x + x; /* +/-0*/
   }
 
   /* check x=10^n-1 for 1 <= n <= 15, where log10p1(x) is exact,

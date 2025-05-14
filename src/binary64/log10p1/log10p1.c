@@ -1432,7 +1432,7 @@ cr_log10p1 (double x)
         return 1.0 / -0.0;
       }
     }
-    return x + x; /* +/-0*/
+    return x + x; /* +/-0 */
   }
 
   /* check x=10^n-1 for 1 <= n <= 15, where log10p1(x) is exact,

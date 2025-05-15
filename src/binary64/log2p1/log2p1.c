@@ -37,6 +37,9 @@ SOFTWARE.
 #include <errno.h>
 #include "dint_log2p1.h"
 
+#define TRACEX 0x1p-969
+#define TRACEY -0x1p-969
+
 /*
   Approximation tables
 */
@@ -1798,6 +1801,8 @@ static const int8_t exceptions_rnd[EXCEPTIONS] = {
 static double
 cr_log2p1_accurate (double x)
 {
+  if (x == TRACEX || x == TRACEY) 
+    printf("(cr) x = %la\n", x);
   dint64_t X, Y, C;
   double ax = __builtin_fabs (x);
 
@@ -1868,6 +1873,8 @@ cr_log2p1_accurate (double x)
 static double
 cr_log2p1_fast (double *h, double *l, double x, int e, d64u64 v)
 {
+  if (x == TRACEX || x == TRACEY) 
+    printf("(fast) x = %la\n", x);
   if (e < -5) /* e <= -6 thus |x| < 2^-5 */
   {
     double lo;
@@ -1982,9 +1989,12 @@ cr_log2p1_fast (double *h, double *l, double x, int e, d64u64 v)
   return 0x1.23p-68; /* 2^-67.82 < 0x1.23p-68 */
 }
 
+
 double
 cr_log2p1 (double x)
 {
+  if (x == TRACEX || x == TRACEY) 
+    printf("(cr) x = %la\n", x);
   d64u64 v = {.f = x};
   int e = ((v.u >> 52) & 0x7ff) - 0x3ff;
   if (__builtin_expect (e == 0x400 || x == 0 || x <= -1.0, 0))

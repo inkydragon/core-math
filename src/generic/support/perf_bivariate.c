@@ -48,8 +48,24 @@ function_type_under_test cr_function_under_test;
 function_type_under_test function_under_test;
 
 #define SAMPLE_SIZE (2 * sizeof(TYPE_UNDER_TEST))
+#if defined(CORE_MATH_F128) && defined(__x86_64__) && !defined(__clang__)
+#define CALL_LATENCY(accu,i)			\
+  {						\
+    __m128i in, ox, oy, m = {1, 0};		\
+    asm("":"=x"(in):"0"(accu));			\
+    asm("":"=x"(ox):"0"(randoms[2*i+0]));	\
+    asm("":"=x"(oy):"0"(randoms[2*i+1]));	\
+    in = _mm_and_si128 (in, m);			\
+    ox = _mm_or_si128 (ox, in);			\
+    oy = _mm_or_si128 (oy, in);			\
+    __float128 x,y;				\
+    asm("":"=x"(x),"=x"(y):"0"(ox),"1"(oy));	\
+    accu = p_function_under_test(x, y);		\
+  }
+#else
 #define CALL_LATENCY(accu,i) \
   accu = p_function_under_test(randoms[2 * i] + 0 * accu, randoms[2 * i + 1])
+#endif
 #define CALL_THROUGHPUT(i) (p_function_under_test(randoms[2 * i], randoms[2 * i + 1]))
 
 #include "perf_common.h"

@@ -181,6 +181,7 @@ fix_underflow (double x, double y)
       feclearexcept (FE_UNDERFLOW);
     return;
   }
+#if defined(mpfr_function_under_test)
   mpfr_t t;
   mpfr_init2 (t, 53);
   fexcept_t flag;
@@ -198,6 +199,7 @@ fix_underflow (double x, double y)
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
 #endif
   mpfr_clear (t);
+#endif
 }
 
 // return 1 if failure, 0 otherwise

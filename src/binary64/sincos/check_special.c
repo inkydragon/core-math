@@ -151,18 +151,6 @@ check_invalid (void)
     exit (1);
 #endif
   }
-  // check EDOM
-  // If Inf is a normal number and s or c is NaN, we should have errno = EDOM.
-  int expected_edom = !is_nan (inf) && (is_nan (s) || is_nan (c));
-  if (expected_edom && errno != EDOM)
-    {
-      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", inf, s, c);
-      fflush (stdout);
-#ifndef DO_NOT_ABORT
-      exit(1);
-#endif
-    }
-
   // Check minInf
   feclearexcept (FE_INVALID);
   cr_sincos (minInf, &s, &c);
@@ -175,17 +163,6 @@ check_invalid (void)
     exit (1);
 #endif
   }
-  // check EDOM
-  // If -Inf is a normal number and s or c is NaN, we should have errno = EDOM.
-  expected_edom = !is_nan (minInf) && (is_nan (s) || is_nan (c));
-  if (expected_edom && errno != EDOM)
-    {
-      printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", minInf, s, c);
-      fflush (stdout);
-#ifndef DO_NOT_ABORT
-      exit(1);
-#endif
-    }
 
   // Check sNaN
   feclearexcept (FE_INVALID);

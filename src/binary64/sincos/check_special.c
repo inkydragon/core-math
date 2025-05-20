@@ -178,7 +178,7 @@ check_invalid (void)
   }
   // check EDOM
   // If sNaN is a normal number and s or c is NaN, we should have errno = EDOM.
-  expected_edom = !is_nan (sNan) && (is_nan (s) || is_nan (c));
+  int expected_edom = !is_nan (sNan) && (is_nan (s) || is_nan (c));
   if (expected_edom && errno != EDOM)
     {
       printf ("Missing errno=EDOM for x=%la (s=%la)  (c=%la)\n", sNan, s, c);

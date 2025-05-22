@@ -151,29 +151,21 @@ static inline int get_rounding_mode (void)
 /* Split a number of exponent 0 (1 <= |x| < 2)
    into a high part fitting in 33 bits and a low part fitting in 31 bits:
    1 <= |rh| <= 2 and |rl| < 2^-32 */
+
 static inline
 void split(double* rh, double* rl, long double x) {
-	static long double C = 0x1.8p+31L; // ulp(C)=2^-32
-	long double y = (x + C) - C;
-	/* Given the relative sizes of C and x, x + C has the same binade as C.
-	   Therefore, the difference is exact. Furthermore,
-	   ulp(x + C) = ulp(C) = 2^-32.
-	   The rounding error in x + C is therefore less than 2^-32.
-	   Thus, |x - y| < 2^-32. Note that since 2^31 <= x + C < 2^32 and the
-	   difference is exact, y is a multiple of ulp(x + C) = 2^-32.
-	   Since |x| < 2, and the roundings are monotonous, x + C is bounded
-	   by the values obtained with |x| = 2, namely 0x1.7ffffffcp+31 and
-	   0x1.80000004p+31, and likely for y, namely -2 and 2.
-	   Since y is a multiple of 2^-32, this ensures y = k*2^-32
-	   with |k| <= 2^-33, thus y fits in 33 bits.
-	   (If |y| = 2, it trivially fits.) */
-	*rh = y; // This conversion is exact by the argument above.
-	*rl = x - y;
-	/* 
-	   |x - y| < 2^-32. Note that x and y are both multiples of
-	   ulp_64(1) = 2^-63; therefore x - y too. This implies that
-	   x - y = l*2^-63 with |l| < 2^31, thus rl fits in 31 bits,
-	   and the difference is exact. */
+	b80u80_t cvt_x; cvt_x.f = x;
+	b64u64_t cvt_w;
+
+	// Keep low 31 bits of x's mantissa. Since the lowest bit should have
+	// weight 2^-63, the exponent should be set to -11 (that is, 0x3f4)
+	cvt_w.u = (0x3f4ul << (64 - 12)) | (cvt_x.m & ((1ul << 31) - 1ul));
+	*rl = cvt_w.f - 0x1p-11;
+
+	// Lowest bit here has weight 2^(-63 + 31) = 2^-32, so exponent should be
+	// -32 + 52, i.e. 20, or 0x413. Note how the explicit 1 bit of x helps here.
+	cvt_w.u =  (0x413ul << (64 - 12)) | (cvt_x.m >> 31);
+	*rh = cvt_w.f - 0x1p20;
 }
 
 // assumes a = 0 or |a| >= |b| (or ulp(a) >= ulp(b))

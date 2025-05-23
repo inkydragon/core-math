@@ -49,7 +49,7 @@ SOFTWARE.
 #include <x86intrin.h>
 #endif 
 
-#if 0 // defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
 #define FLAG_T uint32_t
 #else
 #define FLAG_T fexcept_t
@@ -93,16 +93,15 @@ inline static unsigned int _mm_getcsr()
 }
 #endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 
-/* FIXME: For now, only the naïve versions are enabled, because
-   the intrinsics do not work. They only handle the SSE status word side of
-   things, but ignore the x87 status word (which we touch, using long doubles).
-   Using inline assembly may create register allocation and forward
-   compatibility issues
+/* Note that on x86, the x87 FPU has its own set of flags, which would need
+to be backed up and restored separately if we touched them. However, the
+code below preserves them, except when we know we won't need to restore them
+in such that a way that only saving the SSE status register is enough.
 */
 static FLAG_T
 get_flag (void)
 {
-#if 0 // (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
+#if(defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   return _mm_getcsr ();
 #else
   fexcept_t flag;
@@ -114,7 +113,7 @@ get_flag (void)
 static void
 set_flag (FLAG_T flag)
 {
-#if 0 // __x86_64__ 
+#if(defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   _mm_setcsr (flag);
 #else
   fesetexceptflag (&flag, FE_ALL_EXCEPT);
@@ -148,9 +147,10 @@ static inline int get_rounding_mode (void)
 #endif
 }
 
-/* Split a number of exponent 0 (1 <= |x| < 2)
+/* Split a number of exponent 0 (1 <= |x| < 2), discarding its sign.
    into a high part fitting in 33 bits and a low part fitting in 31 bits:
-   1 <= |rh| <= 2 and |rl| < 2^-32 */
+   we get 1 <= rh <= 2 and rl < 2^-32 such that |x| = rh + rl exactly.
+*/
 
 static inline
 void split(double* rh, double* rl, long double x) {
@@ -735,8 +735,28 @@ void compute_log2pow(double* rh, double* rl, long double x, long double y) {
 	   2^-97.710. Also, |rl'| <= 2^-48.497|rh'|.
 	*/
 
-	double yh = y; double yl = y - (long double) yh;
-	// y = yh + yl exactly, with |yl| < 2^-52 |yh|
+
+	b80u80_t cvt_y; cvt_y.f = y;
+	b64u64_t cvt_w, cvt_aux;
+
+	/* Split y into yh + yl, where |yl| < ulp(yh). We exploit the fact that y
+	   is a normal number.
+	*/
+
+	cvt_w.u = ((cvt_y.e&0x8000ul) << (63 - 15)) | (((cvt_y.e&0x7ffful) + (1023ul - 16383ul)) << (64 - 12)) |
+		((cvt_y.m >> 11) & ~(1ul << 52)); // Explicitely remove leading 1 bit
+	double yh = cvt_w.f;
+
+	/* The bottom bit of y's mantissa has weight e - 63, were e is y's exponent.
+	   Therefore, the exponent of yl should (at first) be e - 63 + 52 = e - 11
+	*/
+	cvt_w.u = ((cvt_y.e&0x8000ul) << (63 - 15)) | (((cvt_y.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12)) |
+		(cvt_y.m & ((1ul << 11) - 1ul));
+
+	// Replicate parasitic implicit leading bit
+	cvt_aux.u = ((cvt_y.e&0x8000ul) << (63 - 15)) | (((cvt_y.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12));
+	double yl = cvt_w.f - cvt_aux.f; // Remove implicit one introduced before
+
 
 	d_mul(rh, rl, yh, yl, *rh, *rl);
 	/* Let us call again rh', rl' the output values for rh and rl,
@@ -1098,8 +1118,8 @@ long double fastpath_roundtest(double rh, double rl, int extra_exp,
 	// Denormals *inside* the computation don't seem to be a problem
 	// given the error analysis (we used absolute bounds mostly)
 
-	// Infinity output case
-	if(__builtin_expect(wanted_exponent >= 32767, 0)) {
+	// Infinity output case, when we know we won't take the accurate path
+	if(__builtin_expect(wanted_exponent >= 32767 && !*fail, 0)) {
 		return (invert ? -0x1p16383L - 0x1p16383L : 0x1p16383L + 0x1p16383L);
 	}
 
@@ -1542,8 +1562,11 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 	   result ends up inexact we need to make sure the inexact flag is set.
 	   Given the save/restore schema around the inexact flag, the easiest way to
 	   do this is the following.
+	   Note that feraiseexcept(FE_INEXACT) might update the x87 inexact flag,
+	   which would break the flag logic.
 	*/
-	feraiseexcept(FE_INEXACT);
+
+	[[maybe_unused]] float discard = 1.0f + 0x1p-25f;
 
 	qint64_t q_r[1]; q_log2pow(q_r, x, y);
 	// q_r = y*log2|x| * (1 + eps_log) with |eps_log| < 2^-249.334
@@ -1633,16 +1656,30 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 
 		qint_subnormalize(subqr,extralow, q_r);
 
+		bool restore_flags = ((cvt_r.e&0x7fff) != 0x7fff) && !subqr->hl && !subqr->lh;
 		// restore the inexact flag
-		if(((cvt_r.e&0x7fff) != 0x7fff) && !subqr->hl && !subqr->lh)
-		  set_flag (inex);
+		if( restore_flags ) {
+			set_flag (inex);
+#ifdef DEBUG
+			printf("Restoring inexact flag, now %d %x\n", fetestexcept(FE_INEXACT), get_flag());
+#endif
+		}
 
 		/* If the result overflows, even if it would be exact with an unbounded
 		   exponent range, the inexact flag must not be cleared. The mantissa checks
 		   are there to check if the result is exact even accounting for
 		   subnormalization.
 		*/
-		return qint_told(subqr,*extralow, rm, invert, &hard);
+		b80u80_t cvt = {.f = qint_told(subqr,*extralow, rm, invert, &hard)};
+		// We return a non-exact subnormal
+		if((cvt.e&0x7fff) == 0 && !restore_flags) {
+			feraiseexcept(FE_UNDERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+			errno = ERANGE;
+#endif
+		}
+
+		return cvt.f;
 	}
 
 //FIXME Do we have a standard macro switch ?
@@ -1654,7 +1691,16 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 		exit(1);
 	}
 #endif
-	else {return r;}
+	else {
+		b80u80_t cvt = {.f = r};
+		if((cvt.e&0x7fff) == 0) { // We return a non-exact subnormal
+			feraiseexcept(FE_UNDERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+			errno = ERANGE;
+#endif
+		}
+		return r;
+	}
 
 }
 
@@ -1807,6 +1853,8 @@ long double cr_powl(long double x, long double y) {
 		}
 	} // Fastpath failed or x was subnormal
 #endif
-
+#ifdef DEBUG
+	printf("Inexact flag before accurate path? %d %x %x\n", fetestexcept(FE_INEXACT), inex, get_flag());
+#endif
 	return accurate_path(x, y, inex, invert);
 }

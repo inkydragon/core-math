@@ -1558,16 +1558,6 @@ int _issnan(long double x) {
 __attribute__((cold))
 static
 long double accurate_path(long double x, long double y, FLAG_T inex, bool invert) {
-	/* accurate_path might be called without any prior computations. If the
-	   result ends up inexact we need to make sure the inexact flag is set.
-	   Given the save/restore schema around the inexact flag, the easiest way to
-	   do this is the following.
-	   Note that feraiseexcept(FE_INEXACT) might update the x87 inexact flag,
-	   which would break the flag logic.
-	*/
-
-	[[maybe_unused]] float discard = 1.0f + 0x1p-25f;
-
 	qint64_t q_r[1]; q_log2pow(q_r, x, y);
 	// q_r = y*log2|x| * (1 + eps_log) with |eps_log| < 2^-249.334
 
@@ -1660,9 +1650,8 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 		// restore the inexact flag
 		if( restore_flags ) {
 			set_flag (inex);
-#ifdef DEBUG
-			printf("Restoring inexact flag, now %d %x\n", fetestexcept(FE_INEXACT), get_flag());
-#endif
+		} else {
+			feraiseexcept(FE_INEXACT);
 		}
 
 		/* If the result overflows, even if it would be exact with an unbounded
@@ -1693,6 +1682,7 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 #endif
 	else {
 		b80u80_t cvt = {.f = r};
+		feraiseexcept(FE_INEXACT);
 		if((cvt.e&0x7fff) == 0) { // We return a non-exact subnormal
 			feraiseexcept(FE_UNDERFLOW);
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -1852,9 +1842,6 @@ long double cr_powl(long double x, long double y) {
 			}
 		}
 	} // Fastpath failed or x was subnormal
-#endif
-#ifdef DEBUG
-	printf("Inexact flag before accurate path? %d %x %x\n", fetestexcept(FE_INEXACT), inex, get_flag());
 #endif
 	return accurate_path(x, y, inex, invert);
 }

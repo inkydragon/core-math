@@ -132,6 +132,7 @@ check_invalid (void)
 {
   double plusInf = asfloat64(0x7ff0000000000000ull);
   double minInf = asfloat64(0xfff0000000000000ull);
+  double qnan = asfloat64(0x7ff8000000000000ull);
 
   // Check +Inf
   feclearexcept (FE_INVALID);
@@ -146,11 +147,20 @@ check_invalid (void)
     exit (1);
 #endif
   }
-  // check the invalid exception was set
+  // check the invalid exception was not set
   int flag = fetestexcept (FE_INVALID);
   if (flag)
   {
     printf ("Spurious invalid exception for x=+Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // Check that y is Inf
+  if (!is_inf(y))
+  {
+    fprintf (stderr, "Error, foo(+Inf) should be +inf, got %la=%"PRIx64"\n",
+      y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -165,6 +175,36 @@ check_invalid (void)
              y, asuint64 (y));
 #ifndef DO_NOT_ABORT
       exit (1);
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Spurious invalid exception for x=-Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // Check that y is Inf
+  if (!is_inf(y))
+  {
+    fprintf (stderr, "Error, foo(-Inf) should be -inf, got %la=%"PRIx64"\n",
+      y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check qnan
+  feclearexcept (FE_INVALID);
+  y = cr_sinh(qnan);
+  if (!is_nan (y))
+  {
+  fprintf (stderr, "Error, foo(qNaN) should be qNaN, got %la=%"PRIx64"\n",
+               y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+        exit (1);
 #endif
   }
   // check the invalid exception was set
@@ -197,7 +237,7 @@ check_invalid (void)
       exit (1);
 #endif
     }
-    // check the invalid exception was not set
+    // check the invalid exception is not set
     flag = fetestexcept (FE_INVALID);
     if (flag)
     {
@@ -212,13 +252,13 @@ check_invalid (void)
     y = cr_sinh (-x);
     if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
     {
-      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+      fprintf (stderr, "Error, foo(%la) should be -Inf, got %la=%"PRIx64"\n",
                x, y, asuint64 (y));
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
     }
-    // check the invalid exception was not set
+    // check the invalid exception is not set
     flag = fetestexcept (FE_INVALID);
     if (flag)
     {

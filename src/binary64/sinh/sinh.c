@@ -26,7 +26,6 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <stdio.h>
 #if defined(__x86_64__)
 #include <x86intrin.h>
 #endif
@@ -40,8 +39,6 @@ SOFTWARE.
 
 typedef uint64_t u64;
 typedef union {double f; u64 u;} b64u64_u;
-
-#define TRACEX 0xf.ffffffffffff8p+1020
 
 static inline double fasttwosum(double x, double y, double *e){
   double s = x + y, z = s - x;
@@ -303,14 +300,12 @@ double cr_sinh(double x){
     return as_sinh_zero(x);
   }
   if(__builtin_expect(aix>0x408633ce8fb9f87dull, 0)){ // |x| >~ 710.47586
-    if(aix>0x7ff0000000000000ull) return x + x; // nan
-    if(aix==0x7ff0000000000000ull) return x; // inf
+    if(aix>=0x7ff0000000000000ull) return x + x; // nan Inf
 #ifdef CORE_MATH_SUPPORT_ERRNO
   errno = ERANGE;
 #endif
 	return __builtin_copysign(0x1p1023, x)*2.0;
       }
-  if(x == TRACEX) printf("(314) x = %la\n", x);
   int64_t il = ((u64)jt.u<<14)>>40, jl = -il;
   int64_t i1 = il&0x3f, i0 = (il>>6)&0x3f, ie = il>>12;
   int64_t j1 = jl&0x3f, j0 = (jl>>6)&0x3f, je = jl>>12;

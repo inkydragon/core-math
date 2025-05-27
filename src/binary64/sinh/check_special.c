@@ -119,6 +119,14 @@ static inline int issignaling(double x) {
   return !(_x.u & (1ull << 51));
 }
 
+static inline int
+is_inf (double x)
+{
+  uint64_t u = asuint64 (x);
+  uint64_t e = u >> 52;
+  return (e == 0x7ff || e == 0xfff) && (u << 12) == 0;
+}
+
 static void
 check_invalid (void)
 {
@@ -167,6 +175,58 @@ check_invalid (void)
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
+  }
+
+  // Check 
+  double T[] = {asfloat64(0x7ff0000000000000ull), // +Inf
+    0x1.fffffffffffffp+1023, // DBL_MAX
+    0x1.633ce8fb9f87cp+9,
+    0x1.633ce8fb9f87dp+9,
+    0x1.633ce8fb9f87ep+9,
+    0x1.633ce8fb9f87fp+9};
+
+  for (unsigned long i = 0; i < sizeof(T)/sizeof(T[0]); i++) {
+    feclearexcept (FE_INVALID);
+    double x = T[i];
+     y = cr_sinh (x);
+    if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
+    {
+      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+               x, y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    // check the invalid exception was not set
+    flag = fetestexcept (FE_INVALID);
+    if (flag)
+    {
+      printf ("Spurious invalid exception for x=%la\n", x);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+
+    // Check -x
+    feclearexcept (FE_INVALID);
+    y = cr_sinh (-x);
+    if (x >= 0x1.633ce8fb9f87ep+9 && !is_inf (y))
+    {
+      fprintf (stderr, "Error, foo(%la) should be +Inf, got %la=%"PRIx64"\n",
+               x, y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    // check the invalid exception was not set
+    flag = fetestexcept (FE_INVALID);
+    if (flag)
+    {
+      printf ("Spurious invalid exception for x=%la\n", x);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }  
   }
 }
 

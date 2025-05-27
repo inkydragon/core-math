@@ -120,6 +120,14 @@ static inline int issignaling(double x) {
   return !(_x.u & (1ull << 51));
 }
 
+static inline int
+is_inf (double x)
+{
+  uint64_t u = asuint64 (x);
+  uint64_t e = u >> 52;
+  return (e == 0x7ff || e == 0xfff) && (u << 12) == 0;
+}
+
 
 static void
 check_invalid (void)
@@ -142,7 +150,7 @@ check_invalid (void)
     exit (1);
 #endif
   }
-  // check that the signaling bit disappeared
+  // check that the signaling bit is not set
   if (issignaling (y))
   {
     fprintf (stderr, "Error, foo(qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
@@ -172,7 +180,7 @@ check_invalid (void)
     exit (1);
 #endif
   }
-  // check that the signaling bit disappeared
+  // check that the signaling bit is not set
   if (issignaling (y))
   {
     fprintf (stderr, "Error, foo(-qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
@@ -271,27 +279,47 @@ check_invalid (void)
       exit (1);
   #endif
     }
-  
-    // Check -Inf
-    feclearexcept (FE_INVALID);
-    y = cr_tan(minInf);
-    if (!is_nan (y))
-    {
-      fprintf (stderr, "Error, foo(-Inf) should be NaN, got %la=%"PRIx64"\n",
-               y, asuint64 (y));
-  #ifndef DO_NOT_ABORT
-        exit (1);
-  #endif
-    }
-    // check the invalid exception was set
-    flag = fetestexcept (FE_INVALID);
-    if (!flag)
-    {
-      printf ("Missing invalid exception for x=-Inf\n");
-  #ifndef DO_NOT_ABORT
+  // Check that y is not Inf
+  if (is_inf(y))
+  {
+    fprintf (stderr, "Error, foo(+Inf) should be +inf, got %la=%"PRIx64"\n",
+      y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+
+  // Check -Inf
+  feclearexcept (FE_INVALID);
+  y = cr_tan(minInf);
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-Inf) should be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
       exit (1);
-  #endif
-    }
+#endif
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if (!flag)
+  {
+    printf ("Missing invalid exception for x=-Inf\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  // Check that y is not Inf
+  if (is_inf(y))
+  {
+    fprintf (stderr, "Error, foo(-Inf) should be -inf, got %la=%"PRIx64"\n",
+      y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
 }
 
 int

@@ -111,10 +111,28 @@ fastpath(long double x, redinfo* ri, bool* need_accurate) {
 	   a Taylor polynomial. 
 	*/
 
-	// split x into xh + xl, this is exact
-	// Since |x| < 2^14, we have |xh0|<=2^14 and |xl0| <= ulp(2^13) = 2^-39
-	double xh0 = x;
-	double xl0 = x - (long double) xh0;
+	b96u96_u cvt_x; cvt_x.f = x;
+	b64u64_u cvt_w, cvt_aux;
+
+	/* Split x into xh0 + xl0, where |xl0| < ulp(xh0). We exploit the fact that x
+	   is a normal number. Since |x| < 2^14, we have |xh0|<=2^14 and
+	   |xl0| <= ulp(2^13) = 2^-39
+	*/
+
+	cvt_w.u = ((cvt_x.e&0x8000ul) << (63 - 15)) | (((cvt_x.e&0x7ffful) + (1023ul - 16383ul)) << (64 - 12)) |
+		((cvt_x.m >> 11) & ~(1ul << 52)); // Explicitely remove leading 1 bit
+	double xh0 = cvt_w.f;
+
+	/* The bottom bit of x's mantissa has weight e - 63, were e is y's exponent.
+	   Therefore, the exponent of xl should (at first) be e - 63 + 52 = e - 11
+	*/
+	cvt_w.u = ((cvt_x.e&0x8000ul) << (63 - 15)) | (((cvt_x.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12)) |
+		(cvt_x.m & ((1ul << 11) - 1ul));
+
+	// Replicate parasitic implicit leading bit
+	cvt_aux.u = ((cvt_x.e&0x8000ul) << (63 - 15)) | (((cvt_x.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12));
+	double xl0 = cvt_w.f - cvt_aux.f; // Remove implicit one introduced before
+
 
 	/* Let ln2inv = ln2invh + ln2invl. Then
 	   |1/ln(2) - ln2inv| < 2^-109.5
@@ -994,6 +1012,7 @@ evaluate_polynomial(tint_t *y, const tint_t* x) {
 
 // accurate path, where ri contains some information computed in the fast path:
 // x/log(2) ~ extra_exponent + 2^-20 fracpart + xs
+__attribute__((cold))
 static
 long double accurate_path(long double x, const redinfo* ri) {
 	tint_t tx[1];

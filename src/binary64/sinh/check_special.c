@@ -207,6 +207,15 @@ check_invalid (void)
         exit (1);
 #endif
   }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+             asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
   // check the invalid exception was set
   flag = fetestexcept (FE_INVALID);
   if (flag)

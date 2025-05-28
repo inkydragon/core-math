@@ -1,6 +1,6 @@
-/* Generate special cases for tgamma testing.
+/* Generate special cases for lgamma testing.
 
-Copyright (c) 2022-2024 Paul Zimmermann, Inria.
+Copyright (c) 2022-2025 Paul Zimmermann, Inria.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -40,8 +40,8 @@ SOFTWARE.
 int ref_init (void);
 int ref_fesetround (int);
 
-double cr_tgamma (double);
-double ref_tgamma (double);
+double cr_lgamma (double);
+double ref_lgamma (double);
 
 int rnd1[] = { FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD };
 
@@ -102,9 +102,9 @@ check (double x)
 {
   ref_init ();
   ref_fesetround (rnd);
-  double y1 = ref_tgamma (x);
+  double y1 = ref_lgamma (x);
   fesetround (rnd1[rnd]);
-  double y2 = cr_tgamma (x);
+  double y2 = cr_lgamma (x);
   if (!is_equal (y1,y2))
   {
     printf ("FAIL x=%la ref=%la z=%la\n", x, y1, y2);
@@ -131,123 +131,9 @@ check_negative (void)
   }
 }
 
-// return x0 such that |gamma(x0)| is minimal on (n,n+1), for n < 0
-static double
-find_min (int n)
-{
-  double x0, x1, x2, x3, v0, v1, v2, v3;
-  x0 = nextafter (n, n+1);
-  x3 = nextafter (n+1, n);
-  // use trichotomy
-  while (1)
-  {
-    x1 = (2.0 * x0 + x3) / 3.0;
-    x2 = (x0 + 2.0 * x3) / 3.0;
-    if (x0 == x1 || x1 == x2 || x2 == x3)
-      break;
-    v1 = fabs (cr_tgamma (x1));
-    v2 = fabs (cr_tgamma (x2));
-    if (v1 < v2)
-      x3 = x2;
-    else
-      x0 = x1;
-  }
-  v0 = fabs (cr_tgamma (x0));
-  v1 = fabs (cr_tgamma (x1));
-  v2 = fabs (cr_tgamma (x2));
-  v3 = fabs (cr_tgamma (x3));
-  if (v0 <= v1 && v0 <= v2 && v0 <= v3)
-    return x0;
-  if (v1 <= v2 && v1 <= v3)
-    return x1;
-  if (v2 <= v3)
-    return x2;
-  return x3;
-}
-
 #ifndef CORE_MATH_TESTS
 #define CORE_MATH_TESTS 1000000000UL /* total number of tests */
 #endif
-
-static void
-check_subnormal_aux (double x1, double x2)
-{
-  if (!(x1 <= x2))
-    return;
-  uint64_t n1 = asuint64 (x1);
-  uint64_t n2 = asuint64 (x2);
-  // for negative numbers, x1 < x2 means n2 < n1
-  int64_t d = n1 - n2;
-  // with s=d/40000, we perform 929699 tests
-  uint64_t s = d / (CORE_MATH_TESTS / 23);
-  if (s == 0)
-    s = 1;
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel for
-#endif
-  for (uint64_t n = n2; n <= n1; n += s)
-    check (asfloat64 (n));
-}
-
-static void
-check_subnormal (void)
-{
-  double x0, y0, a, b, c, x1, x2, x3, x4;
-  for (int k = -184; k <= -171; k++)
-  {
-    x0 = find_min (k);
-    // |gamma(x)| is decreasing on (k,x0), increasing on (x0,k+1)
-    y0 = fabs (cr_tgamma (x0));
-    if (y0 >= 0x1p-1022)
-      continue; // no subnormal value
-    a = k;
-    b = x0;
-    while (nextafter (a, x0) != b)
-    {
-      c = (a + b) / 2.0;
-      if (fabs (cr_tgamma (c)) >= 0x1p-1022)
-        a = c;
-      else
-        b = c;
-    }
-    x1 = b; // smallest value in (k,x0) such that |gamma(x)| < 2^-1022
-    a = k;
-    b = x0;
-    while (nextafter (a, x0) != b)
-    {
-      c = (a + b) / 2.0;
-      if (fabs (cr_tgamma (c)) >= 0x1p-1074)
-        a = c;
-      else
-        b = c;
-    }
-    x2 = a; // largest value in (k,x0) such that |gamma(x)| >= 2^-1074
-    check_subnormal_aux (x1, x2);
-    a = x0;
-    b = k+1;
-    while (nextafter (a, k+1) != b)
-    {
-      c = (a + b) / 2.0;
-      if (fabs (cr_tgamma (c)) >= 0x1p-1022)
-        b = c;
-      else
-        a = c;
-    }
-    x4 = a; // smallest value in (x0,k+1) such that |gamma(x)| < 2^-1022
-    a = x0;
-    b = k+1;
-    while (nextafter (a, k+1) != b)
-    {
-      c = (a + b) / 2.0;
-      if (fabs (cr_tgamma (c)) >= 0x1p-1074)
-        b = c;
-      else
-        a = c;
-    }
-    x3 = b; // largest value in (k,x0) such that |gamma(x)| >= 2^-1074
-    check_subnormal_aux (x3, x4);
-  }
-}
 
 // check precision-p inputs
 static void
@@ -313,9 +199,6 @@ main (int argc, char *argv[])
   printf ("Check low-precision inputs\n");
   check_low_precision (10);
 
-  printf ("Check subnormal output\n");
-  check_subnormal ();
-
   printf ("Check negative inputs\n");
   check_negative ();
 
@@ -324,6 +207,9 @@ main (int argc, char *argv[])
     Seed[i] = seed + i;
   
   printf ("Checking random numbers...\n");
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
   for (uint64_t n = 0; n < CORE_MATH_TESTS; n++)
   {
     ref_init ();

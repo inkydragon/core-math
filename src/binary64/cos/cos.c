@@ -354,7 +354,7 @@ static inline void subnormalize_dint(dint64_t *a) {
 
   if (!a->hi) {
     a->ex++;
-    a->hi = (1ll << 63);
+    a->hi = (1ull << 63);
   }
 }
 

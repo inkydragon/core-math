@@ -364,7 +364,7 @@ static inline void subnormalize_dint(dint64_t *a) {
 
   if (!a->hi) {
     a->ex++;
-    a->hi = (1ll << 63);
+    a->hi = (1ull << 63);
   }
 }
 
@@ -2040,9 +2040,14 @@ cr_sin (double x)
   if (__builtin_expect (e == 0x7ff, 0)) /* NaN, +Inf and -Inf. */
     {
 #ifdef CORE_MATH_SUPPORT_ERRNO
-      if ((t.u << 1) == 0x7ffull<<53) // Inf
+      if ((t.u << 1) == 0x7ffull<<53){ // Inf
         errno = EDOM;
+        return 0.0 / 0.0;
+      }
 #endif
+      if ((t.u << 1) != 0x7ff8ull<<49){
+        return 0.0 / 0.0;
+      }
       t.u = ~0ull;
       return t.f;
     }

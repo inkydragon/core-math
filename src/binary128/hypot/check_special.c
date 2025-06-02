@@ -44,8 +44,8 @@ typedef union {
 int ref_fesetround(int);
 void ref_init(void);
 
-__float128 cr_hypotq(__float128);
-__float128 ref_hypotq(__float128);
+__float128 cr_hypotq(__float128,__float128);
+__float128 ref_hypotq(__float128,__float128);
 
 int rnd1[] = { FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD };
 
@@ -83,8 +83,8 @@ error2 (__float128 x, __float128 y, __float128 z)
   printf ("%s\n", buf);
 }
 
-static void check(__float128 x){
-  __float128 y1 = ref_hypotq(x), y2 = cr_hypotq(x);
+static void check(__float128 x, __float128 y){
+  __float128 y1 = ref_hypotq(x, y), y2 = cr_hypotq(x, y);
   if(!is_equal(y1, y2)) {
     error2 (x, y1, y2);
     fflush(stdout);
@@ -156,7 +156,8 @@ int main(int argc, char *argv[]){
     tid = 0;
 #endif
     __float128 x = get_random(tid);
-    check(x);
+    __float128 y = get_random(tid);
+    check(x,y);
   }
   return 0;
 }

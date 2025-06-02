@@ -88,7 +88,12 @@ static inline int get_rounding_mode (void)
 #endif
 }
 
+#if (defined(__clang__) && __clang_major__ >= 14) || (defined(__GNUC__) && __GNUC__ >= 14 && __BITINT_MAXWIDTH__ && __BITINT_MAXWIDTH__ >= 128)
+typedef unsigned _BitInt(128) u128;
+#else
 typedef unsigned __int128 u128;
+#endif
+
 typedef uint64_t u64;
 typedef int64_t i64;
 typedef union {double f; uint64_t u;} b64u64_u;

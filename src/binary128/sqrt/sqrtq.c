@@ -287,36 +287,18 @@ __float128 cr_sqrtq(__float128 x) {
   sx <<= 1;
   b128u128_u v; v.a = sx - ds;
   unsigned rm = flagp&_MM_ROUND_MASK, nrst = rm == _MM_ROUND_NEAREST;
-  shft = 49 + nrst;
-  i64 dd = (v.bs[0]<<shft)>>shft;
-  if(__builtin_expect(!(dd<-8||dd>3), 0)){ // can round correctly?
+  short dd = v.bs[0]<<2;
+  if(__builtin_expect(!(dd<-37||dd>13), 0)){ // can round correctly?
     // m is almost the final result it can be only 1 ulp off so we
     // just need to test both possibilities. We square it and
     // compare with the initial argument.
-    v.a += !nrst<<14;
-    u128 m = v.a>>15, m2 = m*m;
-    b128u128_u t0, t1;
+    v.a += 1<<13;
+    u128 m = v.a>>14, m2 = m*m;
     // the difference of the squared result and the argument
-    t0.a = m2 - (u.a<<98);
-    if(__builtin_expect(t0.a==0, 0)){
-      // the square root is exact
-      v.a = m<<15;
-    } else {
-      t1 = t0;
-      i64 sgn = t0.bs[1]>>63;
-      t1.a -= (m<<1)^sgn;
-      t1.a += 1 + sgn;
-      if(__builtin_expect(t1.a==0, 0)){
-	// 1 ulp offset brings again an exact root
-	v.a = (m - (2*sgn + 1))<<15;
-      } else {
-	t1.a += t0.a;
-	i64 side = t1.bs[1]>>63; // select what is closer m or m+-1
-	v.b[0] &= ~0ull<<15; // wipe the fractional bits
-	v.a -= ((sgn&side)|(~sgn&1ll))<<(15+side);
-	v.a |= 1;  // add sticky bit since we cannot have an exact mid-point situation
-      }
-    }
+    i128 dm2 = m2 - (u.a<<100);
+    v.b[0] &= ~0x3ffful;
+    if(dm2>0) v.a --;
+    if(dm2<0) v.a ++;
   }
 
   unsigned frac = v.b[0]&0x7fffull; // fractional part

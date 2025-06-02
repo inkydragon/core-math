@@ -10,5 +10,11 @@ check_worst.o: check_worst.c
 
 $(FUNCTION_UNDER_TEST)_mpfr.o: ../support/fenv_mpfr.h
 
+check_special: check_special.o $(FUNCTION_UNDER_TEST).o $(FUNCTION_UNDER_TEST)_mpfr.o
+	$(CC) $(OPENMP) -o $@ $^ -lmpfr -lm $(LDFLAGS)
+
+check_special.o: check_special.c
+	$(CC) $(CFLAGS) $(OPENMP) -o $@ $^ -c
+
 clean::
-	rm -f check_worst
+	rm -f check_worst check_special

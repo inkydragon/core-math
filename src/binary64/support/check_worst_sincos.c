@@ -134,6 +134,14 @@ is_inf (double x)
   uint64_t e = u >> 52;
   return (e == 0x7ff || e == 0xfff) && (u << 12) == 0;
 }
+
+// Return 1 if x is subnormal, 0 otherwise
+static inline int is_subnormal(double x)
+{
+  uint64_t u = asuint64 (x);
+  int e = u >> 52;
+  return (e == 0x800 || e == 0x0) && (u << 12) != 0;
+}
 #endif
 
 static inline int
@@ -217,7 +225,7 @@ check (double x)
   ref_fesetround(rnd);
   mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
   ref_function_under_test(x, &s1, &c1);
-#if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
+#ifdef CORE_MATH_CHECK_INEXACT
   mpfr_flags_t inex1 = mpfr_flags_test (MPFR_FLAGS_INEXACT);
 #endif
   fesetround(rnd1[rnd]);
@@ -324,11 +332,9 @@ check (double x)
 #endif
 
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  // If x is a normal number and y is NaN, we should have errno = EDOM.
-  if (!is_nan (x) && !is_inf (x))
-  {
-    if ((is_nan (s1) || is_nan (c1)) && errno != EDOM)
-    {
+  // If x is +-Inf, we should have errno = EDOM
+  if (is_inf(x)) {
+    if (errno != EDOM) {
       printf ("Missing errno=EDOM for x=%la (s=%la,c=%la)\n", x, s1, c1);
       fflush (stdout);
 #ifdef DO_NOT_ABORT
@@ -337,24 +343,19 @@ check (double x)
       exit(1);
 #endif
     }
-    if ((!is_nan (s1) && !is_nan (c1)) && errno == EDOM)
-    {
-      printf ("Spurious errno=EDOM for x=%la (s=%la,c=%la)\n", x, s1, c1);
-      fflush (stdout);
+  } else if (errno == EDOM) {
+    printf ("Spurious errno=EDOM for x=%la (s=%la,c=%la)\n", x, s1, c1);
+    fflush (stdout);
 #ifdef DO_NOT_ABORT
-      return 1;
+    return 1;
 #else
-      exit(1);
+    exit(1);
 #endif
-    }
+  }
 
-    /* If x is a normal number and a pole error (s/c exact infinity) or an
-       overflow/underflow occurs, we should have errno = ERANGE. */
-    int expected_erange = ((is_inf (s1) || is_inf (c1)) && inex1 == 0) ||
-      mpfr_flags_test (MPFR_FLAGS_OVERFLOW) ||
-      mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
-    if (expected_erange && errno != ERANGE)
-    {
+  // If x is subnormal or |s1| < 2^-1022, we should have errno = ERANGE
+  if (is_subnormal(x) || __builtin_abs (s1) < 0x1p-1022) {
+    if (errno != ERANGE) {
       printf ("Missing errno=ERANGE for x=%la (s=%la,c=%la)\n", x, s1, c1);
       fflush (stdout);
 #ifdef DO_NOT_ABORT
@@ -363,18 +364,16 @@ check (double x)
       exit(1);
 #endif
     }
-    if (!expected_erange && errno == ERANGE)
-    {
-      printf ("Spurious errno=ERANGE for x=%la (s=%la,c=%la)\n", x, s1, c1);
-      fflush (stdout);
+  } else if (errno == ERANGE) {
+    printf ("Spurious errno=ERANGE for x=%la (s=%la,c=%la)\n", x, s1, c1);
+    fflush (stdout);
 #ifdef DO_NOT_ABORT
-      return 1;
+    return 1;
 #else
-      exit(1);
+    exit(1);
 #endif
-    }
   }
-#endif
+#endif // CORE_MATH_SUPPORT_ERRNO
 
   // check underflow flag is not reset
   feraiseexcept (FE_UNDERFLOW);
@@ -517,6 +516,7 @@ check_signaling_nan (void)
     fprintf (stderr, "Error, foo(sNaN) should be NaN, got c=%la=%"PRIx64"\n", c, asuint64 (c));
     exit (1);
   }
+
   // check that the signaling bit disappeared
   if (issignaling (s))
   {

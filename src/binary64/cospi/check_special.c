@@ -126,7 +126,7 @@ static void scan_consecutive(int64_t n, double x){
   ref_init();
   ref_fesetround (rnd);
   fesetround(rnd1[rnd]);
-  double dir = __builtin_inf();
+  double dir = 1.0/0.0;
   if(n<0) {
     dir = -dir;
     n = -n;

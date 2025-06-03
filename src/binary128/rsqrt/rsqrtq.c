@@ -91,7 +91,7 @@ typedef union {
 } b128u128_u;
 
 #if (defined(__x86_64__) && (defined(__APPLE__) || defined(_WIN32)))
-static inline __float128 local_nanq(const char *tagp){
+static inline __float128 local_nanq(__attribute__((unused)) const char *tagp){
   b128u128_u u;
   u.a = ~(u128)0u;
   return u.f;
@@ -314,7 +314,7 @@ __float128 cr_rsqrtq(__float128 x){
     k1.a = mUU(t0.a, m.a, &k0.a);
     k1.a += t1.a*m.a;
     k1.a |= !!k0.a;
-    v.b[0] &= ~0x3ffful;
+    v.b[0] &= ~0x3fffull;
     i128 D = k1.a;
     if(D<0) v.a++;
     if(D>0) v.a--;

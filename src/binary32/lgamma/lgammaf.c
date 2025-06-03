@@ -120,7 +120,7 @@ float cr_lgammaf(float x){
   if(__builtin_expect(t.u>=(0xffu<<23), 0)){ // NaN or Inf
     if(t.u==(0xffu<<23)){ // +-inf
       signgam = 1;
-      return __builtin_inff();
+      return 1.0/0.0;
     }
     return x + x; // nan
   }

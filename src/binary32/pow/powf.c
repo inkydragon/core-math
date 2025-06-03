@@ -415,7 +415,7 @@ float cr_powf(float x0, float y0){
       if(((tx.u<<1) < ((uint64_t)0x3ff<<53)) ^ (ty.u>>63)){
 	return 0;
       } else {
-	return __builtin_inf();
+	return 1.0/0.0;
       }
     }
     return x0 + y0;

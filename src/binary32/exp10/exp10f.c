@@ -100,7 +100,7 @@ float cr_exp10f(float x){
       return 1.0 + z*(0x1.26bb1bbb55516p+1 + z*(0x1.53524c73cea69p+1 + z*0x1.0470591de2ca4p+1));
     if(ux >= 0xffu<<24) { // x is inf or nan
       if(ux > 0xffu<<24) return x + x; // x = nan
-      static const float ir[] = {__builtin_inff(), 0.0f};
+      static const float ir[] = {1.0/0.0, 0.0f};
       return ir[t.u>>31]; // x = +-inf
     }
     if(t.u>0xc23369f4u){ // x < -0x1.66d3e8p+5

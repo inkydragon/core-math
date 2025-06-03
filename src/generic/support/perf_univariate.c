@@ -47,8 +47,8 @@ SOFTWARE.
 
 typedef TYPE_UNDER_TEST function_type_under_test (TYPE_UNDER_TEST);
 
-function_type_under_test cr_function_under_test;
-function_type_under_test function_under_test;
+// function_type_under_test cr_function_under_test;
+// function_type_under_test function_under_test;
 
 #define SAMPLE_SIZE (sizeof(TYPE_UNDER_TEST))
 // disable for now the code below which does not work for TYPE_UNDER_TEST=long double

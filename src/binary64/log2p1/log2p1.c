@@ -1874,8 +1874,8 @@ cr_log2p1_fast (double *h, double *l, double x, int e, d64u64 v)
     double lo;
     if (e <= -969)
     {
-      /* then |x| might be as small as 2^-970, thus h=x/log(2) might in the
-         binade [2^-969,2^-968), with ulp(h) = 2^-1022, and if |l| < ulp(h),
+      /* then |x| might be as small as 2^-969, thus h=x/log(2) might in the
+         binade [2^-969,2^-968), with ulp(h) = 2^-1021, and if |l| < ulp(h),
          then l.ulp() might be smaller than 2^-1074. We defer that case to
          the accurate path. */
       *h = *l = 0;

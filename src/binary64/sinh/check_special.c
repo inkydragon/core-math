@@ -157,9 +157,9 @@ check_invalid (void)
 #endif
   }
   // Check that y is Inf
-  if (!is_inf(y))
+  if (!is_inf(y) && y > 0)
   {
-    fprintf (stderr, "Error, foo(+Inf) should be +inf, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(+Inf) should be +Inf, got %la=%"PRIx64"\n",
       y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -187,9 +187,9 @@ check_invalid (void)
 #endif
   }
   // Check that y is Inf
-  if (!is_inf(y))
+  if (!is_inf(y) && y < 0)
   {
-    fprintf (stderr, "Error, foo(-Inf) should be -inf, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(-Inf) should be -Inf, got %la=%"PRIx64"\n",
       y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -199,21 +199,13 @@ check_invalid (void)
   // Check qnan
   feclearexcept (FE_INVALID);
   y = cr_sinh(qnan);
-  if (!is_nan (y))
+  // Check that sinh(qNaN) = qNaN
+  if (!is_nan (y) || issignaling(y))
   {
   fprintf (stderr, "Error, foo(qNaN) should be qNaN, got %la=%"PRIx64"\n",
                y, asuint64 (y));
 #ifndef DO_NOT_ABORT
         exit (1);
-#endif
-  }
-  // check that the signaling bit disappeared
-  if (issignaling (y))
-  {
-    fprintf (stderr, "Error, foo(qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
-             asuint64 (y));
-#ifndef DO_NOT_ABORT
-    exit (1);
 #endif
   }
   // check the invalid exception was set

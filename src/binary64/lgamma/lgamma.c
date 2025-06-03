@@ -860,7 +860,9 @@ double cr_lgamma(double x){
 
   b64u64_u t = {.f = x};
   uint64_t nx = t.u<<1;
-  if(__builtin_expect(nx >= 0xfeaea9b24f16a350ull, 0)){
+  if(__builtin_expect(nx >= 0xfeaea9b24f16a34cull, 0)){
+    if(nx == 0xfeaea9b24f16a34cull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
+    if(nx == 0xfeaea9b24f16a34eull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
     if(__builtin_expect(nx>=(0x7fful<<53), 0)){ /* x=NaN or +/-Inf */
       if(nx==(0x7fful<<53)){ /* x=+/-Inf */
 	signgam = 1;
@@ -945,6 +947,7 @@ double cr_lgamma(double x){
       // (x-0.5)*ln(x) = (x-0.5)*(lh + ll)
       if(__builtin_expect(au>=0x2198000, 0)){ // x >= 0x1p52
 	// for large |x| use expansion
+	if(__builtin_expect(au>=0x3fabaa6, 0)) lh = fasttwosum(lh,ll,&ll); // x>=0x1.754cp+1014
 	double hlh = lh*0.5;
 	lh = mulddd(ax, lh,ll, &ll);
 	ll -= hlh;

@@ -36,32 +36,35 @@ SOFTWARE.
 /* __builtin_roundeven was introduced in gcc 10:
    https://gcc.gnu.org/gcc-10/changes.html,
    and in clang 17 */
-#if (defined(__GNUC__) && __GNUC__ >= 10) || (defined(__clang__) && __clang_major__ >= 17)
-#define HAS_BUILTIN_ROUNDEVEN
-#endif
-
-#if !defined(HAS_BUILTIN_ROUNDEVEN) && (defined(__GNUC__) || defined(__clang__)) && (defined(__AVX__) || defined(__SSE4_1__) || (__ARM_ARCH >= 8))
-inline double __builtin_roundeven(double x){
-   double ix;
-#if defined __AVX__
-   __asm__("vroundsd $0x8,%1,%1,%0":"=x"(ix):"x"(x));
-#elif __ARM_ARCH >= 8
-   __asm__ ("frintn %d0, %d1":"=w"(ix):"w"(x));
-#else /* __SSE4_1__ */
-   __asm__("roundsd $0x8,%1,%0":"=x"(ix):"x"(x));
-#endif
-   return ix;
-}
-#define HAS_BUILTIN_ROUNDEVEN
-#endif
-
-#ifndef HAS_BUILTIN_ROUNDEVEN
-#include <math.h>
-/* round x to nearest integer */
+#if ((defined(__GNUC__) && __GNUC__ >= 10) || (defined(__clang__) && __clang_major__ >= 17)) && (defined(__aarch64__) || defined(__x86_64__) || defined(__i386__))
+# define roundeven_finite(x) __builtin_roundeven (x)
+#else
+/* round x to nearest integer, breaking ties to even */
 static double
-__builtin_roundeven (double x)
+roundeven_finite (double x)
 {
-  return round(x); /* nearest, away from 0 */
+  double ix;
+# if (defined(__GNUC__) || defined(__clang__)) && (defined(__AVX__) || defined(__SSE4_1__) || (__ARM_ARCH >= 8))
+#  if defined __AVX__
+   __asm__("vroundsd $0x8,%1,%1,%0":"=x"(ix):"x"(x));
+#  elif __ARM_ARCH >= 8
+   __asm__ ("frintn %d0, %d1":"=w"(ix):"w"(x));
+#  else /* __SSE4_1__ */
+   __asm__("roundsd $0x8,%1,%0":"=x"(ix):"x"(x));
+#  endif
+# else
+  ix = __builtin_round (x); /* nearest, away from 0 */
+  if (__builtin_fabs (ix - x) == 0.5)
+  {
+    /* if ix is odd, we should return ix-1 if x>0, and ix+1 if x<0 */
+    union { double f; uint64_t n; } u, v;
+    u.f = ix;
+    v.f = ix - __builtin_copysign (1.0, x);
+    if (__builtin_ctz (v.n) > __builtin_ctz (u.n))
+      ix = v.f;
+  }
+# endif
+  return ix;
 }
 #endif
 
@@ -863,8 +866,8 @@ double cr_lgamma(double x){
   if(__builtin_expect(nx >= 0xfeaea9b24f16a34cull, 0)){
     if(nx == 0xfeaea9b24f16a34cull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
     if(nx == 0xfeaea9b24f16a34eull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
-    if(__builtin_expect(nx>=(0x7fful<<53), 0)){ /* x=NaN or +/-Inf */
-      if(nx==(0x7fful<<53)){ /* x=+/-Inf */
+    if(__builtin_expect(nx>=(0x7ffull<<53), 0)){ /* x=NaN or +/-Inf */
+      if(nx==(0x7ffull<<53)){ /* x=+/-Inf */
 	signgam = 1;
 	return __builtin_fabs(x); /* x=+Inf */
       }
@@ -1266,7 +1269,7 @@ double as_sinpipid(double x, double *l){
   x -= 0.5;
   double ax = __builtin_fabs(x);
   double sx = ax*128;
-  double ix = __builtin_roundeven(sx);
+  double ix = roundeven_finite(sx);
   int ky = ix, kx = 64-ky;
   if(__builtin_expect(kx<2,0)){
     static const double c[2] = {-0x1.a51a6625307d3p+0, -0x1.16cc8f2044a4ap-55};
@@ -1312,7 +1315,7 @@ double as_sinpipid_accurate(double x, double *l){
   x -= 0.5;
   x = __builtin_fabs(x);
   x *= 128;
-  double ix = __builtin_roundeven(x), d = ix-x;
+  double ix = roundeven_finite(x), d = ix-x;
   int ky = ix, kx = 64-ky;
 
   double sh = stpi[kx][1], sl = stpi[kx][0];

@@ -37,8 +37,6 @@ SOFTWARE.
 #include <errno.h>
 #include "dint_log2p1.h"
 
-#define TRACEX 0x1p-969
-#define TRACEY -0x1p-969
 
 /*
   Approximation tables

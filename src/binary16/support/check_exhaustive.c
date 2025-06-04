@@ -49,7 +49,6 @@ int rnd1[] = { FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD };
 int rnd2[] = { MPFR_RNDN,    MPFR_RNDZ,     MPFR_RNDU, MPFR_RNDD   };
 
 int rnd = 0;
-int keep = 0;
 
 typedef union { uint16_t n; _Float16 x; } union_t;
 
@@ -134,7 +133,9 @@ doit (uint16_t n)
   {
     printf ("FAIL x=%a ref=%a y=%a\n", (float) x, (float) y, (float) z);
     fflush (stdout);
-    if (!keep) exit (1);	
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
   								// BOUT DE CODE SUPPRIMÉ
 }
@@ -183,12 +184,6 @@ main (int argc, char *argv[])
       else if (strcmp (argv[1], "--rndd") == 0)
         {
           rnd = 3;
-          argc --;
-          argv ++;
-        }
-      else if (strcmp (argv[1], "--keep") == 0)
-        {
-          keep = 1;
           argc --;
           argv ++;
         }

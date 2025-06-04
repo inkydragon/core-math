@@ -94,7 +94,7 @@ float cr_coshf(float x){
   if(__builtin_expect(ax>0x8565a9f8u, 0)){ // |x| >~ 89.4
     if(ax>=0xff000000u) {
       if(ax<<8) return x + x; // nan
-      return 1.0/0.0; // +-inf
+      return 1.0f/0.0f; // +-inf
     }
     float r = 2.0f*0x1.fffffep127f;
 #ifdef CORE_MATH_SUPPORT_ERRNO

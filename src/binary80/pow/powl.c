@@ -1678,7 +1678,7 @@ long double cr_powl(long double x, long double y) {
 	   whereas sign is more convenient during special value handling.
 	*/
 
-	static const long double inf = 1.0/0.0;
+	static const long double inf = __builtin_infl();
 	bool lt1 = (x_exp < 0) ^ (cvt_y.e>>15);
 	// If lt1 is set, then |x|^y < 1.
 	// If lt1 is not set, then either |x|^y > 1 or |x|==1

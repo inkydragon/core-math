@@ -115,7 +115,7 @@ float cr_expm1f(float x){
       if(ax==(0xffu<<24)) return -1.0f;
       return -1.0f + 0x1p-26f;
     }
-    if(ax==(0xffu<<24)) return 1.0/0.0;
+    if(ax==(0xffu<<24)) return 1.0f/0.0f;
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE;
 #endif

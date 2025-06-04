@@ -977,19 +977,19 @@ __attribute__((noinline)) float as_compoundf_special(float x, float y){
 	if(sy == 0)
 	  return 0.0f; // Rule (c)
 	else
-	  return 1.0/0.0; // Rule (b)
+	  return 1.0f/0.0f; // Rule (b)
       }
       if (x < 0.0f){
 	if(sy == 0)
 	  return 0.0f;
 	else
-	  return 1.0/0.0;
+	  return 1.0f/0.0f;
       }
       if (x > 0.0f){
 	if(sy != 0)
 	  return 0.0f;
 	else
-	  return 1.0/0.0;
+	  return 1.0f/0.0f;
       }
       return 1.0f;
     }

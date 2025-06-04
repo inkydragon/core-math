@@ -37,8 +37,8 @@ __float128 ref_rsqrtq(__float128 x){
   /* mpfr_rec_sqrt differs from IEEE 754-2019: IEEE 754-2019 says that
      rsqrt(-0) should give -Inf, whereas mpfr_rec_sqrt(-0) gives +Inf */
   if(!(u.a<<1)){ // case x = 0
-    if(u.a>>127) return - 1.0/0.0; // x=-0
-    return 1.0/0.0; // x=+0
+    if(u.a>>127) return -__builtin_inff128(); // x=-0
+    return __builtin_inff128(); // x=+0
   }
 
   if((u.a<<1)>(unsigned __int128)0x7fff<<113){ // sNaN/qNaN case

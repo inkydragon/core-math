@@ -34,6 +34,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <errno.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -111,6 +112,7 @@ check_invalid (void)
 {
   double zero = asfloat64 (0x0000000000000000);
   double minZero = asfloat64 (0x8000000000000000);
+  errno = 0;
 
   //Check +0
   feclearexcept (FE_INVALID);
@@ -136,6 +138,13 @@ check_invalid (void)
 #endif
   }
 
+  if(errno != ERANGE)
+  {
+      fprintf (stderr, "Expected errno=ERANGE, got errno=%d for x=+0 [y=%a]\n", errno, y);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
 
   // check -0
   feclearexcept (FE_INVALID);
@@ -156,6 +165,14 @@ check_invalid (void)
   {
     fprintf (stderr, "Error, tgamma(-0) should be -Inf, got %la=%"PRIx64"\n",
       y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  if(errno != ERANGE)
+  {
+      fprintf (stderr, "Expected errno=ERANGE, got errno=%d for x=-0 [y=%a]\n", errno, y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

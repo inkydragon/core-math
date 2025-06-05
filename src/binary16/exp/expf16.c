@@ -68,13 +68,18 @@ _Float16 cr_expf16(_Float16 x){
 		float k = __builtin_roundevenf(inv_log2 * x); 
 		float xp = __builtin_fmaf(k, minus_log2, x); // xp is a float such that |xp| is minimal and x = klog(2) + xp
 		int i = 0x40 * xp;
-		float xpp = xp - (float) i / 0x40; // x = klog(2) + i/2^6 + xpp
+		float xpp = xp - (float) i * 0x1p-6f; // x = klog(2) + i/2^6 + xpp
 																		   // So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
 
 		// result
 		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * (0x1.555644p-3 + xpp * 0x1.555bep-5)));
+                b32u32_u v = {.f = xpp * tb[i + (1<<6)]};
+                v.u += (int) k << 23;
+                return v.f;
+#if 0
 		if (k >= 0) return (_Float16) (xpp * tb[i + (1<<6)] * (1 << (int)k));
 		else return (_Float16) (xpp * tb[i + (1<<6)] / (1 << (int) -k));
+#endif
 	}
 }
 

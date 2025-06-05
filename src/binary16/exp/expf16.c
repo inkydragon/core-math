@@ -40,7 +40,7 @@ typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_expf16(_Float16 x){
 	uint16_t x0 = 0xcc55; // binaryrepresentation of x0 in order to compare uint16_t rather than flt16
- 	_Float16 x1 = 0x1.62bp3; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
+ 	_Float16 x1 = 0x1.62cp3; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
 	static const float tb[] = // tabulate value of exp(i/2^6) for i in [-2^6, 2^6], size(tb) = 2^7 + 1
 		{0x5.e2d59p-4, 0x5.fa9038p-4, 0x6.12aa9p-4, 0x6.2b261p-4,
 		 0x6.44044p-4, 0x6.5d46b8p-4, 0x6.76efp-4, 0x6.90feb8p-4,
@@ -84,10 +84,10 @@ _Float16 cr_expf16(_Float16 x){
 		float k = __builtin_roundevenf(inv_log2 * x); 
 		float xp = __builtin_fmaf(k, minus_log2, x); // xp is a float such that |xp| is minimal and x = klog(2) + xp
 		int i = 0x40 * xp;
-			if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
-			if (x == 0x1.de4p-8) return (0x1.01cp+0 + 0x1p-12);
+                if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
+		if (x == 0x1.de4p-8) return (0x1.01cp+0 + 0x1p-12);
 	  	if (x == 0x1.73cp-6) return (0x1.05cp+0 + 0x1p-12);
-			if (x == 0x1.62cp+3) return (0x1.fdcp+15 - 1);
+		if (x == 0x1.62cp+3) return (0x1.fdcp+15 - 1);
 		}
 		float xpp = xp - (float) i * 0x1p-6f; // x = klog(2) + i/2^6 + xpp
 																		   		// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)

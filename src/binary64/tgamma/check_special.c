@@ -98,6 +98,14 @@ is_equal (double x, double y)
   return asuint64 (x) == asuint64 (y);
 }
 
+static inline int
+is_inf (double x)
+{
+  uint64_t u = asuint64 (x);
+  uint64_t e = u >> 52;
+  return (e == 0x7ff || e == 0xfff) && (u << 12) == 0;
+}
+
 static void
 check_invalid (void)
 {
@@ -116,7 +124,17 @@ check_invalid (void)
 #ifndef DO_NOT_ABORT
   exit (1);
 #endif
-    }
+  }
+
+  // Check that tgamma(+0) = +Inf
+  if (!is_inf(y) || y < 0)
+  {
+    fprintf (stderr, "Error, tgamma(+0) should be +Inf, got %la=%"PRIx64"\n",
+      y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
 
 
   // check -0
@@ -130,6 +148,16 @@ check_invalid (void)
       printf ("Spurious invalid exception for x=-0\n");
 #ifndef DO_NOT_ABORT
   exit (1);
+#endif
+  }
+
+  // Check that tgamma(-0) = -Inf
+  if (!is_inf(y) || y > 0)
+  {
+    fprintf (stderr, "Error, tgamma(-0) should be -Inf, got %la=%"PRIx64"\n",
+      y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
 #endif
   }
 }

@@ -157,7 +157,7 @@ check_invalid (void)
 #endif
   }
   // Check that y is Inf
-  if (!is_inf(y) && y > 0)
+  if (!is_inf(y) || y < 0)
   {
     fprintf (stderr, "Error, foo(+Inf) should be +Inf, got %la=%"PRIx64"\n",
       y, asuint64 (y));
@@ -187,7 +187,7 @@ check_invalid (void)
 #endif
   }
   // Check that y is Inf
-  if (!is_inf(y) && y < 0)
+  if (!is_inf(y) || y > 0)
   {
     fprintf (stderr, "Error, foo(-Inf) should be -Inf, got %la=%"PRIx64"\n",
       y, asuint64 (y));

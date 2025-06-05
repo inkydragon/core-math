@@ -33,6 +33,7 @@ SOFTWARE.
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
+#include <inttypes.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -95,6 +96,42 @@ is_equal (double x, double y)
   if (is_nan (y))
     return is_nan (x);
   return asuint64 (x) == asuint64 (y);
+}
+
+static void
+check_invalid (void)
+{
+  double zero = asfloat64 (0x0000000000000000);
+  double minZero = asfloat64 (0x8000000000000000);
+
+  //Check +0
+  feclearexcept (FE_INVALID);
+  double y = cr_tgamma (zero);
+
+  // check the invalid exception was not set
+  int flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+    printf ("Spurious invalid exception for x=+0\n");
+#ifndef DO_NOT_ABORT
+  exit (1);
+#endif
+    }
+
+
+  // check -0
+  feclearexcept (FE_INVALID);
+  y = cr_tgamma (minZero);
+
+  // check the invalid exception was not set
+  flag = fetestexcept (FE_INVALID);
+  if (flag)
+  {
+      printf ("Spurious invalid exception for x=-0\n");
+#ifndef DO_NOT_ABORT
+  exit (1);
+#endif
+  }
 }
 
 static void
@@ -309,6 +346,8 @@ main (int argc, char *argv[])
     }
   ref_init ();
   ref_fesetround (rnd);
+
+  check_invalid ();
 
   printf ("Check low-precision inputs\n");
   check_low_precision (10);

@@ -112,7 +112,9 @@ check_invalid (void)
 {
   double zero = asfloat64 (0x0000000000000000);
   double minZero = asfloat64 (0x8000000000000000);
+#ifdef CORE_MATH_SUPPORT_ERRNO
   errno = 0;
+#endif
 
   //Check +0
   feclearexcept (FE_INVALID);
@@ -138,6 +140,7 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(errno != ERANGE)
   {
       fprintf (stderr, "Expected errno=ERANGE, got errno=%d for x=+0 [y=%a]\n", errno, y);
@@ -145,6 +148,7 @@ check_invalid (void)
     exit (1);
 #endif
   }
+#endif
 
   // check -0
   feclearexcept (FE_INVALID);
@@ -170,6 +174,7 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(errno != ERANGE)
   {
       fprintf (stderr, "Expected errno=ERANGE, got errno=%d for x=-0 [y=%a]\n", errno, y);
@@ -177,6 +182,7 @@ check_invalid (void)
     exit (1);
 #endif
   }
+#endif
 }
 
 static void

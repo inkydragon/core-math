@@ -592,11 +592,11 @@ check_signaling_nan (void)
   }
 
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (snan, 2.0);
-  // check that foo(NaN,2) = NaN
+  y = cr_function_under_test (snan, 1.0);
+  // check that foo(NaN,1) = NaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,2.0) should be NaN, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(sNaN,1.0) should be NaN, got %la=%"PRIx64"\n",
              y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -605,7 +605,7 @@ check_signaling_nan (void)
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,2.0) should be qNaN, got sNaN=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(sNaN,1.0) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -615,7 +615,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=sNaN,2.0\n");
+    printf ("Missing invalid exception for x,y=sNaN,1.0\n");
     exit (1);
   }
 
@@ -648,11 +648,11 @@ check_signaling_nan (void)
   }
 
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (2.0, snan);
+  y = cr_function_under_test (1.0, snan);
   // check that foo(NaN) = NaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(2.0,sNaN) should be NaN, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(1.0,sNaN) should be NaN, got %la=%"PRIx64"\n",
              y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -661,7 +661,7 @@ check_signaling_nan (void)
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
-    fprintf (stderr, "Error, foo(2.0,sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(1.0,sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -671,18 +671,18 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=2.0,sNaN\n");
+    printf ("Missing invalid exception for x,y=1.0,sNaN\n");
     exit (1);
   }
 
   // check also sNaN with the sign bit set
   snan = asfloat64 (0xfff0000000000001ull);
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (snan, 2.0);
+  y = cr_function_under_test (snan, 1.0);
   // check that foo(NaN) = NaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(-sNaN,2.0) should be NaN, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(-sNaN,1.0) should be NaN, got %la=%"PRIx64"\n",
              y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -691,7 +691,7 @@ check_signaling_nan (void)
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
-    fprintf (stderr, "Error, foo(-sNaN,2.0) should be qNaN, got sNaN=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(-sNaN,1.0) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -701,16 +701,16 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=-sNaN,2.0\n");
+    printf ("Missing invalid exception for x,y=-sNaN,1.0\n");
     exit (1);
   }
 
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (2.0, snan);
+  y = cr_function_under_test (1.0, snan);
   // check that foo(NaN) = NaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(2.0,-sNaN) should be NaN, got %la=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(1.0,-sNaN) should be NaN, got %la=%"PRIx64"\n",
              y, asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -719,7 +719,7 @@ check_signaling_nan (void)
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
-    fprintf (stderr, "Error, foo(2.0,-sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
+    fprintf (stderr, "Error, foo(1.0,-sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
 #ifndef DO_NOT_ABORT
     exit (1);
@@ -729,7 +729,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=2.0,-sNaN\n");
+    printf ("Missing invalid exception for x,y=1.0,-sNaN\n");
     exit (1);
   }
 }

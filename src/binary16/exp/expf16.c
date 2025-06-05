@@ -94,9 +94,9 @@ _Float16 cr_expf16(_Float16 x){
 
 		// result
 		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * (0x1.555644p-3 + xpp * 0x1.555bep-5)));
-    b32u32_u v = {.f = xpp * tb[i + (1<<6)]};
-    v.u += (int) k << 23;
-  	return v.f;
+    b32u32_u w = {.f = xpp * tb[i + (1<<6)]};
+    w.u += (int) k << 23;
+  	return w.f;
 	}
 }
 

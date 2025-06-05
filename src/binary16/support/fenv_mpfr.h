@@ -15,6 +15,6 @@ int ref_fesetround(int rounding_mode)
 
 void ref_init(void)
 {
-  mpfr_set_emin (-148);
-  mpfr_set_emax (128);
+  mpfr_set_emin (-23);
+  mpfr_set_emax (16);
 }

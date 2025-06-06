@@ -384,6 +384,7 @@ check (float x, float y)
 #endif
   }
 
+  /* Check that all flags are not reset */
   // check inexact flag is not reset
   feraiseexcept (FE_INEXACT);
   z1 = cr_function_under_test(x, y);

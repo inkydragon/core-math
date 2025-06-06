@@ -294,6 +294,47 @@ doit (uint32_t n)
     }
   }
 #endif
+
+  // Check that all flags are not reset
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  cr_function_under_test(x, &z1, &z2);
+  if (!fetestexcept (FE_UNDERFLOW)){
+    printf ("Underflow exception was reset for x=%la (z=%la)\n",
+      x, z1);
+    }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  cr_function_under_test(x, &z2, &z2);
+  if (!fetestexcept (FE_DIVBYZERO)){
+    printf ("Division by zero exception was reset for x=%la (z=%la)\n",
+      x, z1);
+    }
+
+  // check inexact flag is not reset
+  feraiseexcept (FE_INEXACT);
+  cr_function_under_test(x, &z2, &z2);
+  if (!fetestexcept (FE_INEXACT)){
+    printf ("Inexact exception was reset for x=%la (z=%la)\n",
+      x, z1);
+    }
+
+  // check invalid flag is not reset
+  feraiseexcept (FE_INVALID);
+  cr_function_under_test(x, &z2, &z2);
+  if (!fetestexcept (FE_INVALID)){
+    printf ("Invalid exception was reset for x=%la (z=%la)\n",
+      x, z1);
+    }
+
+  // check overflow flag is not reset
+  feraiseexcept (FE_OVERFLOW);
+  cr_function_under_test(x, &z2, &z2);
+  if (!fetestexcept (FE_OVERFLOW)){
+    printf ("Overflow exception was reset for x=%la (z=%la)\n",
+      x, z1);
+    }
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN

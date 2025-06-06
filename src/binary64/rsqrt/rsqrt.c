@@ -199,9 +199,4 @@ extern double invsqrt (double);
 double rsqrt(double x){
   return invsqrt(x);
 }
-#elif !defined(SKIP_C_FUNC_REDEF)
-/* rsqrt function is not in glibc so define it here just to compile tests */
-double rsqrt(double x){
-  return cr_rsqrt(x);
-}
 #endif

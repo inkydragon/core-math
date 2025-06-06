@@ -337,10 +337,3 @@ __float128 cr_rsqrtq(__float128 x){
   v.b[1] += e2; // place exponent
   return reinterpret_u128_as_f128(v.a); // put into xmm register
 }
-
-#if !defined(SKIP_C_FUNC_REDEF)
-/* rsqrt function is not in glibc so define it here just to compile tests */
-__float128 rsqrtq(__float128 x){
-  return cr_rsqrtq(x);
-}
-#endif

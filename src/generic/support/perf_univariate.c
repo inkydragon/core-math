@@ -51,7 +51,8 @@ function_type_under_test cr_function_under_test;
 function_type_under_test function_under_test;
 
 #define SAMPLE_SIZE (sizeof(TYPE_UNDER_TEST))
-#if TYPE_UNDER_TEST==__float128 && defined(__x86_64__) && !defined(__clang__)
+// disable for now the code below which does not work for TYPE_UNDER_TEST=long double
+#if defined(CORE_MATH_F128) && defined(__x86_64__) && !defined(__clang__)
 #define CALL_LATENCY(accu,i)					\
   {								\
     __m128i in, out, m = {1, 0};				\

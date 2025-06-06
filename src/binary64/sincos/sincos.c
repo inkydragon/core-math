@@ -345,7 +345,7 @@ static inline void subnormalize_dint(dint64_t *a) {
 
   if (!a->hi) {
     a->ex++;
-    a->hi = (1ll << 63);
+    a->hi = (1ull << 63);
   }
 }
 
@@ -2198,6 +2198,10 @@ cr_sincos (double x, double *s, double *c)
 
   if (__builtin_expect (e == 0x7ff, 0)) /* NaN, +Inf and -Inf. */
     {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      if ((t.u << 1) == 0x7ffull<<53) // Inf
+        errno = EDOM;
+#endif
       t.u = ~0ull;
       *s = t.f;
       *c = t.f;
@@ -2215,10 +2219,12 @@ cr_sincos (double x, double *s, double *c)
     // for x=-0, fma (x, -0x1p-54, x) returns +0
     *s = (x == 0) ? x : __builtin_fma (x, -0x1p-54, x);
     *c = (x == 0) ? 1.0 : 1.0 - 0x1p-54;
-#ifdef CORE_MATH_CHECK_INEXACT
-    if (x != 0 && __builtin_fabs (*s) < 0x1p-1022)
-      errno = ERANGE;
+
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    if (x != 0 && (__builtin_fabs (x) < 0x1p-1022 || __builtin_fabs (*s) < 0x1p-1022))
+      errno = ERANGE; // underflow
 #endif
+
     return;
   }
 

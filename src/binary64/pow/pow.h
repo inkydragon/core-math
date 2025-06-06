@@ -425,7 +425,7 @@ static inline void subnormalize_qint(qint64_t *a) {
 
   if (!a->hh) {
     a->ex++;
-    a->hh = (1ll << 63);
+    a->hh = (1ull << 63);
   }
 }
 

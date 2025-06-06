@@ -88,7 +88,12 @@ static inline int get_rounding_mode (void)
 #endif
 }
 
+#if (defined(__clang__) && __clang_major__ >= 14) || (defined(__GNUC__) && __GNUC__ >= 14 && __BITINT_MAXWIDTH__ && __BITINT_MAXWIDTH__ >= 128)
+typedef unsigned _BitInt(128) u128;
+#else
 typedef unsigned __int128 u128;
+#endif
+
 typedef uint64_t u64;
 typedef int64_t i64;
 typedef union {double f; uint64_t u;} b64u64_u;
@@ -152,14 +157,14 @@ double cr_rsqrt(double x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE; // pole error
 #endif
-      return __builtin_inf(); // case x = +0
+      return 1.0 / 0.0; // case x = +0
     }
   } else if(__builtin_expect(ix.u >= 0x7ffull<<52, 0)){ // NaN, Inf, x <= 0
     if(!(ix.u<<1)) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE; // pole error
 #endif
-      return -__builtin_inf(); // x=-0
+      return 1.0 / -0.0; // x=-0
     }
     if(ix.u > 0xfff0000000000000ull) return x + x; // -NaN
     if(ix.u >> 63){ // x < 0

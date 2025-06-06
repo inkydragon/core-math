@@ -71,8 +71,13 @@ roundeven_finite (double x)
 
 typedef union {float f; uint32_t u;} b32u32_u;
 typedef union {double f; uint64_t u;} b64u64_u;
-typedef unsigned __int128 u128;
 typedef uint64_t u64;
+
+#if (defined(__clang__) && __clang_major__ >= 14) || (defined(__GNUC__) && __GNUC__ >= 14 && __BITINT_MAXWIDTH__ && __BITINT_MAXWIDTH__ >= 128)
+typedef unsigned _BitInt(128) u128;
+#else
+typedef unsigned __int128 u128;
+#endif
 
 static double __attribute__((noinline)) rbig(uint32_t u, int *q){
   static const u64 ipi[] = {0xfe5163abdebbc562, 0xdb6295993c439041, 0xfc2757d1f534ddc0, 0xa2f9836e4e441529};

@@ -354,7 +354,7 @@ check (double x)
   }
 
   // If x is subnormal or |s1| < 2^-1022, we should have errno = ERANGE
-  if (is_subnormal(x) || __builtin_abs (s1) < 0x1p-1022) {
+  if (is_subnormal(x) || __builtin_fabs (s1) < 0x1p-1022) {
     if (errno != ERANGE) {
       printf ("Missing errno=ERANGE for x=%la (s=%la,c=%la)\n", x, s1, c1);
       fflush (stdout);

@@ -651,7 +651,7 @@ cr_log (double x)
   int e = (v.u >> 52) - 0x3ff;
   if (e >= 0x400 || e == -0x3ff) /* x <= 0 or NaN/Inf or subnormal */
   {
-    static const d64u64 minf = {.u = 0xffful << 52};
+    static const d64u64 minf = {.u = 0xfffull << 52};
     if (e == 0x400 || (e == 0xc00 && x != minf.f)) /* +Inf or NaN */
       return x + x;
     if (x <= 0.0)

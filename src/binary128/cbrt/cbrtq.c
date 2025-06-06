@@ -209,6 +209,7 @@ inline static i64 as_rcbrt(u64 m){
   u64 c1 = (C<<(64-n0-n1))>>(5+32);
   u64 c2 = (C<<(64-n0-n1-n2))>>(10+32);
   i64 d = (i64)((m<<4)-(1l<<63))>>32;
+  i64 d = (i64)((m<<4)-(1ll<<63))>>32;
   u64 d2 = ((u64)(d*d))>>32;
   u64 re = c0  + d2*c2;
   u64 ro = d*(c1 + ((d2*c3)>>22));
@@ -237,6 +238,11 @@ inline static b128u128_u as_icbrt(b128u128_u x, unsigned i){
   u128 r2 = (u128)r*r;
   x.a >>= 3-i;
   x.b[1] |= 1ul<<(61+i);
+  if(__builtin_expect((i64)r>=0, 0)) r = ~0ll; // now r cannot be above 1 it is strictly <1
+  r = mhuu(r, rcbrt_i[i]);
+  u128 r2 = (u128)r*r;
+  x.a >>= 3-i;
+  x.b[1] |= 1ull<<(61+i);
   b128u128_u sx = {.a = mhUU(r2, x.a)};
   i128 H = mhuU(r, sx.a);
   i64 h = H, m = h>>63;

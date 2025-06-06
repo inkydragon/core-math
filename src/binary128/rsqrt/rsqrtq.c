@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdio.h>
 #include <errno.h>
 #include <fenv.h>
 #include <stdint.h>
@@ -92,7 +91,7 @@ typedef union {
 } b128u128_u;
 
 #if (defined(__x86_64__) && (defined(__APPLE__) || defined(_WIN32)))
-static inline __float128 local_nanq(const char *tagp){
+static inline __float128 local_nanq(__attribute__((unused)) const char *tagp){
   b128u128_u u;
   u.a = ~(u128)0u;
   return u.f;
@@ -222,7 +221,7 @@ static inline u64 rsqrt9(u64 m){
   // coefficients into 32 bit. The constant coefficient can be
   // rounded to 33 bits since the most significant bit is always 1
   // and implicitly assumed in the table.
-  u64 indx = m>>58; // subrange index 
+  u64 indx = m>>58; // subrange index
   u64 c3 = c[indx][3], c0 = c[indx][0], c1 = c[indx][1], c2 = c[indx][2];
   c0 <<= 31; // to 64 bit with the space for the implicit bit
   c0 |= 1ull<<63; // add implicit bit
@@ -294,7 +293,7 @@ __float128 cr_rsqrtq(__float128 x){
       return u.f;
     }
   }
-  
+
   const u64 rsqrt_2[] = {~0ull,0xb504f333f9de6484ull}; // 2^64/sqrt(2)
   u64 rx = u.b[1], r = rsqrt9(rx);
   u128 r2 = (u128)r*rsqrt_2[i];
@@ -307,30 +306,21 @@ __float128 cr_rsqrtq(__float128 x){
 
   b128u128_u v; v.a = ((u128)r<<64) - ((i128)ds<<3);
   unsigned rm = flagp&_MM_ROUND_MASK, nrst = rm == _MM_ROUND_NEAREST;
-  i64 dd = ((v.bs[0]^(nrst<<14))+24)&0x7fff;
-  if(__builtin_expect(dd<49, 0)){ // can round correctly?
-    b128u128_u m;
-    m.a = v.a>>15;
-    b128u128_u t0, t1, k0, k1;
+  short dd = v.b[0]<<2;
+  if(__builtin_expect(!(dd<-4||dd>96), 0)){ // can round correctly?
+    v.a += 1<<13;
+    b128u128_u m = {.a = v.a>>14}, t0, t1, k0, k1;
     t1.a = mUU(m.a, u.a, &t0.a);
     k1.a = mUU(t0.a, m.a, &k0.a);
     k1.a += t1.a*m.a;
-    i128 msk = ~(k1.as>>127);
-    t0.a ^= msk;
-    t1.a ^= msk;
-    k0.a += (u.a>>1) - msk;
-    if(k0.a<u.a) k1.a++;
-    k0.a += t0.a;
-    if(k0.a<t0.a) k1.a++;
-    k1.a += t1.a;
-    v.b[0] &= ~0ull<<15;
-    i64 side = k1.bs[1]>>63;
-    if(msk) v.b[0] -= 1<<15;
-    if(side) v.b[0] += 1<<14;
-    v.b[0] |= 1;
+    k1.a |= !!k0.a;
+    v.b[0] &= ~0x3fffull;
+    i128 D = k1.a;
+    if(D<0) v.a++;
+    if(D>0) v.a--;
   }
   unsigned frac = v.b[0]&0x7fffull; // fractional part
-  u64 rnd = 0; 
+  u64 rnd = 0;
   if(__builtin_expect(nrst, 1)){
     rnd = frac>>14;  // round to nearest tie to even
   } else if(rm==_MM_ROUND_UP){

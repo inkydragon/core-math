@@ -31,6 +31,7 @@ SOFTWARE.
 #include <fenv.h>
 #include <math.h>
 #include <unistd.h>
+#include <inttypes.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -94,16 +95,80 @@ check (double x)
   }
 }
 
-typedef union {double f; uint64_t u;} b64u64_u;
+typedef union {
+  double f;
+  uint64_t i;
+} d64u64;
 
 static double
 get_random (int tid)
 {
-  b64u64_u v;
-  v.u = rand_r (Seed + tid);
-  v.u |= (uint64_t) rand_r (Seed + tid) << 31;
-  v.u |= (uint64_t) rand_r (Seed + tid) << 62;
+  d64u64 v;
+  v.i = rand_r (Seed + tid);
+  v.i |= (uint64_t) rand_r (Seed + tid) << 31;
+  v.i |= (uint64_t) rand_r (Seed + tid) << 62;
   return v.f;
+}
+
+static inline double
+asfloat64 (uint64_t i)
+{
+  d64u64 u = {.i = i};
+  return u.f;
+}
+
+static void
+check_invalid (void)
+{
+  double zero = asfloat64 (0x0000000000000000);
+  double minZero = asfloat64 (0x8000000000000000);
+
+  feclearexcept (FE_DIVBYZERO);
+  //Check +0
+  double y = cr_rsqrt (zero);
+
+  // check that foo(+0) != NaN
+  if (is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(+0) should not be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+  
+  int flag = fetestexcept (FE_DIVBYZERO);
+  if(!flag)
+  {
+    printf("Missing divide by zero exception for x=+0\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+
+  // check -0
+  feclearexcept (FE_DIVBYZERO);
+  y = cr_rsqrt (minZero);
+
+  // check that foo(+0) != NaN
+  if (is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(-0) should not be NaN, got %la=%"PRIx64"\n",
+             y, asuint64 (y));
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(!flag)
+  {
+    printf("Missing divide by zero exception for x=-0\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
 }
 
 int
@@ -150,6 +215,8 @@ main (int argc, char *argv[])
 
   ref_init();
   ref_fesetround (rnd);
+
+  check_invalid ();
 
   printf ("Checking random values\n");
 #ifndef CORE_MATH_TESTS

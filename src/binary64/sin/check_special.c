@@ -33,6 +33,7 @@ SOFTWARE.
 #include <sys/types.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <errno.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -127,6 +128,11 @@ check_invalid (void)
 
   // Check +Inf
   feclearexcept (FE_INVALID);
+
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  errno = 0;
+#endif
+
   double y = cr_sin(plusInf);
   if (!is_nan (y))
   {
@@ -153,8 +159,20 @@ check_invalid (void)
     exit (1);
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  // check errno = EDOM
+  if (errno != EDOM)
+  {
+    fprintf (stderr, "Error, missing errno=EDOM for x=+Inf\n");
+    exit (1);
+  }
+#endif
+
   // Check -Inf
   feclearexcept (FE_INVALID);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  errno = 0;
+#endif
   y = cr_sin(minInf);
   if (!is_nan (y))
   {
@@ -180,6 +198,15 @@ check_invalid (void)
              asuint64 (y));
     exit (1);
   }
+
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  // check errno = EDOM
+  if (errno != EDOM)
+  {
+    fprintf (stderr, "Error, missing errno=EDOM for x=-Inf\n");
+    exit (1);
+  }
+#endif
 }
 
 int

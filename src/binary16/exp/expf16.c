@@ -25,8 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
-#include <math.h>
-#include <stdlib.h>
+#include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -99,8 +98,6 @@ _Float16 cr_expf16(_Float16 x){
   	return w.f;
 	}
 }
-
-
 
 // dummy function since GNU libc does not provide it
 _Float16 expf16 (_Float16 x) {

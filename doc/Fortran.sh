@@ -28,7 +28,7 @@ do
 	echo "end interface"
 done
 echo "! float binary functions"
-for I in atan2 atan2pi hypot pow
+for I in atan2 atan2pi compound hypot pow
 do
 	echo "interface"
 	echo "   pure function cr_${I}f(x, y) bind(c,name='cr_${I}f')"
@@ -50,7 +50,7 @@ echo "     real(kind=c_float), intent(out) :: s, c"
 echo "   end subroutine cr_${I}f"
 echo "end interface"
 echo "! double unary functions"
-for I in acos acosh acospi asin asinh asinpi atan atanh atanpi cbrt cos cosh cospi erf erfc exp exp10 exp10m1 exp2 exp2m1 expm1 log log10 log10p1 log1p log2 log2p1 rsqrt sin sinh sinpi tan tanh tanpi
+for I in acos acosh acospi asin asinh asinpi atan atanh atanpi cbrt cos cosh cospi erf erfc exp exp10 exp10m1 exp2 exp2m1 expm1 lgamma log log10 log10p1 log1p log2 log2p1 rsqrt sin sinh sinpi tan tanh tanpi
 do
 	echo "interface"
 	echo "   pure function cr_${I}(x) bind(c,name='cr_${I}')"
@@ -112,7 +112,7 @@ then
 fi
 # Please uncomment the lines below if your Fortran compiler supports the REAL128 kind.
 # echo "! quad unary functions"
-# for I in rsqrt sqrt
+# for I in cbrt rsqrt sqrt
 # do
 # 	echo "interface"
 # 	echo "   pure function cr_${I}q(x) bind(c,name='cr_${I}q')"

@@ -864,8 +864,8 @@ double cr_lgamma(double x){
   b64u64_u t = {.f = x};
   uint64_t nx = t.u<<1;
   if(__builtin_expect(nx >= 0xfeaea9b24f16a34cull, 0)){
-    if(nx == 0xfeaea9b24f16a34cull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
-    if(nx == 0xfeaea9b24f16a34eull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
+    if(t.u == 0x7f5754d9278b51a6ull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
+    if(t.u == 0x7f5754d9278b51a7ull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
     if(__builtin_expect(nx>=(0x7ffull<<53), 0)){ /* x=NaN or +/-Inf */
       if(nx==(0x7ffull<<53)){ /* x=+/-Inf */
 	signgam = 1;
@@ -958,7 +958,6 @@ double cr_lgamma(double x){
 	// for other |x| use a simple product
 	lh = mulddd(ax-0.5, lh,ll, &ll);
       }
-      double zh = 1.0/ax, zl = __builtin_fma(zh,-ax, 1.0)*zh;
       static const double c[][2] = {
 	{0x1.acfe390c97d6ap-2, -0x1.1d9792ced423ap-58}, {0x1.55555555554c1p-4, -0x1.0143af34001bdp-59}};
       static const double q[] = {
@@ -966,6 +965,7 @@ double cr_lgamma(double x){
 	-0x1.a7fd66a05ccfcp-10};
       lh = fastsum(lh,ll, c[0][0], c[0][1], &ll);
       if(ax<0x1p100){
+	double zh = 1.0/ax, zl = __builtin_fma(zh,-ax, 1.0)*zh;
 	double z2h = zh*zh, z4h = z2h*z2h;
 	double q0 = q[0] + z2h*q[1], q2 = q[2] + z2h*q[3], q4 = q[4];
 	fl = z2h*(q0 + z4h*(q2 + z4h*q4));
@@ -1351,32 +1351,32 @@ double as_lgamma_asym_accurate(double xh, double *xl, double *e){
   // (x-0.5)*ln(x) - (x - 0.5) - 0.5 + 0.5*ln(2*pi)
   // (x-0.5)*(ln(x)-1) + 0.5*(ln(2*pi)-1)
 
-  double zh = 1.0/xh, dz = *xl*zh, zl = (__builtin_fma(zh,-xh,1.0) - dz)*zh;
-  double l2, l1, l0 = as_logd_accurate(xh, &l1, &l2);
-  if(*xl != 0){
-    double dl2, dl1 = mulddd(*xl, zh, __builtin_fma(zh,-xh,1.0)*zh, &dl2);
-    dl2 -= dl1*dl1/2;
-    l1 = sumdd(l1,l2,dl1,dl2, &l2);
-  }
-
-  b64u64_u t = {.f = xh};
-  double wl, wh;
-  if(t.u>>52 > 0x3ff + 51){
-    wh = xh;
-    wl = *xl - 0.5;
-  } else {
-    wh = xh - 0.5;
-    wl = *xl;
-  }
-  l0 -= 1;
-
-  double l0x = l0*wh, l0xl = __builtin_fma(l0,wh,-l0x);
-  double l1x = l1*wh, l1xl = __builtin_fma(l1,wh,-l1x);
-  double l2x = l2*wh;
-
-  l1x = sumdd(l1x,l2x, l0xl,l1xl, &l2x);
-  l1x = sumdd(l1x,l2x, l0*wl,l1*wl, &l2x);
+  double l2, l1, l0 = as_logd_accurate(xh, &l1, &l2), l0x, l1x, l2x;
   if(xh<0x1p120){
+    double zh = 1.0/xh, dz = *xl*zh, zl = (__builtin_fma(zh,-xh,1.0) - dz)*zh;
+    if(*xl != 0){
+      double dl2, dl1 = mulddd(*xl, zh, __builtin_fma(zh,-xh,1.0)*zh, &dl2);
+      dl2 -= dl1*dl1/2;
+      l1 = sumdd(l1,l2,dl1,dl2, &l2);
+    }
+
+    b64u64_u t = {.f = xh};
+    double wl, wh;
+    if(t.u>>52 > 0x3ff + 51){
+      wh = xh;
+      wl = *xl - 0.5;
+    } else {
+      wh = xh - 0.5;
+      wl = *xl;
+    }
+    l0 -= 1;
+
+    l0x = l0*wh; double l0xl = __builtin_fma(l0,wh,-l0x);
+    l1x = l1*wh; double l1xl = __builtin_fma(l1,wh,-l1x);
+    l2x = l2*wh;
+
+    l1x = sumdd(l1x,l2x, l0xl,l1xl, &l2x);
+    l1x = sumdd(l1x,l2x, l0*wl,l1*wl, &l2x);
     double z2l, z2h = muldd(zh,zl,zh,zl, &z2l);
     double fh, fl;
     if(xh>=48){
@@ -1423,6 +1423,14 @@ double as_lgamma_asym_accurate(double xh, double *xl, double *e){
     l1x = sumdd(l1x,l2x, fh,fl, &l2x);
     l0x = fasttwosum(l0x,l1x, &l1x);
     l1x = fasttwosum(l1x,l2x, &l2x);
+  } else {
+    double wl = *xl - 0.5;
+    l0 -= 1;
+    l0x = l0*xh; double l0xl = __builtin_fma(l0,xh,-l0x);
+    l1x = l1*xh; double l1xl = __builtin_fma(l1,xh,-l1x);
+    l2x = l2*xh;
+    l1x = sumdd(l1x,l2x, l0xl,l1xl, &l2x);
+    l1x = sumdd(l1x,l2x, l0*wl,l1*wl, &l2x);
   }
   *xl = l1x;
   *e = l2x;

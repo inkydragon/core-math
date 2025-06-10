@@ -83,16 +83,16 @@ _Float16 cr_expf16(_Float16 x){
 		float k = __builtin_roundevenf(inv_log2 * x); 
 		float xp = __builtin_fmaf(k, minus_log2, x); // xp is a float such that |xp| is minimal and x = klog(2) + xp
 		int i = 0x40 * xp;
-                if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
-		if (x == 0x1.de4p-8) return (0x1.01cp+0 + 0x1p-12);
+    if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
+			if (x == 0x1.de4p-8) return (0x1.01cp+0 + 0x1p-12);
 	  	if (x == 0x1.73cp-6) return (0x1.05cp+0 + 0x1p-12);
-		if (x == 0x1.62cp+3) return (0x1.fdcp+15 - 1);
+			if (x == 0x1.62cp+3) return (0x1.fdcp+15 - 1);
 		}
-		float xpp = xp - (float) i * 0x1p-6f; // x = klog(2) + i/2^6 + xpp
-																		   		// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
+		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
+																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
 
 		// result
-		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * (0x1.555644p-3 + xpp * 0x1.555bep-5)));
+		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * 0x1.555644p-3));
     b32u32_u w = {.f = xpp * tb[i + (1<<6)]};
     w.u += (int) k << 23;
   	return w.f;

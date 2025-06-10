@@ -99,12 +99,58 @@ is_equal (_Float16 y1, _Float16 y2)
   return asuint (y1) == asuint (y2);
 }
 
-// IL MANQUE PLEIN DE CHOSES :
-// 	underflow_before
-//	overflow
-//	inexact
-//	errno
-//	is_signaling
+int underflow_before; // non-zero if processor raises underflow before rounding
+
+// return non-zero if the processor raises underflow before rounding
+// (e.g., aarch64)
+static void
+check_underflow_before (void)
+{
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
+  fesetround (FE_TONEAREST);
+  feclearexcept (FE_UNDERFLOW);
+  float x = 0x1p-126f;
+  float y = __builtin_fmaf (-x, x, x);
+  if (x == y) // this is needed otherwise the compiler says y is unused
+    underflow_before = fetestexcept (FE_UNDERFLOW);
+  fesetexceptflag (&flag, FE_ALL_EXCEPT); //restore flags
+}
+
+/* For |y| = 2^-14 and underflow after rounding, clear the MPFR
+   underflow exception when the rounded result (with unbounded exponent)
+   equals +/-2^-14 (might be set due to a bug in MPFR <= 4.2.1).
+   For |y| = 2^-14 and underflow before rounding, clear the fenv.h
+   underflow exception when |f(x)| < 2^-14 but there is no underflow
+   after rounding (thus we mimic underflow after rounding). */
+static void
+fix_underflow (_Float16 x, _Float16 y)
+{
+  if (__builtin_fabsf (y) != 0x1p-14)
+    return;
+  if (underflow_before) {
+    if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
+      feclearexcept (FE_UNDERFLOW);
+    return;
+  }
+  mpfr_t t;
+  mpfr_init2 (t, 11);
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
+  mpfr_set_flt (t, (float) x, MPFR_RNDN); // exact
+  /* mpfr_set_d might raise the processor underflow/overflow/inexact flags
+     (https://gitlab.inria.fr/mpfr/mpfr/-/issues/2) */
+  fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
+  mpfr_function_under_test (t, t, rnd2[rnd]);
+  /* don't call mpfr_subnormalize here since we precisely want an unbounded
+     exponent */
+  mpfr_abs (t, t, MPFR_RNDN); // exact
+#if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
+  if (mpfr_cmp_ui_2exp (t, 1, -14) == 0) // |o(f(x,y))| = 2^-14
+    mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
+#endif
+  mpfr_clear (t);
+}
 
 void
 doit (uint16_t n)
@@ -113,42 +159,259 @@ doit (uint16_t n)
   x = asfloat (n);
   ref_init ();
   ref_fesetround (rnd);
-  		// mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
+  mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
   y = ref_function_under_test (x);
-		// #if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
-  		// mpfr_flags_t inex_y = mpfr_flags_test (MPFR_FLAGS_INEXACT);
-		// #endif
+#if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
+  mpfr_flags_t inex_y = mpfr_flags_test (MPFR_FLAGS_INEXACT);
+#endif
   fesetround (rnd1[rnd]);
-  		// feclearexcept (FE_INEXACT | FE_UNDERFLOW | FE_OVERFLOW);
-		// #ifdef CORE_MATH_SUPPORT_ERRNO
-		//  errno = 0;
-		// #endif
+  feclearexcept (FE_INEXACT | FE_UNDERFLOW | FE_OVERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  errno = 0;
+#endif
   z = cr_function_under_test (x);
-		// #ifdef CORE_MATH_CHECK_INEXACT
-  		// int inex_z = fetestexcept (FE_INEXACT);
-		// #endif
-  		/* Note: the test y != z would not distinguish +0 and -0, instead we compare
-    		 the 32-bit encodings. */
+#ifdef CORE_MATH_CHECK_INEXACT
+  int inex_z = fetestexcept (FE_INEXACT);
+#endif
+  /* Note: the test y != z would not distinguish +0 and -0, instead we compare
+     the 16-bit encodings. */
   if (!is_equal (y, z))
   {
     printf ("FAIL x=%a ref=%a y=%a\n", (float) x, (float) y, (float) z);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
-    exit (1);
+   	exit (1);
 #endif
   }
-  								// BOUT DE CODE SUPPRIMÉ
+
+  /* When there is underflow but the result is exact, IEEE 754-2019 says the
+     underflow exception should not be signaled. However MPFR raises the
+     underflow exception in this case: we clear it to mimic IEEE 754-2019. */
+  if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_INEXACT))
+    mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
+
+  fix_underflow (x, y);
+
+  // check spurious/missing underflow
+  if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
+  {
+    printf ("Spurious underflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+   	exit (1);
+#endif
+  }
+  if (!fetestexcept (FE_UNDERFLOW) && mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
+  {
+    printf ("Missing underflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+   	exit (1);
+#endif
+  }
+
+  // check spurious/missing overflow
+  if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
+  {
+    printf ("Spurious overflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+   	exit (1);
+#endif
+  }
+  if (!fetestexcept (FE_OVERFLOW) && mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
+  {
+    printf ("Missing overflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+   	exit (1);
+#endif
+  }
+
+  // check inexact exception
+#ifdef CORE_MATH_CHECK_INEXACT
+  if ((inex_y == 0) && (inex_z != 0))
+  {
+    printf ("Spurious inexact exception for x=%a (y=%a)\n", (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+   	exit (1);
+#endif
+  }
+  if ((inex_y != 0) && (inex_z == 0))
+  {
+    printf ("Missing inexact exception for x=%a (y=%a)\n", (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+   	exit (1);
+#endif
+  }
+#endif
+
+  // check errno
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  // If x is a normal number and y is NaN, we should have errno = EDOM.
+  if (!is_nan (x) && !is_inf (x))
+  {
+    if (is_nan (y) && errno != EDOM)
+    {
+      printf ("Missing errno=EDOM for x=%a (y=%a)\n", x, y);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    if (!is_nan (y) && errno == EDOM)
+    {
+      printf ("Spurious errno=EDOM for x=%a (y=%a)\n", x, y);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    int expected_erange = (is_inf (y) && inex_y == 0) ||
+      mpfr_flags_test (MPFR_FLAGS_OVERFLOW) ||
+      mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
+    if (expected_erange && errno != ERANGE)
+    {
+      printf ("Missing errno=ERANGE for x=%a (y=%a)\n", x, y);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+    if (!expected_erange && errno == ERANGE)
+    {
+      printf ("Spurious errno=ERANGE for x=%a (y=%a)\n", x, y);
+      fflush (stdout);
+#ifndef DO_NOT_ABORT
+      exit (1);
+#endif
+    }
+  }
+#endif
+}
+
+// When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
+static inline int issignaling(_Float16 x) {
+  union_t _x = {.x = x};
+
+  return !(_x.n & (1u << 9));
+}
+
+/* check for signaling NaN input */
+static void
+check_signaling_nan (void)
+{
+	_Float16 snan = asfloat(0x7c01u);
+  _Float16 y = cr_function_under_test (snan);
+  // check that foo(NaN) = NaN
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %a=%x\n",
+             (float) y, asuint (y));
+    exit (1);
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
+             asuint (y));
+    exit (1);
+  }
+  // also test sNaN with sign bit set
+  snan = asfloat (0xfc01u);
+  y = cr_function_under_test (snan);
+  // check that foo(NaN) = NaN
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %a=%x\n",
+             (float) y, asuint (y));
+    exit (1);
+  }
+  // check that the signaling bit disappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
+             asuint (y));
+    exit (1);
+  }
+}
+
+static void
+check_exceptions_aux (uint16_t n)
+{
+  _Float16 x = asfloat (n);
+  feclearexcept (FE_INEXACT);
+  _Float16 y = cr_function_under_test (x);
+  int inex = fetestexcept (FE_INEXACT);
+  // there should be no inexact exception if the result is NaN, +/-Inf or +/-0
+  if (inex && (is_nan (y) || is_inf (y) || y == 0))
+  {
+    fprintf (stderr, "Error, for x=%a=%x, inexact exception set (y=%a=%x)\n",
+             (float) x, asuint (x), (float) y, asuint (y));
+    exit (1);
+  }
+  feclearexcept (FE_OVERFLOW);
+  y = cr_function_under_test (x);
+  inex = fetestexcept (FE_OVERFLOW);
+  if (inex)
+  {
+    fprintf (stderr, "Error, for x=%a, overflow exception set (y=%a)\n", (float) x, (float) y);
+    exit (1);
+  }
+  feclearexcept (FE_UNDERFLOW);
+  y = cr_function_under_test (x);
+  inex = fetestexcept (FE_UNDERFLOW);
+  if (inex)
+  {
+    fprintf (stderr, "Error, for x=%a, underflow exception set (y=%a)\n", (float) x, (float) y);
+    exit (1);
+  }
+}
+
+// check that no overflow/underflor/inexact is set for input NaN, Inf, 0
+// when the output is also NaN, Inf, 0
+static void
+check_exceptions (void)
+{
+  // check +sNaN and -sNaN
+  check_exceptions_aux (0x7c01);
+  check_exceptions_aux (0xfc01);
+  // check +qNaN and -qNaN
+  check_exceptions_aux (0x7e00);
+  check_exceptions_aux (0xfe00);
+  // check +Inf and -Inf
+  check_exceptions_aux (0x7c00);
+  check_exceptions_aux (0xfc00);
+  // check +0 and -0
+  check_exceptions_aux (0x0);
+  check_exceptions_aux (0x8000);
 }
 
 static int doloop (void)
 {
+  // check sNaN
+  doit (0x7c01);
+  doit (0xfc01);
+  // check qNaN
+  doit (0x7e00);
+  doit (0xfe00);
+  // check +Inf and -Inf
+  doit (0x7e00);
+  doit (0xfe00);
+
+  check_signaling_nan ();
+
+  check_exceptions ();
+
   // check regular numbers
-  uint16_t nmin = 0x0001, nmax = 0x7bff;
-		// #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-  		/* Use a static schedule with small chunks, since the function might be
-     		very easy to evaluate in some ranges, for example log of x < 0. */
-		// #pragma omp parallel for schedule(static,1024)
-		// #endif
+  uint16_t nmin = asuint (0x0p0f), nmax = asuint (0x1.ffcp+15f);
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+  /* Use a static schedule with small chunks, since the function might be
+     very easy to evaluate in some ranges, for example log of x < 0. */
+#pragma omp parallel for schedule(static,1024)
+#endif
   for (uint16_t n = nmin; n <= nmax; n++)
   {
     doit (n);
@@ -194,7 +457,7 @@ main (int argc, char *argv[])
         }
     }
 
-  // check_underflow_before ();
+  check_underflow_before ();
 
   return doloop();
 }

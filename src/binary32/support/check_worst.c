@@ -416,8 +416,6 @@ check (float x, float y)
 #ifndef DO_NOT_ABORT
     exit(1);
 #endif
-  }else {
-    printf("oui\n");
   }
 }
 

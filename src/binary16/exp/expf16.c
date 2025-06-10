@@ -63,8 +63,6 @@ _Float16 cr_expf16(_Float16 x){
 		float k = __builtin_roundevenf(inv_log2 * x); 
 		float xp = __builtin_fmaf(k, minus_log2, x); // xp is a float such that |xp| is minimal and x = klog(2) + xp
 		int i = 0x40 * xp;
-		if (i > 22) return -1;
-		if (i < -22) return -1;
     if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
 			if (x == 0x1.de4p-8) return (0x1.01cp+0 + 0x1p-12);
 	  	if (x == 0x1.73cp-6) return (0x1.05cp+0 + 0x1p-12);

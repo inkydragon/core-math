@@ -60,9 +60,8 @@ _Float16 cr_exp2f16(_Float16 x){
 		 0x1.6a09e6p+0};
 	b16u16_u v = {.f = x};
 	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-		if ((v.u & 0x7c01) == 0x7c01) v.u = (v.u & 0xfc00) + 0x200; // if x is snan
-		else if (v.u == 0xfc00) v.u = 0x0000;
-		return v.f;
+		if (v.u == 0xfc00) return 0x0p0;
+		else return x + x;
 	}
 	else if (v.u > x0) return (_Float16) 0x1p-25f;
 	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p5f; 

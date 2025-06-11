@@ -39,7 +39,7 @@ typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_exp10f16(_Float16 x){
 	uint16_t x0 = 0xc786; // binary representation of x0 in order to compare uint16_t rather than flt16
- 	_Float16 x1 = 0x1.34p2; // largest _Float16 such that 10^x1 <= MAX_FLOAT16 < 10^x1+
+ 	_Float16 x1 = 0x1.344p2; // largest _Float16 such that 10^x1 <= MAX_FLOAT16 < 10^x1+
 	static const float tb[] = // tabulate value of 10^(i/2^6) for i in [-2^5*log(2)/log(10), 2^5*log(2)/log(10)], size(tb) = 39
 		{0x8.13b01p-4, 0x8.5f6eep-4, 0x8.adf41p-4, 0x8.ff59ap-4,
 		 0x9.53ba8p-4, 0x9.ab32bp-4, 0xa.05df3p-4, 0xa.63dep-4,  
@@ -53,13 +53,19 @@ _Float16 cr_exp10f16(_Float16 x){
 		 0x1.d7ea92p+0, 0x1.e93436p+0, 0x1.fb1ffcp+0};
 	b16u16_u v = {.f = x};
 	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-		if ((v.u & 0x7c01) == 0x7c01) v.u = (v.u & 0xfc00) + 0x200; // if x is snan
-		else if (v.u == 0xfc00) v.u = 0x0000;
-		return v.f;
+		if (v.u == 0xfc00) return 0x0p0;
+		else return x + x;
 	}
 	else if (v.u > x0) return (_Float16) 0x1p-25f;
 	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p5f; 
 	else {
+		if (x == -0x1.c28p+0) return 0x1.1ccp-6 + 0x1p-18;
+		if (x == 0x1p+2) return 0x1.388p+13;
+		if (x == 0x1p+1) return 0x1.9p+6;
+		if (x == 0x1.8p+1) return 0x1.f4p+9;
+		if (x == 0x1p+0) return 0x1.4p3;
+		if (x == -0x1.2ap-6) return 0x1.ebp-1 - 0x1p-13;
+		if (x == -0x1.b5p-3) return 0x1.394p-1 - 0x1p-13;
 		float log10_on_log2 = 0x1.a934fp1f;
 		float minus_log2_on_log10 = -0x1.344136p-2f;
 		float k = __builtin_roundevenf((float) x * log10_on_log2); 

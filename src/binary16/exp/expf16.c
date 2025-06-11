@@ -76,7 +76,7 @@ _Float16 cr_expf16(_Float16 x){
 		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
 																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
 		// result
-		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * 0x1.555644p-3));
+		xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(xpp, 0x1.555644p-3, 0.5), xpp, 1.0), xpp, 1.0);
 		b32u32_u w = {.f = xpp * tb[i + 22]};
 		w.u += (int) k << 23;
 		return w.f;

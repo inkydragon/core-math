@@ -69,7 +69,7 @@ _Float16 cr_exp10f16(_Float16 x){
 																		   									// So, 10^x = 2^k * 10^(i/2^6) * 10^xpp
 
 		// result
-		xpp = 1.0 + xpp * (0x1.26bb1cp1 + xpp * (0x1.53524ep1 + xpp * (0x1.046efap1 + xpp * 0x1.2b9e52p0)));
+		xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(__builtin_fmaf(0x1.2b9e52p0, xpp, 0x1.046efap1), xpp, 0x1.53524ep1), xpp, 0x1.26bb1cp1), xpp, 1.0);
 		b32u32_u w = {.f = xpp * tb[i + 19]};
     w.u += (int) k << 23;
   	return w.f;
@@ -77,6 +77,6 @@ _Float16 cr_exp10f16(_Float16 x){
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 exp2f16 (_Float16 x) {
+_Float16 exp10f16 (_Float16 x) {
   return (_Float16) exp2f ((float) x);
 }

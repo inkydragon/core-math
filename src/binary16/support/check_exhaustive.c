@@ -313,14 +313,18 @@ check_signaling_nan (void)
     {
       fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
                u, (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
       exit (1);
+#endif
     }
     // check that the signaling bit disappeared
     if (issignaling (y))
     {
       fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
                u, asuint (y));
+#ifndef DO_NOT_ABORT
       exit (1);
+#endif
     }
     // also test sNaN with sign bit set
     snan = asfloat (0x8000u + u);
@@ -330,14 +334,18 @@ check_signaling_nan (void)
     {
       fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
                0x8000u + u, (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
       exit (1);
+#endif
     }
     // check that the signaling bit disappeared
     if (issignaling (y))
     {
       fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
                0x8000u + u, asuint (y));
+#ifndef DO_NOT_ABORT
       exit (1);
+#endif
     }
   }
 }
@@ -354,7 +362,9 @@ check_exceptions_aux (uint16_t n)
   {
     fprintf (stderr, "Error, for x=%a=%x, inexact exception set (y=%a=%x)\n",
              (float) x, asuint (x), (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   feclearexcept (FE_OVERFLOW);
   y = cr_function_under_test (x);
@@ -362,7 +372,9 @@ check_exceptions_aux (uint16_t n)
   if (inex)
   {
     fprintf (stderr, "Error, for x=%a, overflow exception set (y=%a)\n", (float) x, (float) y);
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   feclearexcept (FE_UNDERFLOW);
   y = cr_function_under_test (x);
@@ -370,7 +382,9 @@ check_exceptions_aux (uint16_t n)
   if (inex)
   {
     fprintf (stderr, "Error, for x=%a, underflow exception set (y=%a)\n", (float) x, (float) y);
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
 }
 

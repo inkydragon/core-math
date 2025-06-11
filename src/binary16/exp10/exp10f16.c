@@ -70,7 +70,7 @@ _Float16 cr_exp10f16(_Float16 x){
 		float minus_log2_on_log10 = -0x1.344136p-2f;
 		float k = __builtin_roundevenf((float) x * log10_on_log2); 
 		float xp = __builtin_fmaf(minus_log2_on_log10, k, (float) x);
-		int i = 0x40 * xp;
+		int i = 0x1p6 * xp;
 		float xpp = __builtin_fmaf((float) i, -0x1p-6, xp); // x = klog(2)/log(10) + i/2^6 + xpp
 																		   									// So, 10^x = 2^k * 10^(i/2^6) * 10^xpp
 

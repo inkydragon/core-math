@@ -69,7 +69,7 @@ _Float16 cr_exp2f16(_Float16 x){
 	else {		
 		float k = __builtin_roundevenf((float) x); 
 		float xp = -k + x;
-		int i = 0x40 * xp;
+		int i = 0x1p6 * xp;
 		float xpp = __builtin_fmaf((float) i, -0x1p-6, xp); // x = k + i/2^6 + xpp
 																		   									// So, 2^x = 2^k * 2^(i/2^6) * 2^xpp
 

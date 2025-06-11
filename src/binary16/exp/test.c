@@ -1,31 +1,5 @@
-/* Correctly-rounded natural exponential function for binary16 value.
-
-Copyright (c) 2025 Maxence Ponsardin.
-
-This file is part of the CORE-MATH project
-(https://core-math.gitlabpages.inria.fr/).
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-*/
-
 #include <stdint.h>
-#include <math.h> // only used during performance tests
+#include <stdio.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -57,7 +31,6 @@ _Float16 cr_expf16(_Float16 x){
 	b16u16_u v = {.f = x};
 	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
 		if ((v.u & 0x7c01) == 0x7c01) v.u = (v.u & 0xfc00) + 0x200; // if x is snan
-		else if (v.u == 0xfc00) v.u = 0x0000;
 		return v.f;
 	}
 	else if (v.u > x0) return (_Float16) 0x1p-25f;
@@ -74,7 +47,7 @@ _Float16 cr_expf16(_Float16 x){
 			if (x == 0x1.62cp+3) return (0x1.fdcp+15 - 1);
 		}
 		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
-																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
+																											// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
 		// result
 		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * 0x1.555644p-3));
 		b32u32_u w = {.f = xpp * tb[i + 22]};
@@ -83,7 +56,7 @@ _Float16 cr_expf16(_Float16 x){
 	}
 }
 
-// dummy function since GNU libc does not provide it
-_Float16 expf16 (_Float16 x) {
-  return (_Float16) expf ((float) x);
+int main(void) {
+	b16u16_u t = {.u = 0xfc00};
+	printf("%a\n", (float) cr_expf16(t.f));
 }

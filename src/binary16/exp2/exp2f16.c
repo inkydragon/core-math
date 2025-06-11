@@ -59,9 +59,13 @@ _Float16 cr_exp2f16(_Float16 x){
 		 0x1.5ab07ep+0, 0x1.5e76f2p+0, 0x1.6247ecp+0, 0x1.662388p+0,
 		 0x1.6a09e6p+0};
 	b16u16_u v = {.f = x};
-	if ((v.u & 0x7c00) == 0x7c00 && v.u & 0x3ff) return x; // if x is nan
+	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
+		if ((v.u & 0x7c01) == 0x7c01) v.u = (v.u & 0xfc00) + 0x200; // if x is snan
+		else if (v.u == 0xfc00) v.u = 0x0000;
+		return v.f;
+	}
 	else if (v.u > x0) return (_Float16) 0x1p-25f;
-	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p4f; 
+	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p5f; 
 	else if (v.u == 0x11c5) return (_Float16) 0x1.004p+0 - 0x1p-12; // only one wrong case
 	else {		
 		float k = __builtin_roundevenf((float) x); 

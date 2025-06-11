@@ -55,7 +55,8 @@ _Float16 cr_expf16(_Float16 x){
 		 0x1.690492p+0};
 
 	b16u16_u v = {.f = x};
-	if (v.u > x0) return (_Float16) 0x1p-25f;
+	if ((v.u & 0x7c00) == 0x7c00 && v.u & 0x3ff) return x; // if x is nan
+	else if (v.u > x0) return (_Float16) 0x1p-25f;
 	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p4f; 
 	else {
 		float minus_log2 = -0x1.62e430p-1;
@@ -63,19 +64,18 @@ _Float16 cr_expf16(_Float16 x){
 		float k = __builtin_roundevenf(inv_log2 * x); 
 		float xp = __builtin_fmaf(k, minus_log2, x); // xp is a float such that |xp| is minimal and x = klog(2) + xp
 		int i = 0x40 * xp;
-    	if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
+		if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
 			if (x == 0x1.de4p-8) return (0x1.01cp+0 + 0x1p-12);
-	  		if (x == 0x1.73cp-6) return (0x1.05cp+0 + 0x1p-12);
+			if (x == 0x1.73cp-6) return (0x1.05cp+0 + 0x1p-12);
 			if (x == 0x1.62cp+3) return (0x1.fdcp+15 - 1);
 		}
 		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
 																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
-
 		// result
 		xpp = 1.0 + xpp * (1 + xpp * (0.5 + xpp * 0x1.555644p-3));
-    b32u32_u w = {.f = xpp * tb[i + 22]};
-    w.u += (int) k << 23;
-  	return w.f;
+		b32u32_u w = {.f = xpp * tb[i + 22]};
+		w.u += (int) k << 23;
+		return w.f;
 	}
 }
 

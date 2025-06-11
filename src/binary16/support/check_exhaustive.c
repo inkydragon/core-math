@@ -1,4 +1,4 @@
-/* Check correctness of univariate binary32 function by exhaustive search.
+/* Check correctness of univariate binary16 function by exhaustive search.
 
 Copyright (c) 2022-2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -255,7 +255,7 @@ doit (uint16_t n)
   {
     if (is_nan (y) && errno != EDOM)
     {
-      printf ("Missing errno=EDOM for x=%a (y=%a)\n", x, y);
+      printf ("Missing errno=EDOM for x=%a (y=%a)\n", (float) x, (float) y);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -263,7 +263,7 @@ doit (uint16_t n)
     }
     if (!is_nan (y) && errno == EDOM)
     {
-      printf ("Spurious errno=EDOM for x=%a (y=%a)\n", x, y);
+      printf ("Spurious errno=EDOM for x=%a (y=%a)\n", (float) x, (float) y);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -274,7 +274,7 @@ doit (uint16_t n)
       mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
     if (expected_erange && errno != ERANGE)
     {
-      printf ("Missing errno=ERANGE for x=%a (y=%a)\n", x, y);
+      printf ("Missing errno=ERANGE for x=%a (y=%a)\n", (float) x, (float) y);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -282,7 +282,7 @@ doit (uint16_t n)
     }
     if (!expected_erange && errno == ERANGE)
     {
-      printf ("Spurious errno=ERANGE for x=%a (y=%a)\n", x, y);
+      printf ("Spurious errno=ERANGE for x=%a (y=%a)\n", (float) x, (float) y);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -310,14 +310,18 @@ check_signaling_nan (void)
   {
     fprintf (stderr, "Error, foo(sNaN) should be NaN, got %a=%x\n",
              (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   // also test sNaN with sign bit set
   snan = asfloat (0xfc01u);
@@ -327,14 +331,18 @@ check_signaling_nan (void)
   {
     fprintf (stderr, "Error, foo(sNaN) should be NaN, got %a=%x\n",
              (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   // check that the signaling bit disappeared
   if (issignaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
 }
 
@@ -350,7 +358,9 @@ check_exceptions_aux (uint16_t n)
   {
     fprintf (stderr, "Error, for x=%a=%x, inexact exception set (y=%a=%x)\n",
              (float) x, asuint (x), (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   feclearexcept (FE_OVERFLOW);
   y = cr_function_under_test (x);
@@ -358,7 +368,9 @@ check_exceptions_aux (uint16_t n)
   if (inex)
   {
     fprintf (stderr, "Error, for x=%a, overflow exception set (y=%a)\n", (float) x, (float) y);
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
   feclearexcept (FE_UNDERFLOW);
   y = cr_function_under_test (x);
@@ -366,7 +378,9 @@ check_exceptions_aux (uint16_t n)
   if (inex)
   {
     fprintf (stderr, "Error, for x=%a, underflow exception set (y=%a)\n", (float) x, (float) y);
+#ifndef DO_NOT_ABORT
     exit (1);
+#endif
   }
 }
 

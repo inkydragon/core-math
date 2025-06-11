@@ -52,7 +52,8 @@ _Float16 cr_exp10f16(_Float16 x){
 		 0x1.98a9a4p+0, 0x1.a7a218p+0, 0x1.b726fp+0, 0x1.c73d52p+0,  
 		 0x1.d7ea92p+0, 0x1.e93436p+0, 0x1.fb1ffcp+0};
 	b16u16_u v = {.f = x};
-	if (v.u > x0) return (_Float16) 0x1p-25f;
+	if ((v.u & 0x7c00) == 0x7c00 && v.u & 0x3ff) return x; // if x is nan
+	else if (v.u > x0) return (_Float16) 0x1p-25f;
 	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p4f; 
 	else {
 		float log10_on_log2 = 0x1.a934fp1f;

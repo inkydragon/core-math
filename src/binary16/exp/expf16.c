@@ -56,8 +56,9 @@ _Float16 cr_expf16(_Float16 x){
 
 	b16u16_u v = {.f = x};
 	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-		if ((v.u & 0x7c01) == 0x7c01) v.u = (v.u & 0xfc00) + 0x200; // if x is snan
-		else if (v.u == 0xfc00) v.u = 0x0000;
+		if (v.u == 0xfc00) v.u = 0;
+		else if (v.u == 0x7c00) return x;
+		else v.u = 0x7e00;
 		return v.f;
 	}
 	else if (v.u > x0) return (_Float16) 0x1p-25f;

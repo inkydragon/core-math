@@ -303,38 +303,42 @@ static inline int issignaling(_Float16 x) {
 static void
 check_signaling_nan (void)
 {
-	_Float16 snan = asfloat(0x7c01u);
-  _Float16 y = cr_function_under_test (snan);
-  // check that foo(NaN) = NaN
-  if (!is_nan (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %a=%x\n",
-             (float) y, asuint (y));
-    exit (1);
-  }
-  // check that the signaling bit disappeared
-  if (issignaling (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
-             asuint (y));
-    exit (1);
-  }
-  // also test sNaN with sign bit set
-  snan = asfloat (0xfc01u);
-  y = cr_function_under_test (snan);
-  // check that foo(NaN) = NaN
-  if (!is_nan (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %a=%x\n",
-             (float) y, asuint (y));
-    exit (1);
-  }
-  // check that the signaling bit disappeared
-  if (issignaling (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
-             asuint (y));
-    exit (1);
+  /* signaling NaNs have encoding 0x7c01 to 0x7dff */
+  _Float16 snan;
+  for (uint16_t u = 0x7c01u; u < 0x7e00u; u++) {
+    snan = asfloat (u);
+    _Float16 y = cr_function_under_test (snan);
+    // check that foo(NaN) = NaN
+    if (!is_nan (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
+               u, (float) y, asuint (y));
+      exit (1);
+    }
+    // check that the signaling bit disappeared
+    if (issignaling (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
+               u, asuint (y));
+      exit (1);
+    }
+    // also test sNaN with sign bit set
+    snan = asfloat (0x8000u + u);
+    y = cr_function_under_test (snan);
+    // check that foo(NaN) = NaN
+    if (!is_nan (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
+               0x8000u + u, (float) y, asuint (y));
+      exit (1);
+    }
+    // check that the signaling bit disappeared
+    if (issignaling (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
+               0x8000u + u, asuint (y));
+      exit (1);
+    }
   }
 }
 

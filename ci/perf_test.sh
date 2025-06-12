@@ -5,4 +5,4 @@ export LDFLAGS="-L/usr/local/lib"
 ./perf.sh expf
 ./perf.sh exp
 ./perf.sh expl
-./perf.sh rsqrtq
+./perf.sh sqrtq

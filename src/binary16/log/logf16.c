@@ -35,6 +35,7 @@ SOFTWARE.
 #pragma STDC FENV_ACCESS ON
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
@@ -51,8 +52,11 @@ _Float16 cr_logf16(_Float16 x){
 	else if (t.u >> 10 >= 0x1f) {
 		if (t.u == 0x8000) return neginf.f;
 =======
+=======
+
+>>>>>>> 9f181131 (Fixed almost 4k wrong cases, it was due to subnormalized : I was looking for fraction right after the exponent but in subnormalized number, the fraction iskinda shifted.\nStill 7 wrong cases)
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
-typedef union {double f; uint64_t u;} b64u64_u; // used double instead of flt to get better precision
+typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_logf16(_Float16 x){
 	b16u16_u t = {.f = x};
@@ -63,6 +67,7 @@ _Float16 cr_logf16(_Float16 x){
 		else if (t.u >> 15) return 0.0 / 0.0;
 		else return x + x;
 	}
+<<<<<<< HEAD
 <<<<<<< HEAD
 	float log2 = 0x1.62e430p-1;
 <<<<<<< HEAD
@@ -91,6 +96,9 @@ _Float16 cr_logf16(_Float16 x){
 	// We have, x = 2^expo * (1 + i2^-5 + xf.f)
 	// Thus, log(x) = expo log(2) + log(1 + i2^-5) + log(1 + xf.f / (1 + i2^-5))
 =======
+=======
+	float log2 = 0x1.62e430p-1;
+>>>>>>> 9f181131 (Fixed almost 4k wrong cases, it was due to subnormalized : I was looking for fraction right after the exponent but in subnormalized number, the fraction iskinda shifted.\nStill 7 wrong cases)
 	static const float tb[] = 
 		{0x0p+0, 0x3.f81518p-8, 0x7.e0a6cp-8, 0xb.ba2c8p-8,  
 		 0xf.85186p-8, 0x1.341d7ap-4, 0x1.6f0d28p-4, 0x1.a926d4p-4,  
@@ -110,6 +118,7 @@ _Float16 cr_logf16(_Float16 x){
 		 0xa.95169p-4, 0xa.b5fcfp-4, 0xa.d6a02p-4, 0xa.f7015p-4};
 	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormalized
+<<<<<<< HEAD
 =======
 	double log2 = 0x1.62e42fefa39efp-1;
 	static const double tb[] = 
@@ -146,6 +155,15 @@ _Float16 cr_logf16(_Float16 x){
 	xf.f = __builtin_fma(__builtin_fma(__builtin_fma(__builtin_fma(-0x1.000ccd7266ca8p-2, xf.f, 0x1.556222b13ce3fp-2), xf.f, -0x1.ffffffd10d907p-2), xf.f, 0x1.fffffff332571p-1), xf.f, -0x1p-58);
 	return __builtin_fma(log2, (double) expo, tb[i] + xf.f);
 >>>>>>> c7042ccb (Tried to use double instead of float to have a better precision but it didn't work, still ~4000 wrong cases)
+=======
+	int i = (xf.u & 0x007e0000) >> 17;
+	xf.f = 0x1p-23 * (xf.u & 0x0001ffff);
+	// We have, x = 2^expo * (1 + i2⁻⁶ + xf.f)
+	// Thus, log(x) = expo log(2) + log(1 + i2⁻⁶) + log(1 + xf.f / (1 + i2⁻⁶))
+	xf.f /= __builtin_fmaf(0x1p-6, (float) i, (float) 1);
+	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.555554p-2, xf.f, -0.5f), xf.f, 1.0f);
+	return __builtin_fmaf(log2, (float) expo, tb[i] + xf.f);
+>>>>>>> 9f181131 (Fixed almost 4k wrong cases, it was due to subnormalized : I was looking for fraction right after the exponent but in subnormalized number, the fraction iskinda shifted.\nStill 7 wrong cases)
 }
 
 // dummy function since GNU libc does not provide it

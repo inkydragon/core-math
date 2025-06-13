@@ -1,4 +1,4 @@
-/* Correctly-rounded logarithm function for binary16 value.
+/* Correctly-rounded binary logarithm function for binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 
@@ -30,12 +30,12 @@ SOFTWARE.
 /* code from MPFR */
 
 _Float16
-ref_log (_Float16 x)
+ref_log2 (_Float16 x)
 {
   mpfr_t y;
   mpfr_init2 (y, 11);
   mpfr_set_flt (y, (float) x, MPFR_RNDN);
-  int inex = mpfr_log (y, y, rnd2[rnd]);
+  int inex = mpfr_log2 (y, y, rnd2[rnd]);
   mpfr_subnormalize (y, inex, rnd2[rnd]);
   _Float16 ret = (_Float16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);

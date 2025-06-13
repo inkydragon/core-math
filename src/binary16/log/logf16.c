@@ -52,7 +52,7 @@ _Float16 cr_logf16(_Float16 x){
 		if (t.u == 0x8000) return neginf.f;
 =======
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
-typedef union {float f; uint32_t u;} b32u32_u;
+typedef union {double f; uint64_t u;} b64u64_u; // used double instead of flt to get better precision
 
 _Float16 cr_logf16(_Float16 x){
 	b16u16_u t = {.f = x};
@@ -63,6 +63,7 @@ _Float16 cr_logf16(_Float16 x){
 		else if (t.u >> 15) return 0.0 / 0.0;
 		else return x + x;
 	}
+<<<<<<< HEAD
 	float log2 = 0x1.62e430p-1;
 <<<<<<< HEAD
 	static const float tb[] = // tabulate values of log(1 + i2^-5)
@@ -109,14 +110,42 @@ _Float16 cr_logf16(_Float16 x){
 		 0xa.95169p-4, 0xa.b5fcfp-4, 0xa.d6a02p-4, 0xa.f7015p-4};
 	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormalized
+=======
+	double log2 = 0x1.62e42fefa39efp-1;
+	static const double tb[] = 
+		{0x0p+0, 0x3.f815161f807c8p-8, 0x7.e0a6c39e0ccp-8, 0xb.ba2c7b196e7ep-8,  
+     0xf.85186008b153p-8, 0x1.341d7961bd1d1p-4, 0x1.6f0d28ae56b4cp-4, 0x1.a926d3a4ad563p-4,  
+     0x1.e27076e2af2e6p-4, 0x2.1aefcf9a11cb2p-4, 0x2.52aa5f03fea46p-4, 0x2.89a56d996fa3cp-4,  
+     0x2.bfe60e14f27a8p-4, 0x2.f57120421b212p-4, 0x3.2a4b539e8ad68p-4, 0x3.5e7929d017fe6p-4,  
+     0x3.91fef8f353444p-4, 0x3.c4e0edc55e5ccp-4, 0x3.f7230dabc7c56p-4, 0x4.28c9389ce438cp-4,  
+     0x4.59d72aeae9838p-4, 0x4.8a507ef3de598p-4, 0x4.ba38aeb8474c4p-4, 0x4.e993155a517a8p-4,  
+     0x5.1862f08717b08p-4, 0x5.46ab61cb7e0b4p-4, 0x5.746f6fd602728p-4, 0x5.a1b207a6c52bcp-4,  
+     0x5.ce75fdaef401cp-4, 0x5.fabe0ee0abf0cp-4, 0x6.268ce1b05096cp-4, 0x6.51e5070845becp-4,  
+     0x6.7cc8fb2fe613p-4, 0x6.a73b26a682128p-4, 0x6.d13ddef323d8cp-4, 0x6.fad36769c6dfp-4,  
+     0x7.23fdf1e6a6888p-4, 0x7.4cbf9f803af54p-4, 0x7.751a813071284p-4, 0x7.9d109875a1e2p-4,  
+     0x7.c4a3d7ebc1bb4p-4, 0x7.ebd623de3cc7cp-4, 0x8.12a952d2e87f8p-4, 0x8.391f2e0e6fap-4,  
+     0x8.5f39721295418p-4, 0x8.84f9cf16a64b8p-4, 0x8.aa61e97a6af5p-4, 0x8.cf735a33e4b78p-4,  
+     0x8.f42faf382068p-4, 0x9.18986bdf5fa18p-4, 0x9.3caf0944d88d8p-4, 0x9.6074f6a24746p-4,  
+     0x9.83eb99a7885fp-4, 0x9.a7144ece70e98p-4, 0x9.c9f069ab150dp-4, 0x9.ec813538ab7d8p-4,  
+     0xa.0ec7f4233957p-4, 0xa.30c5e10e2f61p-4, 0xa.527c2ed81f5d8p-4, 0xa.73ec08dbadd88p-4,  
+     0xa.9516932de2d58p-4, 0xa.b5fcead9f9cc8p-4, 0xa.d6a0261acf968p-4, 0xa.f70154920b3a8p-4};
+	b64u64_u xf = {.f = x};
+	int expo = (xf.u >> 52) - 1023; // used double instead of flaot16 to avoid working with subnormalized
+>>>>>>> c7042ccb (Tried to use double instead of float to have a better precision but it didn't work, still ~4000 wrong cases)
 	int i = (t.u & 0x03f0) >> 4;
 	xf.f = 0x1p-10 * (t.u & 0x000f);
 	// We have, x = 2^expo * (1 + i2⁻⁶ + xf.f)
 	// Thus, log(x) = expo log(2) + log(1 + i2⁻⁶) + log(1 + xf.f / (1 + i2⁻⁶))
+<<<<<<< HEAD
 	xf.f /= __builtin_fmaf(0x1p-6, (float) i, (float) 1);
 >>>>>>> 1fe06f90 (First implementation of logf16 with 4000 wrong cases)
 	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.555554p-2, xf.f, -0.5f), xf.f, 1.0f);
 	return __builtin_fmaf(log2, (float) expo, tb[i] + xf.f);
+=======
+	xf.f /= __builtin_fma(0x1p-6, (double) i, 1.0);
+	xf.f = __builtin_fma(__builtin_fma(__builtin_fma(__builtin_fma(-0x1.000ccd7266ca8p-2, xf.f, 0x1.556222b13ce3fp-2), xf.f, -0x1.ffffffd10d907p-2), xf.f, 0x1.fffffff332571p-1), xf.f, -0x1p-58);
+	return __builtin_fma(log2, (double) expo, tb[i] + xf.f);
+>>>>>>> c7042ccb (Tried to use double instead of float to have a better precision but it didn't work, still ~4000 wrong cases)
 }
 
 // dummy function since GNU libc does not provide it

@@ -39,6 +39,7 @@ SOFTWARE.
 
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
+<<<<<<< HEAD
 static const b16u16_u neginf = {.u = 0xfc00};
 
 /* This code is largely inspired by TANG, P. T. P. Table-driven
@@ -57,13 +58,20 @@ _Float16 cr_logf16(_Float16 x){
 >>>>>>> 9f181131 (Fixed almost 4k wrong cases, it was due to subnormalized : I was looking for fraction right after the exponent but in subnormalized number, the fraction iskinda shifted.\nStill 7 wrong cases)
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
+=======
+b16u16_u neginf = {.u = 0xfc00};
+>>>>>>> 9a3bb25c (Added logf16 succesfully with 0 wrong case)
 
 _Float16 cr_logf16(_Float16 x){
 	b16u16_u t = {.f = x};
-	if (t.u == 0) return -0xffcp15f - 0x1p5f;
+	if (t.u == 0) return neginf.f;
 	else if (t.u >> 10 >= 0x1f) {
+<<<<<<< HEAD
 		if (t.u == 0x8000) return -0xffcp+15f - 0x1p5f;
 >>>>>>> 1fe06f90 (First implementation of logf16 with 4000 wrong cases)
+=======
+		if (t.u == 0x8000) return neginf.f;
+>>>>>>> 9a3bb25c (Added logf16 succesfully with 0 wrong case)
 		else if (t.u >> 15) return 0.0 / 0.0;
 		else return x + x;
 	}
@@ -104,8 +112,8 @@ _Float16 cr_logf16(_Float16 x){
 		 0xf.85186p-8, 0x1.341d7ap-4, 0x1.6f0d28p-4, 0x1.a926d4p-4,  
 		 0x1.e27076p-4, 0x2.1aefdp-4, 0x2.52aa6p-4, 0x2.89a56cp-4,  
 		 0x2.bfe61p-4, 0x2.f5712p-4, 0x3.2a4b54p-4, 0x3.5e7928p-4,  
-		 0x3.91fef8p-4, 0x3.c4e0ecp-4, 0x3.f7230cp-4, 0x4.28c938p-4,  
-		 0x4.59d728p-4, 0x4.8a508p-4, 0x4.ba38bp-4, 0x4.e99318p-4,  
+		 0x3.91fef8p-4, 0x3.c4e0ecp-4, 0x3.f7230cp-4, 0x4.28c93cp-4,  
+		 0x4.59d728p-4, 0x4.8a508p-4, 0x4.ba38bp-4, 0x4.e99336p-4,  
 		 0x5.1862fp-4, 0x5.46ab6p-4, 0x5.746f7p-4, 0x5.a1b208p-4,  
 		 0x5.ce76p-4, 0x5.fabe1p-4, 0x6.268cep-4, 0x6.51e508p-4,  
 		 0x6.7cc8f8p-4, 0x6.a73b28p-4, 0x6.d13dep-4, 0x6.fad368p-4,  
@@ -115,7 +123,7 @@ _Float16 cr_logf16(_Float16 x){
 		 0x8.f42fbp-4, 0x9.18987p-4, 0x9.3caf1p-4, 0x9.6074fp-4,  
 		 0x9.83ebap-4, 0x9.a7145p-4, 0x9.c9f07p-4, 0x9.ec813p-4,  
 		 0xa.0ec7fp-4, 0xa.30c5ep-4, 0xa.527c3p-4, 0xa.73ec1p-4,  
-		 0xa.95169p-4, 0xa.b5fcfp-4, 0xa.d6a02p-4, 0xa.f7015p-4};
+		 0xa.95169p-4, 0xa.b5fcfp-4, 0xa.d6a02p-4, 0xa.f70148p-4};
 	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormalized
 <<<<<<< HEAD

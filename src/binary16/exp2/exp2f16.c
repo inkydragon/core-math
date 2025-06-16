@@ -1,4 +1,4 @@
-/* Correctly-rounded natural exponential function for binary16 value.
+/* Correctly-rounded 2^x function for binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 

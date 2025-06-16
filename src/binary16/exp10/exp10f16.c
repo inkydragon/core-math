@@ -77,7 +77,7 @@ _Float16 cr_exp10f16(_Float16 x){
 		// result
 		xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(__builtin_fmaf(0x1.2b9e52p0, xpp, 0x1.046efap1), xpp, 0x1.53524ep1), xpp, 0x1.26bb1cp1), xpp, 1.0);
 		b32u32_u w = {.f = xpp * tb[i + 19]};
-    w.u += (int) k << 23;
+    w.u += (int) k * (1 << 23);
   	return w.f;
 	}
 }

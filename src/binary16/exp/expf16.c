@@ -59,8 +59,8 @@ _Float16 cr_expf16(_Float16 x){
 		if (v.u == 0xfc00) return 0x0p0;
 		else return x + x;
 	}
-	else if (v.u > x0) return (_Float16) 0x1p-25f;
-	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p5f; 
+	else if (v.u > x0) return 0x1p-25f;
+	else if (x > x1) return 0x1.ffcp15f + 0x1p5f;
 	else {
           float xf = x; // exact conversion from _Float16 to float
 		static const float minus_log2 = -0x1.62e430p-1;

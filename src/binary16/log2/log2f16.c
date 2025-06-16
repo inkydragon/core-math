@@ -136,6 +136,7 @@ _Float16 cr_logf16(_Float16 x){
 		 0x9.24925p-4, 0x8.fb824p-4, 0x8.d3dcbp-4, 0x8.ad8f3p-4,  
 		 0x8.88889p-4, 0x8.64ba18p-4, 0x8.42108p-4, 0x8.20821p-4};
 	b32u32_u xf = {.f = x};
+<<<<<<< HEAD
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormalized
 <<<<<<< HEAD:src/binary16/log/logf16.c
 <<<<<<< HEAD
@@ -185,6 +186,9 @@ _Float16 cr_logf16(_Float16 x){
 	return __builtin_fmaf(log2, (float) expo, tb[i] + xf.f);
 >>>>>>> 9f181131 (Fixed almost 4k wrong cases, it was due to subnormalized : I was looking for fraction right after the exponent but in subnormalized number, the fraction iskinda shifted.\nStill 7 wrong cases)
 =======
+=======
+	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormal numbers
+>>>>>>> 7387b238 (Added better comments)
 	int i = (xf.u & 0x007c0000) >> 18;
 	xf.f = 0x1p-23 * (xf.u & 0x0003ffff) * tl[i];
 	// We have, x = 2^expo * (1 + i2^-5 + xf.f)

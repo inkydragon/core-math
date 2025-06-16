@@ -84,5 +84,5 @@ _Float16 cr_exp10f16(_Float16 x){
 
 // dummy function since GNU libc does not provide it
 _Float16 exp10f16 (_Float16 x) {
-  return (_Float16) exp2f ((float) x);
+  return (_Float16) exp10f ((float) x);
 }

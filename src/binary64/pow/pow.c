@@ -105,7 +105,7 @@ typedef struct
   uint32_t res3;
 } fpcr_bitfield;
 
-inline static unsigned int _mm_getcsr()
+inline static unsigned int _mm_getcsr(void)
 {
   union
   {

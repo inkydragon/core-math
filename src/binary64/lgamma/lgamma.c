@@ -36,32 +36,35 @@ SOFTWARE.
 /* __builtin_roundeven was introduced in gcc 10:
    https://gcc.gnu.org/gcc-10/changes.html,
    and in clang 17 */
-#if (defined(__GNUC__) && __GNUC__ >= 10) || (defined(__clang__) && __clang_major__ >= 17)
-#define HAS_BUILTIN_ROUNDEVEN
-#endif
-
-#if !defined(HAS_BUILTIN_ROUNDEVEN) && (defined(__GNUC__) || defined(__clang__)) && (defined(__AVX__) || defined(__SSE4_1__) || (__ARM_ARCH >= 8))
-inline double __builtin_roundeven(double x){
-   double ix;
-#if defined __AVX__
-   __asm__("vroundsd $0x8,%1,%1,%0":"=x"(ix):"x"(x));
-#elif __ARM_ARCH >= 8
-   __asm__ ("frintn %d0, %d1":"=w"(ix):"w"(x));
-#else /* __SSE4_1__ */
-   __asm__("roundsd $0x8,%1,%0":"=x"(ix):"x"(x));
-#endif
-   return ix;
-}
-#define HAS_BUILTIN_ROUNDEVEN
-#endif
-
-#ifndef HAS_BUILTIN_ROUNDEVEN
-#include <math.h>
-/* round x to nearest integer */
+#if ((defined(__GNUC__) && __GNUC__ >= 10) || (defined(__clang__) && __clang_major__ >= 17)) && (defined(__aarch64__) || defined(__x86_64__) || defined(__i386__))
+# define roundeven_finite(x) __builtin_roundeven (x)
+#else
+/* round x to nearest integer, breaking ties to even */
 static double
-__builtin_roundeven (double x)
+roundeven_finite (double x)
 {
-  return round(x); /* nearest, away from 0 */
+  double ix;
+# if (defined(__GNUC__) || defined(__clang__)) && (defined(__AVX__) || defined(__SSE4_1__) || (__ARM_ARCH >= 8))
+#  if defined __AVX__
+   __asm__("vroundsd $0x8,%1,%1,%0":"=x"(ix):"x"(x));
+#  elif __ARM_ARCH >= 8
+   __asm__ ("frintn %d0, %d1":"=w"(ix):"w"(x));
+#  else /* __SSE4_1__ */
+   __asm__("roundsd $0x8,%1,%0":"=x"(ix):"x"(x));
+#  endif
+# else
+  ix = __builtin_round (x); /* nearest, away from 0 */
+  if (__builtin_fabs (ix - x) == 0.5)
+  {
+    /* if ix is odd, we should return ix-1 if x>0, and ix+1 if x<0 */
+    union { double f; uint64_t n; } u, v;
+    u.f = ix;
+    v.f = ix - __builtin_copysign (1.0, x);
+    if (__builtin_ctz (v.n) > __builtin_ctz (u.n))
+      ix = v.f;
+  }
+# endif
+  return ix;
 }
 #endif
 
@@ -861,10 +864,10 @@ double cr_lgamma(double x){
   b64u64_u t = {.f = x};
   uint64_t nx = t.u<<1;
   if(__builtin_expect(nx >= 0xfeaea9b24f16a34cull, 0)){
-    if(nx == 0xfeaea9b24f16a34cull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
-    if(nx == 0xfeaea9b24f16a34eull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
-    if(__builtin_expect(nx>=(0x7fful<<53), 0)){ /* x=NaN or +/-Inf */
-      if(nx==(0x7fful<<53)){ /* x=+/-Inf */
+    if(t.u == 0x7f5754d9278b51a6ull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
+    if(t.u == 0x7f5754d9278b51a7ull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
+    if(__builtin_expect(nx>=(0x7ffull<<53), 0)){ /* x=NaN or +/-Inf */
+      if(nx==(0x7ffull<<53)){ /* x=+/-Inf */
 	signgam = 1;
 	return __builtin_fabs(x); /* x=+Inf */
       }
@@ -955,7 +958,6 @@ double cr_lgamma(double x){
 	// for other |x| use a simple product
 	lh = mulddd(ax-0.5, lh,ll, &ll);
       }
-      double zh = 1.0/ax, zl = __builtin_fma(zh,-ax, 1.0)*zh;
       static const double c[][2] = {
 	{0x1.acfe390c97d6ap-2, -0x1.1d9792ced423ap-58}, {0x1.55555555554c1p-4, -0x1.0143af34001bdp-59}};
       static const double q[] = {
@@ -963,6 +965,7 @@ double cr_lgamma(double x){
 	-0x1.a7fd66a05ccfcp-10};
       lh = fastsum(lh,ll, c[0][0], c[0][1], &ll);
       if(ax<0x1p100){
+	double zh = 1.0/ax, zl = __builtin_fma(zh,-ax, 1.0)*zh;
 	double z2h = zh*zh, z4h = z2h*z2h;
 	double q0 = q[0] + z2h*q[1], q2 = q[2] + z2h*q[3], q4 = q[4];
 	fl = z2h*(q0 + z4h*(q2 + z4h*q4));
@@ -1266,7 +1269,7 @@ double as_sinpipid(double x, double *l){
   x -= 0.5;
   double ax = __builtin_fabs(x);
   double sx = ax*128;
-  double ix = __builtin_roundeven(sx);
+  double ix = roundeven_finite(sx);
   int ky = ix, kx = 64-ky;
   if(__builtin_expect(kx<2,0)){
     static const double c[2] = {-0x1.a51a6625307d3p+0, -0x1.16cc8f2044a4ap-55};
@@ -1312,7 +1315,7 @@ double as_sinpipid_accurate(double x, double *l){
   x -= 0.5;
   x = __builtin_fabs(x);
   x *= 128;
-  double ix = __builtin_roundeven(x), d = ix-x;
+  double ix = roundeven_finite(x), d = ix-x;
   int ky = ix, kx = 64-ky;
 
   double sh = stpi[kx][1], sl = stpi[kx][0];
@@ -1348,32 +1351,32 @@ double as_lgamma_asym_accurate(double xh, double *xl, double *e){
   // (x-0.5)*ln(x) - (x - 0.5) - 0.5 + 0.5*ln(2*pi)
   // (x-0.5)*(ln(x)-1) + 0.5*(ln(2*pi)-1)
 
-  double zh = 1.0/xh, dz = *xl*zh, zl = (__builtin_fma(zh,-xh,1.0) - dz)*zh;
-  double l2, l1, l0 = as_logd_accurate(xh, &l1, &l2);
-  if(*xl != 0){
-    double dl2, dl1 = mulddd(*xl, zh, __builtin_fma(zh,-xh,1.0)*zh, &dl2);
-    dl2 -= dl1*dl1/2;
-    l1 = sumdd(l1,l2,dl1,dl2, &l2);
-  }
-
-  b64u64_u t = {.f = xh};
-  double wl, wh;
-  if(t.u>>52 > 0x3ff + 51){
-    wh = xh;
-    wl = *xl - 0.5;
-  } else {
-    wh = xh - 0.5;
-    wl = *xl;
-  }
-  l0 -= 1;
-
-  double l0x = l0*wh, l0xl = __builtin_fma(l0,wh,-l0x);
-  double l1x = l1*wh, l1xl = __builtin_fma(l1,wh,-l1x);
-  double l2x = l2*wh;
-
-  l1x = sumdd(l1x,l2x, l0xl,l1xl, &l2x);
-  l1x = sumdd(l1x,l2x, l0*wl,l1*wl, &l2x);
+  double l2, l1, l0 = as_logd_accurate(xh, &l1, &l2), l0x, l1x, l2x;
   if(xh<0x1p120){
+    double zh = 1.0/xh, dz = *xl*zh, zl = (__builtin_fma(zh,-xh,1.0) - dz)*zh;
+    if(*xl != 0){
+      double dl2, dl1 = mulddd(*xl, zh, __builtin_fma(zh,-xh,1.0)*zh, &dl2);
+      dl2 -= dl1*dl1/2;
+      l1 = sumdd(l1,l2,dl1,dl2, &l2);
+    }
+
+    b64u64_u t = {.f = xh};
+    double wl, wh;
+    if(t.u>>52 > 0x3ff + 51){
+      wh = xh;
+      wl = *xl - 0.5;
+    } else {
+      wh = xh - 0.5;
+      wl = *xl;
+    }
+    l0 -= 1;
+
+    l0x = l0*wh; double l0xl = __builtin_fma(l0,wh,-l0x);
+    l1x = l1*wh; double l1xl = __builtin_fma(l1,wh,-l1x);
+    l2x = l2*wh;
+
+    l1x = sumdd(l1x,l2x, l0xl,l1xl, &l2x);
+    l1x = sumdd(l1x,l2x, l0*wl,l1*wl, &l2x);
     double z2l, z2h = muldd(zh,zl,zh,zl, &z2l);
     double fh, fl;
     if(xh>=48){
@@ -1420,6 +1423,14 @@ double as_lgamma_asym_accurate(double xh, double *xl, double *e){
     l1x = sumdd(l1x,l2x, fh,fl, &l2x);
     l0x = fasttwosum(l0x,l1x, &l1x);
     l1x = fasttwosum(l1x,l2x, &l2x);
+  } else {
+    double wl = *xl - 0.5;
+    l0 -= 1;
+    l0x = l0*xh; double l0xl = __builtin_fma(l0,xh,-l0x);
+    l1x = l1*xh; double l1xl = __builtin_fma(l1,xh,-l1x);
+    l2x = l2*xh;
+    l1x = sumdd(l1x,l2x, l0xl,l1xl, &l2x);
+    l1x = sumdd(l1x,l2x, l0*wl,l1*wl, &l2x);
   }
   *xl = l1x;
   *e = l2x;

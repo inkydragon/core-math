@@ -39,28 +39,13 @@ typedef unsigned __int128 u128;
 // the following represent (-1)^sgn*(h/2^64+m/2^128+l/2^192)*2^ex
 // we have either h=m=l=0 to represent +0 or -0
 // or the most significant bit of h is 1
-#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 typedef union {
   struct {
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
     uint64_t m, h, l; // put m before h on little-endian processor
 #else
-    uint64_t h, m, l; // put h before m on little-endian processor
-#endif
-    int64_t ex;
-    uint64_t sgn;
-  };
-  struct {
-    u128 _h;
-    uint64_t _l;
-    int64_t _ex;
-    uint64_t _sgn;
-  };
-} tint_t;
-#else
-typedef union {
-  struct {
     uint64_t h, m, l; // put h before m on big-endian processor
+#endif
     int64_t ex;
     uint64_t sgn;
   };
@@ -71,7 +56,6 @@ typedef union {
     uint64_t _sgn;
   };
 } tint_t;
-#endif
 
 // ZERO is a tint_t representation of 0
 static const tint_t ZERO = {.h = 0, .m = 0, .l = 0, .ex = -1076, .sgn = 0};

@@ -67,7 +67,7 @@ _Float16 cr_log10f16(_Float16 x){
 		 0xe.38e39p-27f, 0xd.d67c9p-27f, 0xd.79436p-27f, 0xd.20cdep-27f,  
 		 0xc.ccccdp-27f, 0xc.7ce0cp-27f, 0xc.30c31p-27f, 0xb.e82fap-27f,  
 		 0xb.a2cbc8p-27f, 0xb.60b61p-27f, 0xb.21643p-27f, 0xa.e4c41p-27f,  
-		 0xa.aaaabp-27f, 0xa.72ed36p-27f, 0xa.3d70ap-27f, 0xa.0a0a1p-27f,  
+		 0xa.aaaabp-27f, 0xa.72ed28p-27f, 0xa.3d70ap-27f, 0xa.0a0a1p-27f,  
 		 0x9.d89d9p-27f, 0x9.a90e8p-27f, 0x9.7b426p-27f, 0x9.4f209p-27f,  
 		 0x9.24925p-27f, 0x8.fb824p-27f, 0x8.d3dcbp-27f, 0x8.ad8f3p-27f,  
 		 0x8.88938ap-27f, 0x8.64bfd8p-27f, 0x8.4218b8p-27f, 0x8.208136p-27f};
@@ -86,7 +86,7 @@ _Float16 cr_log10f16(_Float16 x){
 	xf.f = (xf.u & 0x0003ffff) * tl[i];
 	// We have, x = 2^expo * (1 + i2^-5 + xf.f)
 	// Thus, log(x) = expo log(2) + log(1 + i2^-5) + log(1 + xf.f / (1 + i2^-5))
-	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.555554p-2, xf.f, -0.5f), xf.f, 1.0f) * 0x1.bcb7b2p-2;
+	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.287a76p-3f, xf.f, -0x1.bcb7b2p-3f), xf.f, 0x1.bcb7b2p-2f);
 	return __builtin_fmaf(log10_2, (float) expo, xf.f + tb[i]); 
 }
 

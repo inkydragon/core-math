@@ -1,4 +1,4 @@
-/* Correctly-rounded logarithm function for binary16 value.
+/* Correctly-rounded radix-10 logarithm function for binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 
@@ -44,7 +44,7 @@ implementation of the logarithm function in IEEE floating-point
 arithmetic. ACM Trans. Math. Softw. 16, 4 (1990), 378–400.
 https://dl.acm.org/doi/10.1145/98267.98294 */
 
-_Float16 cr_logf16(_Float16 x){
+_Float16 cr_log10f16(_Float16 x){
 	b16u16_u t = {.f = x};
 	if (t.u == 0) return neginf.f;
 	else if (t.u >> 10 >= 0x1f) {
@@ -52,36 +52,45 @@ _Float16 cr_logf16(_Float16 x){
 		else if (t.u >> 15) return 0.0f / 0.0f;
 		else return x + x;
 	}
-	float log2 = 0x1.62e430p-1;
-	static const float tb[] = // tabulate values of log(1 + i2^-5)
-		{0x0p+0f, 0x7.e0a6cp-8f, 0xf.85186p-8f, 0x1.6f0d28p-4f,  
-		 0x1.e27076p-4f, 0x2.52aa6p-4f, 0x2.bfe61p-4f, 0x3.2a4b54p-4f,  
-		 0x3.91fef8p-4f, 0x3.f7230cp-4f, 0x4.59d728p-4f, 0x4.ba38ccp-4f,  
-		 0x5.1862fp-4f, 0x5.746f7p-4f, 0x5.ce76p-4f, 0x6.268cep-4f,  
-		 0x6.7cc8f8p-4f, 0x6.d13dcp-4f, 0x7.23fdfp-4f, 0x7.751a8p-4f,  
-		 0x7.c4a3d8p-4f, 0x8.12a95p-4f, 0x8.5f397p-4f, 0x8.aa61fp-4f,  
-		 0x8.f42fbp-4f, 0x9.3caf1p-4f, 0x9.83ebap-4f, 0x9.c9f07p-4f,  
-		 0xa.0ec7fp-4f, 0xa.527c3p-4f, 0xa.95169p-4f, 0xa.d6a02p-4f};
+	float log10_2 = 0x1.344136p-2;
+	static const float tb[] = // tabulate values of log10(1 + i2^-5)
+		{0x0p+0f, 0x3.6bd21p-8f, 0x6.bd7e48p-8f, 0x9.f688dp-8f,  
+		 0xd.1854fp-8f, 0x1.02428cp-4f, 0x1.31b306p-4f, 0x1.5fe804p-4f,  
+		 0x1.8cf178p-4f, 0x1.b8de4ep-4f, 0x1.e3bc1ap-4f, 0x2.0d97acp-4f,  
+		 0x2.367ce4p-4f, 0x2.5e76d4p-4f, 0x2.858fdp-4f, 0x2.abd18cp-4f,  
+		 0x2.d1451p-4f, 0x2.f5f2e8p-4f, 0x3.19e2f2p-4f, 0x3.3d1cf8p-4f,  
+		 0x3.5fa7c8p-4f, 0x3.818a28p-4f, 0x3.a2ca6p-4f, 0x3.c36e68p-4f,  
+		 0x3.e37bdcp-4f, 0x4.02f818p-4f, 0x4.21e82p-4f, 0x4.4050c8p-4f,  
+		 0x4.5e3698p-4f, 0x4.7b9dep-4f, 0x4.988acp-4f, 0x4.b5013p-4f};
 	static const float tl[] = // tabulate values of 1 / (1 + i2^-5)
 		{0x1p-23f, 0xf.83e1p-27f, 0xf.0f0f1p-27f, 0xe.a0ea1p-27f,  
-		 0xe.38e39p-27f, 0xd.d67c9p-27f, 0xd.79436p-27f, 0xd.20d21p-27f,  
+		 0xe.38e39p-27f, 0xd.d67c9p-27f, 0xd.79436p-27f, 0xd.20cdep-27f,  
 		 0xc.ccccdp-27f, 0xc.7ce0cp-27f, 0xc.30c31p-27f, 0xb.e82fap-27f,  
-		 0xb.a2e8cp-27f, 0xb.60b61p-27f, 0xb.21643p-27f, 0xa.e4c41p-27f,  
-		 0xa.aaaabp-27f, 0xa.72f05p-27f, 0xa.3d70ap-27f, 0xa.0a0a1p-27f,  
+		 0xb.a2cbc8p-27f, 0xb.60b61p-27f, 0xb.21643p-27f, 0xa.e4c41p-27f,  
+		 0xa.aaaabp-27f, 0xa.72ed36p-27f, 0xa.3d70ap-27f, 0xa.0a0a1p-27f,  
 		 0x9.d89d9p-27f, 0x9.a90e8p-27f, 0x9.7b426p-27f, 0x9.4f209p-27f,  
 		 0x9.24925p-27f, 0x8.fb824p-27f, 0x8.d3dcbp-27f, 0x8.ad8f3p-27f,  
-		 0x8.88889p-27f, 0x8.64b8ap-27f, 0x8.42108p-27f, 0x8.208168p-27f};
+		 0x8.88938ap-27f, 0x8.64bfd8p-27f, 0x8.4218b8p-27f, 0x8.208136p-27f};
 	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormal numbers
-	int i = (xf.u & 0x007c0000) >> 18;
+	uint32_t i = (xf.u & 0x007c0000) >> 18;
+	if ((i | 0x00000019) == 0x0000001f) { // 0...0xx11x
+		if (i == 7) { // 4 wrong cases
+			if (x == 0x1.394p-1f) return -0x1.b5p-3f + 0x1p-15f;
+			if (x == 0x1.388p+13f) return 0x1p+2f;
+		} else if ((i | 0x00000001) == 0x0000001f) { // i = 30 or i = 31
+			if (x == 0x1.f84p+6f) return 0x1.0ccp+1f + 0x1p-11f;
+			if (x == 0x1.f4p+9f) return 0x1.8p+1f;
+		}
+	}
 	xf.f = (xf.u & 0x0003ffff) * tl[i];
 	// We have, x = 2^expo * (1 + i2^-5 + xf.f)
 	// Thus, log(x) = expo log(2) + log(1 + i2^-5) + log(1 + xf.f / (1 + i2^-5))
-	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.555554p-2f, xf.f, -0.5f), xf.f, 1.0f);
-	return __builtin_fmaf(log2, (float) expo, tb[i] + xf.f);
+	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.555554p-2, xf.f, -0.5f), xf.f, 1.0f) * 0x1.bcb7b2p-2;
+	return __builtin_fmaf(log10_2, (float) expo, xf.f + tb[i]); 
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 logf16 (_Float16 x) {
-  return (_Float16) logf ((float) x);
+_Float16 log10f16 (_Float16 x) {
+  return (_Float16) log10f ((float) x);
 }

@@ -63,20 +63,19 @@ _Float16 cr_expf16(_Float16 x){
 	else if (x > x1) return 0x1.ffcp15f + 0x1p5f;
 	else {
           float xf = x; // exact conversion from _Float16 to float
-		static const float minus_log2 = -0x1.62e430p-1;
+		static const float minus_log2 = -0x1.62e430p-1f;
 		static const float inv_log2 = 0x1.715476p0f;
 		float k = __builtin_roundevenf(inv_log2 * xf);
 		float xp = __builtin_fmaf(k, minus_log2, xf); // xp is a float such that |xp| is minimal and x = klog(2) + xp
 		int i = 0x1p6f * xp;
-                if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
+    if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
 			if (xf == 0x1.de4p-8f) return 0x1.01cp+0f + 0x1p-12f;
 			if (xf == 0x1.73cp-6f) return 0x1.05cp+0f + 0x1p-12f;
-			if (xf == 0x1.62cp+3f) return 0x1.fdcp+15f - 1.0f;
-               	}
+    }
 		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
 																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
 		// result
-                xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(xpp, 0x1.555644p-3f, 0.5f), xpp, 1.0f), xpp, 1.0f);
+    xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(xpp, 0x1.555644p-3f, 0.5f), xpp, 1.0f), xpp, 1.0f);
 		b32u32_u w = {.f = xpp * tb[i + 22]};
 		w.u += (int32_t) k * (1l << 23);
 		return w.f; // conversion float -> _Float16 (with rounding)

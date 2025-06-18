@@ -68,8 +68,8 @@ _Float16 cr_log2f16(_Float16 x){
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormalized
 	int i = (xf.u & 0x007c0000) >> 18;
 	xf.f = 0x1p-23 * (xf.u & 0x0003ffff) * tl[i];
-	// We have, x = 2^expo * (1 + i2⁻⁵ + xf.f)
-	// Thus, log(x) = expo log(2) + log(1 + i2⁻⁵) + log(1 + xf.f / (1 + i2⁻⁵))
+	// We have, x = 2^expo * (1 + i2^-5 + xf.f)
+	// Thus, log(x) = expo log(2) + log(1 + i2^-5) + log(1 + xf.f / (1 + i2^-5))
 	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.555554p-2, xf.f, -0.5f), xf.f, 1.0f) * 0x1.715476p+0;
 	return (float) expo + tb[i] + xf.f;
 }

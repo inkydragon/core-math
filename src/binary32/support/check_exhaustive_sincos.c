@@ -301,7 +301,7 @@ doit (uint32_t n)
   cr_function_under_test(x, &z1, &z2);
   if (!fetestexcept (FE_UNDERFLOW)){
     printf ("Underflow exception was reset for x=%la\n",
-      x, z1);
+      x);
     }
 
   // check divbyzero flag is not reset
@@ -309,7 +309,7 @@ doit (uint32_t n)
   cr_function_under_test(x, &z2, &z2);
   if (!fetestexcept (FE_DIVBYZERO)){
     printf ("Division by zero exception was reset for x=%la\n",
-      x, z1);
+      x);
     }
 
   // check inexact flag is not reset
@@ -317,7 +317,7 @@ doit (uint32_t n)
   cr_function_under_test(x, &z2, &z2);
   if (!fetestexcept (FE_INEXACT)){
     printf ("Inexact exception was reset for x=%la\n",
-      x, z1);
+      x);
     }
 
   // check invalid flag is not reset
@@ -325,7 +325,7 @@ doit (uint32_t n)
   cr_function_under_test(x, &z2, &z2);
   if (!fetestexcept (FE_INVALID)){
     printf ("Invalid exception was reset for x=%la\n",
-      x, z1);
+      x);
     }
 
   // check overflow flag is not reset
@@ -333,7 +333,7 @@ doit (uint32_t n)
   cr_function_under_test(x, &z2, &z2);
   if (!fetestexcept (FE_OVERFLOW)){
     printf ("Overflow exception was reset for x=%la\n",
-      x, z1);
+      x);
     }
 }
 

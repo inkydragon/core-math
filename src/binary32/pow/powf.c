@@ -101,7 +101,7 @@ typedef struct
   uint32_t res3;
 } fpcr_bitfield;
 
-inline static unsigned int _mm_getcsr()
+inline static unsigned int _mm_getcsr(void)
 {
   union
   {
@@ -415,7 +415,7 @@ float cr_powf(float x0, float y0){
       if(((tx.u<<1) < ((uint64_t)0x3ff<<53)) ^ (ty.u>>63)){
 	return 0;
       } else {
-	return __builtin_inf();
+	return 1.0f/0.0f;
       }
     }
     return x0 + y0;

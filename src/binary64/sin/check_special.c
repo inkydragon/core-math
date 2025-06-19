@@ -128,9 +128,11 @@ check_invalid (void)
 
   // Check +Inf
   feclearexcept (FE_INVALID);
+
 #ifdef CORE_MATH_SUPPORT_ERRNO
   errno = 0;
 #endif
+
   double y = cr_sin(plusInf);
   if (!is_nan (y))
   {
@@ -156,6 +158,7 @@ check_invalid (void)
              asuint64 (y));
     exit (1);
   }
+
 #ifdef CORE_MATH_SUPPORT_ERRNO
   // check errno = EDOM
   if (errno != EDOM)
@@ -195,6 +198,7 @@ check_invalid (void)
              asuint64 (y));
     exit (1);
   }
+
 #ifdef CORE_MATH_SUPPORT_ERRNO
   // check errno = EDOM
   if (errno != EDOM)

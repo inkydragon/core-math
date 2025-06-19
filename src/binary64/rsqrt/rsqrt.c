@@ -58,7 +58,7 @@ typedef struct
   uint32_t res3;
 } fpcr_bitfield;
 
-inline static unsigned int _mm_getcsr()
+inline static unsigned int _mm_getcsr(void)
 {
   union
   {
@@ -198,10 +198,5 @@ double cr_rsqrt(double x){
 extern double invsqrt (double);
 double rsqrt(double x){
   return invsqrt(x);
-}
-#elif !defined(SKIP_C_FUNC_REDEF)
-/* rsqrt function is not in glibc so define it here just to compile tests */
-double rsqrt(double x){
-  return cr_rsqrt(x);
 }
 #endif

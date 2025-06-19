@@ -232,11 +232,3 @@ long double cr_rsqrtl (long double x){
   v.m += (!!(dr&rn))|ru;
   return v.f;
 }
-
-#if !defined(SKIP_C_FUNC_REDEF)
-/* rsqrtl function is not in glibc so define it here just to compile tests */
-long double rsqrtl (long double x){
-  long double ir = 1.0L/x;
-  return ir*sqrtl(x);
-}
-#endif

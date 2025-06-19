@@ -256,7 +256,7 @@ __float128 cr_rsqrtq(__float128 x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	errno = ERANGE; // pole error
 #endif
-	return __builtin_inff128(); // x = +0
+	return 1.0f128/0.0f128; // x = +0
       }
     }
     e = 1 - ns;
@@ -268,7 +268,7 @@ __float128 cr_rsqrtq(__float128 x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE; // pole error
 #endif
-      return -__builtin_inff128();
+      return -1.0f128/0.0f128;
     }
     if(u.a==(u128)0x7fff<<112) return 0; // x = +Inf
     if(u.a<=(u128)0xffff<<112 && u.a>(u128)0x8000<<112){ // -inf <= x < -0
@@ -337,10 +337,3 @@ __float128 cr_rsqrtq(__float128 x){
   v.b[1] += e2; // place exponent
   return reinterpret_u128_as_f128(v.a); // put into xmm register
 }
-
-#if !defined(SKIP_C_FUNC_REDEF)
-/* rsqrt function is not in glibc so define it here just to compile tests */
-__float128 rsqrtq(__float128 x){
-  return cr_rsqrtq(x);
-}
-#endif

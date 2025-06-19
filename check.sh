@@ -65,7 +65,9 @@ if [ -n "${ARGS[0]}" ]; then
 else
     SIZE=${FILE#src/binary}
     SIZE=${SIZE%%/*}
-    case "$SIZE" in
+		case "$SIZE" in
+				16)
+						KIND=--exhaustive;;
         32)
 	    case "$FUN" in
 		atan2f)

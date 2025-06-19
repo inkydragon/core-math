@@ -112,6 +112,7 @@ then
 fi
 # Please uncomment the lines below if your Fortran compiler supports the REAL128 kind.
 # echo "! quad unary functions"
+# for I in rsqrt sqrt
 # for I in cbrt rsqrt sqrt
 # do
 # 	echo "interface"

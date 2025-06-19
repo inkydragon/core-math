@@ -499,7 +499,7 @@ check_signaling_nan (void)
   }
 
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (snan, 1.0f);
+  y = cr_function_under_test (snan, 2.0f);
   // check that foo(NaN,1.0) = NaN
   if (!is_nan (y))
   {
@@ -518,7 +518,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 1.0f);
+    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 2.0f);
     exit (1);
   }
 
@@ -574,7 +574,7 @@ check_signaling_nan (void)
   // also check sNaN with sign bit set
   snan = asfloat (0xff800001);
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (snan, 1.0f);
+  y = cr_function_under_test (snan, 2.0f);
   // check that foo(NaN,x) = NaN
   if (!is_nan (y))
   {
@@ -593,7 +593,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 1.0f);
+    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 2.0f);
     exit (1);
   }
 

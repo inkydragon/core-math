@@ -2202,6 +2202,8 @@ cr_sincos (double x, double *s, double *c)
       if ((t.u << 1) == 0x7ffull<<53) // Inf
         errno = EDOM;
 #endif
+      if ((t.u << 1) != (0x7ff8ull<<49))
+        feraiseexcept (FE_INVALID);
       t.u = ~0ull;
       *s = t.f;
       *c = t.f;

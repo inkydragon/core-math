@@ -352,6 +352,62 @@ check_exceptions_aux (uint32_t n)
     fprintf (stderr, "Error, for x=%a, underflow exception set (y=%a)\n", x, y);
     exit (1);
   }
+
+  /* Check that all flags are not reset */
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_UNDERFLOW)){
+    printf ("Underflow exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_DIVBYZERO)){
+    printf ("Division by zero exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check inexact flag is not reset
+  feraiseexcept (FE_INEXACT);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_INEXACT)){
+    printf ("Inexact exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check invalid flag is not reset
+  feraiseexcept (FE_INVALID);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_INVALID)){
+    printf ("Invalid exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check overflow flag is not reset
+  feraiseexcept (FE_OVERFLOW);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_OVERFLOW)){
+    printf ("Overflow exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
 }
 
 // check that no overflow/underflor/inexact is set for input NaN, Inf, 0

@@ -256,7 +256,7 @@ __float128 cr_rsqrtq(__float128 x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	errno = ERANGE; // pole error
 #endif
-	return 1.0f128/0.0f128; // x = +0
+	return 1.0q/0.0q; // x = +0
       }
     }
     e = 1 - ns;
@@ -268,7 +268,7 @@ __float128 cr_rsqrtq(__float128 x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE; // pole error
 #endif
-      return -1.0f128/0.0f128;
+      return -1.0q/0.0q;
     }
     if(u.a==(u128)0x7fff<<112) return 0; // x = +Inf
     if(u.a<=(u128)0xffff<<112 && u.a>(u128)0x8000<<112){ // -inf <= x < -0

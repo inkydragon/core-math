@@ -2,7 +2,6 @@ FUNCTION_UNDER_TEST := rsqrtq
 
 include ../support/Makefile.univariate
 
-CFLAGS += -DMPFR_WANT_FLOAT128
 LDFLAGS += -lquadmath
 
 all:: check_special

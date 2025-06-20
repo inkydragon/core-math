@@ -182,9 +182,9 @@ doit (uint16_t n1, uint16_t n2)
   if (!is_equal (y, z))
   {
 #ifndef EXCHANGE_X_Y
-    printf ("FAIL x,y=%a,%a ref=%a y=%a\n", (float) x1, (float) x2, (float) y, (float) z);
+    printf ("FAIL x,y=%a,%a ref=%a z=%a\n", (float) x1, (float) x2, (float) y, (float) z);
 #else
-    printf ("FAIL y,x=%a,%a ref=%a y=%a\n", (float) x1, (float) x2, (float) y, (float) z);
+    printf ("FAIL y,x=%a,%a ref=%a z=%a\n", (float) x1, (float) x2, (float) y, (float) z);
 #endif
     fflush (stdout);
 #ifndef DO_NOT_ABORT

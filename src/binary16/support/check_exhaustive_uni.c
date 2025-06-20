@@ -393,12 +393,16 @@ check_exceptions_aux (uint16_t n)
 static void
 check_exceptions (void)
 {
-  // check +sNaN and -sNaN
-  check_exceptions_aux (0x7c01);
-  check_exceptions_aux (0xfc01);
-  // check +qNaN and -qNaN
-  check_exceptions_aux (0x7e00);
-  check_exceptions_aux (0xfe00);
+  // checking all +sNaN and -sNaN
+	for (uint16_t u = 0x7c01; u < 0x7e00; u++) {
+  	check_exceptions_aux (u);
+  	check_exceptions_aux (u | 0x8000);
+	}
+  // checking all +qNaN and -qNaN
+	for (uint16_t u = 0x7e00; u < 0x8000; u++) {
+  	check_exceptions_aux (u);
+  	check_exceptions_aux (u | 0x8000);
+	}
   // check +Inf and -Inf
   check_exceptions_aux (0x7c00);
   check_exceptions_aux (0xfc00);
@@ -409,12 +413,16 @@ check_exceptions (void)
 
 static int doloop (void)
 {
-  // check sNaN
-  doit (0x7c01);
-  doit (0xfc01);
-  // check qNaN
-  doit (0x7e00);
-  doit (0xfe00);
+  // checking all sNaN
+	for (uint16_t u = 0x7c01; u < 0x7e00; u++) {
+  	doit (u);
+  	doit (u | 0x8000);
+	}
+  // checking all qNaN
+	for (uint16_t u = 0x7e00; u < 0x8000; u++) {
+  	doit (u);
+  	doit (u | 0x8000);
+	}
   // check +Inf and -Inf
   doit (0x7c00);
   doit (0xfc00);

@@ -42,12 +42,12 @@ _Float16 cr_rsqrtf16(_Float16 x){
 	b16u16_u t = {.f = x};
 	// two types of wrong cases : 0xxxx11100010011 and 0xxxx10100011111
 	if ((t.u | 0x7800) == 0x7f13) {
-		if (t.u == 0x7d13) return 0.0f / 0.0f; // snan
+		if (t.u == 0x7f13) return 0.0f / 0.0f; // if x=sNaN return NaN
 		int expo = -((t.u >> 10) - 15) / 2 + 14;
 		t.u = (expo << 10) + 0x204;
 		return -0x1p-20 + t.f;
 	} else if ((t.u | 0x7800) == 0x7d1f) {
-		if (t.u == 0x7d1f) return 0.0f / 0.0f; // snan
+		if (t.u == 0x7d1f) return 0.0f / 0.0f; // if x=sNaN return NaN
 		int expo = -((t.u >> 10) - 15) / 2 + 14;
 		t.u = (expo << 10) + 0x312;
 		return 0x1p-20 + t.f;

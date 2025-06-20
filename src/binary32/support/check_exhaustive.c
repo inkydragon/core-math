@@ -359,31 +359,20 @@ check_exceptions_aux (uint32_t n)
 static void
 check_exceptions (void)
 {
-  // check +sNaN and -sNaN
-  check_exceptions_aux (0x7f800001);
-  check_exceptions_aux (0xff800001);
-  // check +qNaN and -qNaN
-  check_exceptions_aux (0x7fc00000);
-  check_exceptions_aux (0xffc00000);
-  // check +Inf and -Inf
-  check_exceptions_aux (0x7f800000);
-  check_exceptions_aux (0xff800000);
-  // check +0 and -0
-  check_exceptions_aux (0x0);
-  check_exceptions_aux (0x80000000);
+	// checking all Inf, sNaN, qNaN, 0
+	for (uint32_t u = 0x7f800000; u <= 0x80000000; u++) {
+		check_exceptions_aux (u);
+		check_exceptions_aux (u ^ 0x80000000); // -u
+	}
 }
 
 static int doloop (void)
 {
-  // check sNaN
-  doit (0x7f800001);
-  doit (0xff800001);
-  // check qNaN
-  doit (0x7fc00000);
-  doit (0xffc00000);
-  // check +Inf and -Inf
-  doit (0x7f800000);
-  doit (0xff800000);
+  // checking all Inf, sNaN and qNaN
+	for (uint32_t u = 0x7f800000; u < 0x80000000; u++) {
+		doit (u);
+		doit (u ^ 0x80000000); // -u
+	}
 
   check_signaling_nan ();
 

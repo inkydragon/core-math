@@ -315,9 +315,8 @@ check_signaling_nan (void)
   _Float16 snan;
   for (uint16_t u1 = 0x7c01u; u1 < 0x7e00u; u1++) {
     snan = asfloat (u1);
-		uint16_t u2 = 0;
-		do {
-			_Float16 x2 = asfloat(u2);
+		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+			_Float16 x2 = asfloat((_Float16) u2);
     	_Float16 y = cr_function_under_test (snan, x2);
     	// check that foo(NaN, x) = NaN
     	if (!is_nan (y))
@@ -356,12 +355,11 @@ check_signaling_nan (void)
       	exit (1);
 #endif
     	}
-			u2++;
-		} while (u2 != 0);
+		}
     // also test sNaN with sign bit set
     snan = asfloat (0x8000 + u1);
-		do {
-			_Float16 x2 = asfloat(u2);
+		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+			_Float16 x2 = asfloat((_Float16) u2);
     	_Float16 y = cr_function_under_test (snan, x2);
     	// check that foo(NaN, x) = NaN
     	if (!is_nan (y))
@@ -400,8 +398,7 @@ check_signaling_nan (void)
       	exit (1);
 #endif
     	}
-			u2++;
-		} while (u2 != 0);
+		}
   }
 }
 
@@ -451,53 +448,37 @@ check_exceptions_aux (uint16_t n1, uint16_t n2)
 static void
 check_exceptions (void)
 {
-	uint16_t u = 0;
-	do {
-  	// check +sNaN and -sNaN
-  	check_exceptions_aux (0x7c01, u);
-  	check_exceptions_aux (0xfc01, u);
-  	check_exceptions_aux (u, 0x7c01);
-  	check_exceptions_aux (u, 0xfc01);
-  	// check +qNaN and -qNaN
-  	check_exceptions_aux (0x7e00, u);
-  	check_exceptions_aux (0xfe00, u);
-  	check_exceptions_aux (u, 0x7e00);
-  	check_exceptions_aux (u, 0xfe00);
-  	// check +Inf and -Inf
-  	check_exceptions_aux (0x7c00, u);
-  	check_exceptions_aux (0xfc00, u);
-  	check_exceptions_aux (u, 0x7c00);
-  	check_exceptions_aux (u, 0xfc00);
-  	// check +0 and -0
-  	check_exceptions_aux (0x0, u);
-  	check_exceptions_aux (0x8000, u);
-  	check_exceptions_aux (u, 0x0);
-  	check_exceptions_aux (u, 0x8000);
-		u++;
-	} while (u != 0);
+	//checking all sNaN, qNaN, Inf, 0
+	for (uint16_t u1 = 0x7c00; u1 <= 0x8000; u1++) {
+		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+			check_exceptions_aux (u1, (uint16_t) u2);
+			check_exceptions_aux ((uint16_t) u2, u1);
+			// checking for -u1
+			u1 ^= 0x8000;
+			check_exceptions_aux (u1, (uint16_t) u2);
+			check_exceptions_aux ((uint16_t) u2, u1);
+			// set u1 to u1 instead of -u1
+			u1 ^= 0x8000;
+		}
+	}
 }
 
 static int doloop (void)
 {
-	uint16_t u = 0;
-	do {
-  	// check sNaN
-  	doit (0x7c01, u);
-  	doit (0xfc01, u);
-  	doit (u, 0x7c01);
-  	doit (u, 0xfc01);
-  	// check qNaN
-  	doit (0x7e00, u);
-  	doit (0xfe00, u);
-  	doit (u, 0x7e00);
-  	doit (u, 0xfe00);
-  	// check +Inf and -Inf
-  	doit (0x7c00, u);
-  	doit (0xfc00, u);
-  	doit (u, 0x7c00);
-  	doit (u, 0xfc00);
-		u++;
-	} while (u != 0);
+
+	//checking all sNaN, qNaN, Inf
+	for (uint16_t u1 = 0x7c00; u1 < 0x8000; u1++) {
+		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+			check_exceptions_aux (u1, (uint16_t) u2);
+			check_exceptions_aux ((uint16_t) u2, u1);
+			// checking for -u1
+			u1 ^= 0x8000;
+			check_exceptions_aux (u1, (uint16_t) u2);
+			check_exceptions_aux ((uint16_t) u2, u1);
+			// set u1 to u1 instead of -u1
+			u1 ^= 0x8000;
+		}
+	}
 
   check_signaling_nan ();
 

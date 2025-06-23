@@ -91,6 +91,83 @@ check_spurious_invalid (void)
   }
 }
 
+// return +1 when gamma(x) > 0, -1 when gamma(x) < 0 and 0 when undefined
+static int
+expected_signgam (float x)
+{
+  if (x > 0)
+    return +1;
+  if (x == 0)
+    return (signbit (x)) ? -1 : +1;
+  float y = floorf (x);
+  if (x == y)
+    return 0; // x is integer, gamma(x) tends to +Inf and -Inf on both sides
+  // gamma(x) is negative in (-2k-1,-2k), positive in (-2k,-2k+1)
+  // return -1 if y is odd, +1 if y is even
+  // since y != x, necessarily |x| < 2^23, thus we can cast y to uint32_t
+  uint32_t k = y;
+  return (k & 1) ? -1 : +1;
+}
+
+typedef union { uint32_t n; float f; } union_t;
+
+static inline float
+asfloat (uint32_t n)
+{
+  union_t u = {.n = n};
+  return u.f;
+}
+
+static inline uint32_t
+asuint (float f)
+{
+  union_t u = {.f = f};
+  return u.n;
+}
+
+static void
+doit (uint32_t n)
+{
+  float x, y;
+  x = asfloat (n);
+  signgam = 0;
+  y = cr_lgammaf (x);
+  int s = expected_signgam (x);
+
+  // check signgam is correctly set
+  if (s != 0 && signgam == 0)
+  {
+    printf ("Error, signgam is not set for x=%a (y=%a)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // check signgam is correctly set
+  if (s != 0 && s != signgam)
+  {
+    printf ("Error, signgam is wrong for x=%a (y=%a)\n", x, y);
+    printf ("expected %d, got %d\n", s, signgam);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+}
+
+static void
+check_signgam (void)
+{
+  uint32_t nmin = asuint (0x0p0f), nmax = asuint (0x1.fffffep+127f);
+  // this loop should not be parallelized, since signgam is a global variable
+  for (uint32_t n = nmin; n <= nmax; n++)
+  {
+    doit (n);
+    doit (n | 0x80000000);
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -134,6 +211,8 @@ main (int argc, char *argv[])
     }
 
   check_spurious_invalid ();
+
+  check_signgam ();
 
   return 0;
 }

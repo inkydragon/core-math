@@ -110,6 +110,8 @@ expected_signgam (double x)
     return 0; // x is integer, gamma(x) tends to +Inf and -Inf on both sides
   // gamma(x) is negative in (-2k-1,-2k), positive in (-2k,-2k+1)
   // return -1 if y is odd, +1 if y is even
+
+  // since y != x, necessarily |x| < 2^52, thus we can cast y to uint64_t
   uint64_t k = y;
   return (k & 1) ? -1 : +1;
 }

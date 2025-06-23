@@ -51,25 +51,20 @@ int rnd2[] = { MPFR_RNDN,    MPFR_RNDZ,     MPFR_RNDU, MPFR_RNDD   };
 int rnd = 0;
 int keep = 0;
 
-typedef union { uint32_t n; float x; } union_t;
+typedef union { uint32_t n; float f; } union_t;
 
-float
+static inline float
 asfloat (uint32_t n)
 {
-  union_t u;
-  u.n = n;
-  return u.x;
+  union_t u = {.n = n};
+  return u.f;
 }
 
 static inline uint32_t
 asuint (float f)
 {
-  union
-  {
-    float f;
-    uint32_t i;
-  } u = {f};
-  return u.i;
+  union_t u = {.f = f};
+  return u.n;
 }
 
 /* define our own is_nan function to avoid depending from math.h */
@@ -153,7 +148,7 @@ fix_underflow (float x, float y)
   mpfr_clear (t);
 }
 
-void
+static void
 doit (uint32_t n)
 {
   float x, y, z;

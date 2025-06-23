@@ -129,6 +129,9 @@ float cr_lgammaf(float x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE;
 #endif
+      t.f = x;
+      // gamma(+0) = +Inf, gamma(-0) = -Inf
+      signgam = (t.u >> 31) ? -1 : 1;
       return 1.0f/0.0f;
     }
     if(x==1.0f || x==2.0f) {

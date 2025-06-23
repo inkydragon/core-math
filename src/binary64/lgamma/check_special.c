@@ -97,6 +97,23 @@ is_equal (double x, double y)
   return asuint64 (x) == asuint64 (y);
 }
 
+// return +1 when gamma(x) > 0, -1 when gamma(x) < 0 and 0 when undefined
+static int
+expected_signgam (double x)
+{
+  if (x > 0)
+    return +1;
+  if (x == 0)
+    return (signbit (x)) ? -1 : +1;
+  double y = floor (x);
+  if (x == y)
+    return 0; // x is integer, gamma(x) tends to +Inf and -Inf on both sides
+  // gamma(x) is negative in (-2k-1,-2k), positive in (-2k,-2k+1)
+  // return -1 if y is odd, +1 if y is even
+  uint64_t k = y;
+  return (k & 1) ? -1 : +1;
+}
+
 static void
 check (double x)
 {
@@ -104,10 +121,33 @@ check (double x)
   ref_fesetround (rnd);
   double y1 = ref_lgamma (x);
   fesetround (rnd1[rnd]);
+  signgam = 0;
   double y2 = cr_lgamma (x);
   if (!is_equal (y1,y2))
   {
     printf ("FAIL x=%la ref=%la z=%la\n", x, y1, y2);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  int s = expected_signgam (x);
+  // check signgam is correctly set
+  if (s != 0 && signgam == 0)
+  {
+    printf ("Error, signgam is not set for x=%la (y=%la)\n", x, y1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // check signgam is correctly set
+  if (s != 0 && s != signgam)
+  {
+    printf ("Error, signgam is wrong for x=%la (y=%la)\n", x, y1);
+    printf ("expected %d, got %d\n", s, signgam);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit (1);

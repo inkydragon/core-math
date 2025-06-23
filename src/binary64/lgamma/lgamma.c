@@ -864,13 +864,12 @@ double cr_lgamma(double x){
   b64u64_u t = {.f = x};
   uint64_t nx = t.u<<1;
   if(__builtin_expect(nx >= 0xfeaea9b24f16a34cull, 0)){
+    signgam = 1;
     if(t.u == 0x7f5754d9278b51a6ull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
     if(t.u == 0x7f5754d9278b51a7ull) return 0x1.fffffffffffffp+1023 - 0x1p+969;
     if(__builtin_expect(nx>=(0x7ffull<<53), 0)){ /* x=NaN or +/-Inf */
-      if(nx==(0x7ffull<<53)){ /* x=+/-Inf */
-	signgam = 1;
-	return __builtin_fabs(x); /* x=+Inf */
-      }
+      if(nx==(0x7ffull<<53)) /* x=+/-Inf */
+	return __builtin_fabs(x); /* +Inf */
       return x + x; /* x=NaN, where x+x ensures the "Invalid operation"
 		       exception is set if x is sNaN, and it yields a qNaN */
     }
@@ -879,11 +878,10 @@ double cr_lgamma(double x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE;
 #endif
-    if(t.u>>63){
-      return 1.0/0.0;
-    } else {
-      return 0x1.fp1023 * 0x1.fp1023;
-    }
+    if(t.u>>63)
+      return 1.0/0.0; // huge negative integer
+    else
+      return 0x1.fp1023 * 0x1.fp1023; // huge positive integer
   }
   double fx = __builtin_floor(x);
   if(__builtin_expect(fx==x, 0)){ /* x is integer */
@@ -901,6 +899,7 @@ double cr_lgamma(double x){
   unsigned au = nx>>38;
   double fh, fl, eps;
   if(au < ubrd[0]){ // |x|<0.5
+    signgam = (x >= 0) ? +1 : -1;
     double ll, lh = as_logd(__builtin_fabs(x), &ll);
     if(au<0x1da0000){ // |x|<0x1p-75
       fh = -lh;
@@ -944,6 +943,8 @@ double cr_lgamma(double x){
     }
   } else {
     double ax = __builtin_fabs(x);
+    uint64_t k = fx;
+    signgam = (x >= 0 || (k & 1) == 0) ? +1 : -1;
     if(au>=ubrd[19]) {  // |x|>=8.29541 we use asymptotic expansion or Stirling's formula
       double ll, lh = as_logd(ax, &ll);
       lh -= 1;

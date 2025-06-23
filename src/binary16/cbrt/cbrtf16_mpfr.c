@@ -1,4 +1,4 @@
-/* Correctly-rounded square root function for binary16 value.
+/* Correctly-rounded cubic root of binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 
@@ -24,25 +24,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdint.h>
-#include <math.h> // only used during performance tests
+#include <mpfr.h>
+#include "fenv_mpfr.h"
 
-// Warning: clang also defines __GNUC__
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#endif
+/* code from MPFR */
 
-#pragma STDC FENV_ACCESS ON
-
-
-typedef union {_Float16 f; uint16_t u;} b16u16_u;
-typedef union {float f; uint32_t u;} b32u32_u;
-
-_Float16 cr_sqrtf16(_Float16 x){
-	return (_Float16) sqrtf ((float) x);
-}
-
-// dummy function since GNU libc does not provide it
-_Float16 sqrtf16 (_Float16 x) {
-  return (_Float16) sqrtf ((float) x);
+_Float16
+ref_cbrt (_Float16 x)
+{
+  mpfr_t y;
+  mpfr_init2 (y, 11);
+  mpfr_set_flt (y, (float) x, MPFR_RNDN);
+	int inex = mpfr_cbrt (y, y, rnd2[rnd]);
+	mpfr_subnormalize (y, inex, rnd2[rnd]);
+	_Float16 ret = (_Float16) mpfr_get_flt (y, MPFR_RNDN);
+	mpfr_clear (y);
+  return ret;
 }

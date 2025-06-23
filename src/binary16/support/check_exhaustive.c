@@ -290,6 +290,20 @@ doit (uint16_t n)
     }
   }
 #endif
+
+#ifdef CORE_MATH_CHECK_INEXACT
+  // check if the inexact exception was reset
+  feraiseexcept (FE_INEXACT);
+  y = cr_function_under_test (x);
+  if (!fetestexcept (FE_INEXACT)) {
+    printf ("Exception inexact was reset for x=%a (y=%a)\n",
+            (float) x, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+#endif
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN

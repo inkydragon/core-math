@@ -258,8 +258,8 @@ doit (uint16_t n1, uint16_t n2)
 
   // check errno
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  // If x is a normal number and y is NaN, we should have errno = EDOM.
-  if (!is_nan (x) && !is_inf (x))
+  // If x1 and x2 are normal numbers and y is NaN, we should have errno = EDOM.
+  if (!is_nan (x1) && !is_inf (x2) && !is_nan (x1) && !is_inf (x2))
   {
     if (is_nan (y) && errno != EDOM)
     {

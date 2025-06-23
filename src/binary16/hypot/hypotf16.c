@@ -36,10 +36,17 @@ SOFTWARE.
 
 
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
-typedef union {float f; uint32_t u;} b32u32_u;
+typedef union {double f; uint64_t u;} b64u64_u;
 
 _Float16 cr_hypotf16(_Float16 x, _Float16 y){
-	return x + y;
+	b64u64_u tx = {.f = x};
+	b64u64_u ty = {.f = y};
+	tx.u &= 0x7fffffffffffffff;
+	ty.u &= 0x7fffffffffffffff;
+	if (!tx.u) return ty.f;
+	if (!ty.u) return tx.f;
+
+	return sqrt(tx.f * tx.f + ty.f * ty.f);
 }
 
 // dummy function since GNU libc does not provide it

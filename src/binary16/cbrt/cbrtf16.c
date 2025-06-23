@@ -37,6 +37,7 @@ SOFTWARE.
 
 
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
+typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_cbrtf16(_Float16 x){
 	b16u16_u t = {.f = x};
@@ -47,9 +48,9 @@ _Float16 cr_cbrtf16(_Float16 x){
 			return (float) t.f + 0x1p-16 * ((t.u >> 15) - 0.5f);
 		}
 	}
-  b16u16_u y = {.f = cbrtf ((float) x)};
+	b32u32_u y = {.f = cbrtf ((float) x)};
 	// exact cases have always 7 ending 0
-	if (!(y.u % 128) && y.f * y.f * y.f  == x) feclearexcept(FE_INEXACT);
+	if (!(y.u % (1 << 20)) && y.f * y.f * y.f == x) feclearexcept(FE_INEXACT);
 	return y.f;
 }
 

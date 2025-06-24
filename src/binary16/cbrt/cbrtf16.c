@@ -40,18 +40,39 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_cbrtf16(_Float16 x){
+	static const uint16_t tm[] = 
+		{0x00, 0xff, 0xff, 0xff,
+		 0x33, 0x1c, 0x32, 0xff,
+		 0xff, 0xff, 0xff, 0x00,
+		 0xff, 0xff, 0xff, 0x10};
+	static const int te[] = 
+		{0, 0, 0, 0,
+		 1, 2, 0, 0,
+		 0, 0, 0, 1,
+		 0, 0, 0, 0};
+	static const uint16_t tf[] =
+		{0x3c00, 0, 0, 0,
+		 0x3d80, 0x3f00, 0x3c80, 0,
+		 0, 0, 0, 0x3e00,
+		 0, 0, 0, 0x3d00};
+
 	b16u16_u t = {.f = x};
+	b32u32_u xf = {.f = x};
+	if (tm[(xf.u >> 19) % 16] == (xf.u >> 13) % 64) { // exact cases (not supported by cbrtf)
+		int expo = (xf.u & 0x7fffffff) >> 23;
+		if (te[(xf.u >> 19) % 16] == (expo + 2) % 3) {
+			t.u = (t.u & 0x8000) + (((expo - 127 - te[(xf.u >> 19) % 16]) / 3) << 10) + tf[(xf.u >> 19) % 16];
+			return t.f;
+		}
+	}
 	if ((t.u & 0x03ff) == 0x0151) { // only wrong case is 0x1.544pk with k = 1 mod 3
-		int expo = ((t.u & 0x7fff) >> 10);
+		int expo = (t.u & 0x7fff) >> 10;
 		if (expo % 3 == 1 && expo < 31) { // avoid sNaN and k != 1 mod 3
 			t.u = (((expo - 16) / 3 + 15) << 10) + 0x018b + ((t.u >> 15) << 15);
 			return (float) t.f + 0x1p-16 * ((t.u >> 15) - 0.5f);
 		}
 	}
-	b32u32_u y = {.f = cbrtf ((float) x)};
-	// exact cases have always 7 ending 0
-	if (!(y.u % (1 << 20)) && y.f * y.f * y.f == x) feclearexcept(FE_INEXACT);
-	return y.f;
+	return cbrtf ((float) x);
 }
 
 // dummy function since GNU libc does not provide it

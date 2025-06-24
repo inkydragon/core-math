@@ -4,6 +4,7 @@
 # FORCE=true DRY=--dry ./ci.sh to only try compilation (of all functions)
 # FORCE_FUNCTIONS="xxx yyy" ./ci.sh to force checking xxx and yyy
 # CC=clang CFLAGS=-Werror ./ci.sh
+# SKIP16=1 ./ci.sh to avoid _Float16 tests
 
 set -e # We want the above command to potentially fail, only set -e now.
 
@@ -36,6 +37,10 @@ check () {
     fi
     if [ "$doit" == "1" ] && [ "$SKIP80" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binary80; then
         echo "binary80 support is needed for" $FUNCTION "but is not available"
+        doit=0
+    fi
+    if [ "$doit" == "1" ] && [ "$SKIP16" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binary16; then
+        echo "With SKIP16, skipping " $FUNCTION
         doit=0
     fi
     if [ "$doit" == "1" ] && [ "$SKIPQ" == "1" ] && [ "`basename $FUNCTION q`" != "$FUNCTION" ]; then

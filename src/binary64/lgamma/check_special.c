@@ -33,9 +33,6 @@ SOFTWARE.
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#include <omp.h>
-#endif
 
 int ref_init (void);
 int ref_fesetround (int);
@@ -173,7 +170,7 @@ check_negative (void)
 }
 
 #ifndef CORE_MATH_TESTS
-#define CORE_MATH_TESTS 1000000000UL /* total number of tests */
+#define CORE_MATH_TESTS 100000000UL /* total number of tests */
 #endif
 
 // check precision-p inputs
@@ -248,20 +245,13 @@ main (int argc, char *argv[])
     Seed[i] = seed + i;
   
   printf ("Checking random numbers...\n");
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel for
-#endif
+  /* this code should not be run in parallel, since the use of signgam is
+     not thread-safe */
   for (uint64_t n = 0; n < CORE_MATH_TESTS; n++)
   {
     ref_init ();
     ref_fesetround (rnd);
-    int tid;
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-    tid = omp_get_thread_num ();
-#else
-    tid = 0;
-#endif
-    double x = get_random (tid);
+    double x = get_random (0);
     check (x);
   }
 

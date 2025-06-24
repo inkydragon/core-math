@@ -899,7 +899,7 @@ double cr_lgamma(double x){
   unsigned au = nx>>38;
   double fh, fl, eps;
   if(au < ubrd[0]){ // |x|<0.5
-    signgam = (x >= 0) ? +1 : -1;
+    signgam = 1 - 2*(t.u>>63);
     double ll, lh = as_logd(__builtin_fabs(x), &ll);
     if(au<0x1da0000){ // |x|<0x1p-75
       fh = -lh;
@@ -943,8 +943,6 @@ double cr_lgamma(double x){
     }
   } else {
     double ax = __builtin_fabs(x);
-    uint64_t k = fx;
-    signgam = (x >= 0 || (k & 1) == 0) ? +1 : -1;
     if(au>=ubrd[19]) {  // |x|>=8.29541 we use asymptotic expansion or Stirling's formula
       double ll, lh = as_logd(ax, &ll);
       lh -= 1;
@@ -1005,7 +1003,12 @@ double cr_lgamma(double x){
       fh = -sumdd(fh,fl,lh,ll, &fl);
       fl = -fl;
       eps += __builtin_fabs(lh)*4e-22;
+      int64_t k = fx;
+      signgam = 1 - 2*(k & 1);
+    } else {
+      signgam = 1;
     }
+    
   }
   double ub = fh + (fl + eps), lb = fh + (fl - eps);
   if(ub != lb){ // rounding test

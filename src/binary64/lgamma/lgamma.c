@@ -864,6 +864,7 @@ double cr_lgamma(double x){
   b64u64_u t = {.f = x};
   uint64_t nx = t.u<<1;
   if(__builtin_expect(nx >= 0xfeaea9b24f16a34cull, 0)){
+    // |x| >= 0x1.006df1bfac84ep+1015
     signgam = 1;
     if(t.u == 0x7f5754d9278b51a6ull) return 0x1.ffffffffffffep+1023 - 0x1p+969;
     if(t.u == 0x7f5754d9278b51a7ull) return 0x1.fffffffffffffp+1023 - 0x1p+969;

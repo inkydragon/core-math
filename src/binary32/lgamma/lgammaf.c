@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <math.h>
+#include <math.h> // for signgam
 #include <limits.h>
 
 // Warning: clang also defines __GNUC__

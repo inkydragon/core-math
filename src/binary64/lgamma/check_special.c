@@ -162,9 +162,8 @@ typedef union { double f; uint64_t i; } d64u64;
 static void
 check_negative (void)
 {
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel for
-#endif
+  /* this code should not be run in parallel, since the use of signgam is
+     not thread-safe */
   for (int n = -1000000; n < 0; n++)
   {
     check (nextafter ((double) n, 0.0));

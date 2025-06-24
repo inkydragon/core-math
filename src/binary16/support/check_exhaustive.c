@@ -259,7 +259,7 @@ doit (uint16_t n1, uint16_t n2)
   // check errno
 #ifdef CORE_MATH_SUPPORT_ERRNO
   // If x1 and x2 are normal numbers and y is NaN, we should have errno = EDOM.
-  if (!is_nan (x1) && !is_inf (x2) && !is_nan (x1) && !is_inf (x2))
+  if (!is_nan (x1) && !is_inf (x1) && !is_nan (x2) && !is_inf (x2))
   {
     if (is_nan (y) && errno != EDOM)
     {
@@ -302,10 +302,10 @@ doit (uint16_t n1, uint16_t n2)
 #ifdef CORE_MATH_CHECK_INEXACT
   // check if the inexact exception was reset
   feraiseexcept (FE_INEXACT);
-  y = cr_function_under_test (x);
+  y = cr_function_under_test (x1, x2);
   if (!fetestexcept (FE_INEXACT)) {
-    printf ("Exception inexact was reset for x=%a (y=%a)\n",
-            (float) x, (float) y);
+    printf ("Exception inexact was reset for x,y=%a,%a (z=%a)\n",
+            (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit (1);

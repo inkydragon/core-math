@@ -1,4 +1,4 @@
-/* Correctly-rounded reciprocal square root function for binary16 value.
+/* Correctly-rounded Euclidean distance function (hypot) for binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 
@@ -24,38 +24,43 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <mpfr.h>
+#include "fenv_mpfr.h"
 #include <stdint.h>
-#include <math.h>
 
-// Warning: clang also defines __GNUC__
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#endif
+typedef union {_Float16 f; int16_t u;} b16u16;
 
-#pragma STDC FENV_ACCESS ON
+/* code from MPFR */
 
+_Float16
+ref_hypot (_Float16 x, _Float16 y)
+{
+	mpfr_t xm, ym, zm;
 
-typedef union {_Float16 f; uint16_t u;} b16u16_u;
-typedef union {float f; uint32_t u;} b32u32_u;
-
-_Float16 cr_rsqrtf16(_Float16 x){
-	b16u16_u t = {.f = x};
-	// two types of wrong cases : 0xxxx11100010011 and 0xxxx10100011111
-	if ((t.u | 0x7800) == 0x7f13) {
-		if (t.u == 0x7f13) return 0.0f / 0.0f; // if x=sNaN return NaN
-		int expo = -((t.u >> 10) - 15) / 2 + 14;
-		t.u = (expo << 10) + 0x204;
-		return -0x1p-20 + t.f;
-	} else if ((t.u | 0x7800) == 0x7d1f) {
-		if (t.u == 0x7d1f) return 0.0f / 0.0f; // if x=sNaN return NaN
-		int expo = -((t.u >> 10) - 15) / 2 + 14;
-		t.u = (expo << 10) + 0x312;
-		return 0x1p-20 + t.f;
+	b16u16 xi = {.f = x}, yi = {.f = y};
+	if((xi.u & 0x7fff)<(0x7e<<8) && (xi.u & 0x7fff)>(0x7c<<8)) // x = sNAN
+		return x + y; // will return qNaN
+	if((yi.u & 0x7fff)<(0x7e<<8) && (yi.u & 0x7fff)>(0x7c<<8)) // y = sNAN
+		return x + y; // will return qNaN
+	if((xi.u & 0x7fff) == 0){ // x = +/-0
+		yi.u = (yi.u & 0x7fff);
+		return yi.f;
 	}
-	return 1.0f / sqrtf ((float) x);
-}
+	if((yi.u & 0x7fff) == 0){ // y = +/-0
+		xi.u = (xi.u & 0x7fff);
+		return xi.f;
+	}
 
-// dummy function since GNU libc does not provide it
-_Float16 rsqrtf16 (_Float16 x) {
-	return (_Float16) (1.0f / sqrtf ((float) x));
+	mpfr_init2 (xm, 11);
+	mpfr_init2 (ym, 11);
+	mpfr_init2 (zm, 11);
+	mpfr_set_flt (xm, (float) x, MPFR_RNDN);
+	mpfr_set_flt (ym, (float) y, MPFR_RNDN);
+	int inex = mpfr_hypot (zm, xm, ym, rnd2[rnd]);
+	mpfr_subnormalize (zm, inex, rnd2[rnd]);
+	_Float16 ret = (_Float16) mpfr_get_flt (zm, MPFR_RNDN);
+	mpfr_clear (xm);
+	mpfr_clear (ym);
+	mpfr_clear (zm);
+	return ret;
 }

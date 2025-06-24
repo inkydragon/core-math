@@ -1,4 +1,4 @@
-/* Correctly-rounded reciprocal square root function for binary16 value.
+/* Correctly-rounded Euclidean distance function (hypot) for binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 
@@ -25,7 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
-#include <math.h>
+#include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -36,26 +36,15 @@ SOFTWARE.
 
 
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
-typedef union {float f; uint32_t u;} b32u32_u;
+typedef union {double f; uint64_t u;} b64u64_u;
 
-_Float16 cr_rsqrtf16(_Float16 x){
-	b16u16_u t = {.f = x};
-	// two types of wrong cases : 0xxxx11100010011 and 0xxxx10100011111
-	if ((t.u | 0x7800) == 0x7f13) {
-		if (t.u == 0x7f13) return 0.0f / 0.0f; // if x=sNaN return NaN
-		int expo = -((t.u >> 10) - 15) / 2 + 14;
-		t.u = (expo << 10) + 0x204;
-		return -0x1p-20 + t.f;
-	} else if ((t.u | 0x7800) == 0x7d1f) {
-		if (t.u == 0x7d1f) return 0.0f / 0.0f; // if x=sNaN return NaN
-		int expo = -((t.u >> 10) - 15) / 2 + 14;
-		t.u = (expo << 10) + 0x312;
-		return 0x1p-20 + t.f;
-	}
-	return 1.0f / sqrtf ((float) x);
+_Float16 cr_hypotf16(_Float16 x, _Float16 y){
+	b64u64_u tx = {.f = x};
+	b64u64_u ty = {.f = y};
+	return sqrt(tx.f * tx.f + ty.f * ty.f);
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 rsqrtf16 (_Float16 x) {
-	return (_Float16) (1.0f / sqrtf ((float) x));
+_Float16 hypotf16 (_Float16 x, _Float16 y) {
+	return (_Float16) hypotf ((float) x, (float) y);
 }

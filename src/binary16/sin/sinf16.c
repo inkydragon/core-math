@@ -41,6 +41,7 @@ typedef union {double f; uint64_t u;} b64u64_u;
 _Float16 cr_sinf16(_Float16 x){
 	b16u16_u t = {.f = x};
 	if ((t.u & 0x7c00) == 0x7c00) return 0.0f / 0.0f;
+	if (__builtin_expect(!(t.u & 0x7fff), 0)) return x;
 	static const double inv_2pi = 0x1.45f306dc9c883p-3;
 	static const double minus_2pi = -0x1.921fb54442d18p+2;
 	static const double tb_sin[] = // tabulate values of sin(i2^-4) for i in [-2^4pi, 2^4pi]
@@ -56,7 +57,7 @@ _Float16 cr_sinf16(_Float16 x){
 		 -0xc.47dbb205c6d1p-4, -0xb.9dbb406f52bcp-4, -0xa.e7fe0b5fc7868p-4, -0xa.2759c0e79c358p-4,  
 		 -0x9.5c8ef544210fp-4, -0x8.8868625b4e1d8p-4, -0x7.abba1d12c17cp-4, -0x6.c760c14c8585cp-4,  
 		 -0x5.dc40955d9085p-4, -0x4.eb44a5da74f6p-4, -0x3.f55dda9e62aeep-4, -0x2.fb8205f75e56ap-4,  
-		 -0x1.feaaeee86ee36p-4, -0xf.fd557776a76d8p-8, 0x0p+0, 0xf.fd557776a76d8p-8,  
+		 -0x1.feaaeee86ee36p-4, -0xf.fd557776a76d8p-8, 0x0p0, 0xf.fd557776a76d8p-8,  
 		 0x1.feaaeee86ee36p-4, 0x2.fb8205f75e56ap-4, 0x3.f55dda9e62aeep-4, 0x4.eb44a5da74f6p-4,  
 		 0x5.dc40955d9085p-4, 0x6.c760c14c8585cp-4, 0x7.abba1d12c17cp-4, 0x8.8868625b4e1d8p-4,  
 		 0x9.5c8ef544210fp-4, 0xa.2759c0e79c358p-4, 0xa.e7fe0b5fc7868p-4, 0xb.9dbb406f52bcp-4,  
@@ -101,11 +102,12 @@ _Float16 cr_sinf16(_Float16 x){
 	double k = __builtin_roundeven(xd * inv_2pi);
 	double xp = __builtin_fma(minus_2pi, k, xd);
 	// x = 2kpi + xp
-	int i = 0x1p4 * xp;
-	double xpp = __builtin_fma((double) i, -0x1p-4, xp);
+	int i = __builtin_roundeven(0x1p4 * xp);
+	double xpp = __builtin_fma(i, -0x1p-4, xp);
+	double xpp2 = xpp*xpp;
 	// x = 2kpi + i2^-4 + xpp
 	// sin(x) = sin(i2^-4 + xpp) = sin(i2^-4)cos(xpp) + sin(xpp)cos(i2^-4)
-	return tb_sin[i+50]*(1.0-0.5*xpp*xpp) + (xpp-0.166667*xpp*xpp*xpp)*tb_cos[i+50];
+	return __builtin_fma(tb_sin[(int)i+50], __builtin_fma(-0.5, xpp2, 1.0), __builtin_fma(-0x1.5555p-3, xpp*xpp2, xpp) * tb_cos[(int)i+50]);
 }
 
 // dummy function since GNU libc does not provide it

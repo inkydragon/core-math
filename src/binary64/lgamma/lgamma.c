@@ -887,6 +887,8 @@ double cr_lgamma(double x){
   double fx = __builtin_floor(x);
   if(__builtin_expect(fx==x, 0)){ /* x is integer */
     if(x <= 0.0) {
+      uint64_t sign = (t.u >> 63) & 1;
+		  signgam = (sign == 1) ? -1 : 1;
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE;
 #endif

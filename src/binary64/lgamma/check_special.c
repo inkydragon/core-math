@@ -141,7 +141,6 @@ check (double x)
     exit (1);
 #endif
   }
-
   // check signgam is correctly set
   if (s != 0 && s != signgam)
   {
@@ -190,6 +189,59 @@ check_low_precision (int p)
   }
 }
 
+static void
+check_special (void)
+{
+  double zero = asfloat64 (0x0000000000000000);
+  double minZero = asfloat64 (0x8000000000000000);
+
+  // check signgam is correctly set for lgamma (+0)
+  signgam = 0;
+  double y = cr_lgamma (zero);
+  int s = expected_signgam (zero);
+  if(s != 0 && signgam == 0){
+    printf ("Error, signgam is not set for x=%la (y=%la)\n", zero, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+    // check signgam is correctly set
+  if (s != 0 && s != signgam)
+  {
+    printf ("Error, signgam is wrong for x=%la (y=%la)\n", zero, y);
+    printf ("expected %d, got %d\n", s, signgam);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // check signgam is correctly set for lgamma(-0)
+  signgam = 0;
+  y = cr_lgamma (minZero);
+  s = expected_signgam (minZero);
+  if(s != 0 && signgam == 0){
+    printf ("Error, signgam is not set for x=%la (y=%la)\n", minZero, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+    // check signgam is correctly set
+  if (s != 0 && s != signgam)
+  {
+    printf ("Error, signgam is wrong for x=%la (y=%la)\n", minZero, y);
+    printf ("expected %d, got %d\n", s, signgam);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -233,6 +285,8 @@ main (int argc, char *argv[])
     }
   ref_init ();
   ref_fesetround (rnd);
+
+  check_special ();
 
   printf ("Check low-precision inputs\n");
   check_low_precision (10);

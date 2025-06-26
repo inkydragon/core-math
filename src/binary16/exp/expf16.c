@@ -40,19 +40,23 @@ typedef union {float f; uint32_t u;} b32u32_u;
 _Float16 cr_expf16(_Float16 x){
 	static const uint16_t x0 = 0xcc55; // binary representation of x0 in order to compare uint16_t rather than flt16
  	static const _Float16 x1 = 0x1.62cp3; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
-	static const float tb[] = // tabulate value of exp(i/2^6) for i in [-2^6*log(2)/2, 2^6*log(2)/2], size(tb) = 45
-		{0xb.587fcp-4f, 0xb.863cfp-4f, 0xb.b4b29p-4f, 0xb.e3e38p-4f,
-		 0xc.13d2bp-4f, 0xc.44832p-4f, 0xc.75f7dp-4f, 0xc.a8340p-4f,
-		 0xc.db3a8p-4f, 0xd.0f0edp-4f, 0xd.43b41p-4f, 0xd.792d8p-4f,
-		 0xd.af7e9p-4f, 0xd.e6aaap-4f, 0xe.1eb51p-4f, 0xe.57a17p-4f,
-		 0xe.91735p-4f, 0xe.cc2e4p-4f, 0xf.07d6p-4f, 0xf.446e3p-4f,
-		 0xf.81fabp-4f, 0xf.c07f5p-4f, 0x1p0f, 0x1.04080ap+0f,
-		 0x1.082056p+0f, 0x1.0c4924p+0f, 0x1.1082b6p+0f, 0x1.14cd5p+0f,
-		 0x1.192938p+0f, 0x1.1d96bp+0f, 0x1.221604p+0f, 0x1.26a77ap+0f,
-		 0x1.2b4b58p+0f, 0x1.3001ecp+0f, 0x1.34cb82p+0f, 0x1.39a862p+0f,
-		 0x1.3e98dep+0f, 0x1.439d44p+0f, 0x1.48b5e4p+0f, 0x1.4de30ep+0f,
-		 0x1.532518p+0f, 0x1.587c54p+0f, 0x1.5de918p+0f, 0x1.636bbap+0f,
-		 0x1.690492p+0f};
+	static const float tb[] = // tabulate value of exp(log(2)*i/2^6) for i in [0, 63]
+		{0x1p+0f, 0x1.02c9a2p+0f, 0x1.059b0cp+0f, 0x1.087452p+0f,  
+		 0x1.0b5586p+0f, 0x1.0e3ec4p+0f, 0x1.11301ep+0f, 0x1.1429aap+0f,  
+		 0x1.172b84p+0f, 0x1.1a35bep+0f, 0x1.1d4874p+0f, 0x1.2063b8p+0f,  
+		 0x1.2387a6p+0f, 0x1.26b456p+0f, 0x1.29e9ep+0f, 0x1.2d285ap+0f,  
+		 0x1.306fep+0f, 0x1.33c08cp+0f, 0x1.371a74p+0f, 0x1.3a7db4p+0f,  
+		 0x1.3dea64p+0f, 0x1.4160a2p+0f, 0x1.44e086p+0f, 0x1.486a2cp+0f,  
+		 0x1.4bfdaep+0f, 0x1.4f9b28p+0f, 0x1.5342b6p+0f, 0x1.56f474p+0f,  
+		 0x1.5ab07ep+0f, 0x1.5e76f2p+0f, 0x1.6247eap+0f, 0x1.662388p+0f,  
+		 0x1.6a09e6p+0f, 0x1.6dfb24p+0f, 0x1.71f75ep+0f, 0x1.75feb4p+0f,  
+		 0x1.7a1148p+0f, 0x1.7e2f34p+0f, 0x1.82589ap+0f, 0x1.868d9ap+0f,  
+		 0x1.8ace54p+0f, 0x1.8f1aeap+0f, 0x1.93737cp+0f, 0x1.97d82ap+0f,  
+		 0x1.9c4918p+0f, 0x1.a0c668p+0f, 0x1.a5503ap+0f, 0x1.a9e6b6p+0f,  
+		 0x1.ae89fap+0f, 0x1.b33a2ap+0f, 0x1.b7f77p+0f, 0x1.bcc1e8p+0f,  
+		 0x1.c199bep+0f, 0x1.c67f14p+0f, 0x1.cb720ep+0f, 0x1.d072d6p+0f,  
+		 0x1.d58190p+0f, 0x1.da9e6p+0f, 0x1.dfc974p+0f, 0x1.e502eep+0f,  
+		 0x1.ea4afap+0f, 0x1.efa1cp+0f, 0x1.f50766p+0f, 0x1.fa7c18p+0f};
 
 	b16u16_u v = {.f = x};
 	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
@@ -62,22 +66,18 @@ _Float16 cr_expf16(_Float16 x){
 	else if (v.u > x0) return 0x1p-25f;
 	else if (x > x1) return 0x1.ffcp15f + 0x1p5f;
 	else {
-          float xf = x; // exact conversion from _Float16 to float
-		static const float minus_log2 = -0x1.62e430p-1f;
-		static const float inv_log2 = 0x1.715476p0f;
-		float k = __builtin_roundevenf(inv_log2 * xf);
-		float xp = __builtin_fmaf(k, minus_log2, xf); // xp is a float such that |xp| is minimal and x = klog(2) + xp
-		int i = 0x1p6f * xp;
-    if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
-			if (xf == 0x1.de4p-8f) return 0x1.01cp+0f + 0x1p-12f;
-			if (xf == 0x1.73cp-6f) return 0x1.05cp+0f + 0x1p-12f;
-    }
-		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
-																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
-		// result
-    xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(xpp, 0x1.555644p-3f, 0.5f), xpp, 1.0f), xpp, 1.0f);
-		b32u32_u w = {.f = xpp * tb[i + 22]};
-		w.u += (int32_t) k * (1l << 23);
+		float xf = x; // exact conversion from _Float16 to float
+		static const float sixtyfour_over_log2 = 0x1.715476p+6f;
+		static const float minus_log2_over_sixtyfour = -0x1.62e430p-7f;
+		float j = __builtin_roundevenf(sixtyfour_over_log2 * xf);
+		uint32_t jint = j;
+		int i = jint & 0x3f;
+		float xp = __builtin_fmaf(minus_log2_over_sixtyfour, j, xf);
+		// xf = j*log(2)/64 + xp = (j>>6)*log(2) + log(2)*i/64 + xp
+		// so exp(xf) = 2^(j>>6) * exp(log(2)*i/64) * exp(xp)
+    xp = __builtin_fmaf(__builtin_fmaf(0.5f, xp, 1.0f), xp, 1.0f);
+		b32u32_u w = {.f = xp * tb[i]};
+		w.u += (jint >> 6) * (1l << 23);
 		return w.f; // conversion float -> _Float16 (with rounding)
 	}
 }

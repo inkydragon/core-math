@@ -207,7 +207,7 @@ check_special (void)
 #endif
   }
 
-    // check signgam is correctly set
+  // check signgam is correctly set
   if (s != 0 && s != signgam)
   {
     printf ("Error, signgam is wrong for x=%la (y=%la)\n", zero, y);
@@ -230,7 +230,7 @@ check_special (void)
 #endif
   }
 
-    // check signgam is correctly set
+  // check signgam is correctly set
   if (s != 0 && s != signgam)
   {
     printf ("Error, signgam is wrong for x=%la (y=%la)\n", minZero, y);

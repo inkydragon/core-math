@@ -122,7 +122,7 @@ _Float16 cr_sinf16(_Float16 x){
 	double xpp2 = xpp*xpp;
 	// x = 2kpi + i2^-4 + xpp
 	// sin(x) = sin(i2^-4 + xpp) = sin(i2^-4)cos(xpp) + sin(xpp)cos(i2^-4)
-	return __builtin_fma(tb_sin[(int)i+50], __builtin_fma(-0.5, xpp2, 1.0), __builtin_fma(-0x1.5555p-3, xpp*xpp2, xpp) * tb_cos[(int)i+50]);
+	return tb_sin[(int)i+50]*(1.0-0.5*xpp2) + tb_cos[(int)i+50]*(xpp-0x1.5555p-3*xpp*xpp2);
 }
 
 // dummy function since GNU libc does not provide it

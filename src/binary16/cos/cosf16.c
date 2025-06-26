@@ -56,7 +56,7 @@ _Float16 cr_cosf16(_Float16 x){
 		 -0xc.47dbb205c6d1p-4, -0xb.9dbb406f52bcp-4, -0xa.e7fe0b5fc7868p-4, -0xa.2759c0e79c358p-4,  
 		 -0x9.5c8ef544210fp-4, -0x8.8868625b4e1d8p-4, -0x7.abba1d12c17cp-4, -0x6.c760c14c8585cp-4,  
 		 -0x5.dc40955d9085p-4, -0x4.eb44a5da74f6p-4, -0x3.f55dda9e62aeep-4, -0x2.fb8205f75e56ap-4,  
-		 -0x1.feaaeee86ee36p-4, -0xf.fd557776a76d8p-8, 0x0p0, 0xf.fd557776a76d8p-8,  
+		 -0x1.feaaeee86ee36p-4, -0xf.fd557776a76d8p-8, 0x0p+0, 0xf.fd557776a76d8p-8,  
 		 0x1.feaaeee86ee36p-4, 0x2.fb8205f75e56ap-4, 0x3.f55dda9e62aeep-4, 0x4.eb44a5da74f6p-4,  
 		 0x5.dc40955d9085p-4, 0x6.c760c14c8585cp-4, 0x7.abba1d12c17cp-4, 0x8.8868625b4e1d8p-4,  
 		 0x9.5c8ef544210fp-4, 0xa.2759c0e79c358p-4, 0xa.e7fe0b5fc7868p-4, 0xb.9dbb406f52bcp-4,  
@@ -106,7 +106,7 @@ _Float16 cr_cosf16(_Float16 x){
 	double xpp2 = xpp*xpp;
 	// x = 2kpi + i2^-4 + xpp
 	// cos(x) = cos(i2^-4 + xpp) = cos(i2^-4)cos(xpp) - sin(i2^-4)sin(xpp)
-	return tb_cos[(int)i+50]*(1.0-0.5*xpp2) - tb_sin[(int)i+50]*(xpp-0x1.5555p-3*xpp*xpp2);
+	return tb_cos[(int)i+50]*(1.0-0x1.fffffffffffffp-2*xpp2) - tb_sin[(int)i+50]*(xpp-0x1.5555p-3*xpp*xpp2);
 }
 
 // dummy function since GNU libc does not provide it

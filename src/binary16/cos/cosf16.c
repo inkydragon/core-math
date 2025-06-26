@@ -101,12 +101,12 @@ _Float16 cr_cosf16(_Float16 x){
 	double k = __builtin_roundeven(xd * inv_2pi);
 	double xp = __builtin_fma(minus_2pi, k, xd);
 	// x = 2kpi + xp
-	double i = __builtin_roundeven(0x1p4 * xp);
+	double i = __builtin_roundeven(0x1p+4 * xp);
 	double xpp = __builtin_fma(i, -0x1p-4, xp);
 	double xpp2 = xpp*xpp;
 	// x = 2kpi + i2^-4 + xpp
 	// cos(x) = cos(i2^-4 + xpp) = cos(i2^-4)cos(xpp) - sin(i2^-4)sin(xpp)
-	return tb_cos[(int)i+50]*(1.0-0x1.fffffffffffffp-2*xpp2) - tb_sin[(int)i+50]*(xpp-0x1.5555p-3*xpp*xpp2);
+	return tb_cos[(int)i+50]*(0x1p0-0x1.ffffp-2*xpp2) - tb_sin[(int)i+50]*(xpp-0x1.5555p-3*xpp*xpp2);
 }
 
 // dummy function since GNU libc does not provide it

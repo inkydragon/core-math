@@ -227,7 +227,9 @@ check_exact_or_midpoint (void)
 static void
 check_signaling (void)
 {
-  float x, y, z;
+  /* Added volatile as workaround for gcc bug, where with -O1 or higher,
+     the instruction z = cr_powf (x, y) does not seem to call cr_powf(). */
+  volatile float x, y, z;
 
   // check 1^sNaN gives qNaN
   x = 1.0f;

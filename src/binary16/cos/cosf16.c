@@ -73,5 +73,5 @@ _Float16 cr_cosf16(_Float16 x){
 
 // dummy function since GNU libc does not provide it
 _Float16 cosf16 (_Float16 x) {
-  return (_Float16) sinf ((float) x);
+  return (_Float16) cosf ((float) x);
 }

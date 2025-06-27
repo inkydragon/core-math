@@ -64,16 +64,31 @@ asfloat (uint32_t u)
   return v.f;
 }
 
+// this code was contributed by Adhemerval Zanella
+// (rand_state, wyhash64, init_rand_state)
+static __thread uint64_t rand_state;
+
+static uint64_t wyhash64 (void)
+{
+  rand_state += 0x60bee2bee120fc15;
+  __uint128_t tmp;
+  tmp = (__uint128_t) rand_state * 0xa3b195354a39b70d;
+  uint64_t m1 = (tmp >> 64) ^ tmp;
+  tmp = (__uint128_t)m1 * 0x1b03738712fad5c9;
+  uint64_t m2 = (tmp >> 64) ^ tmp;
+  return m2;
+}
+
+static void
+init_rand_state (int seed)
+{
+  rand_state = seed;
+}
+
 static float
 get_random (void)
 {
-  b32u32_u v;
-  int64_t l;
-  l = rand ();
-  v.u = l;
-  // rand generates only 31 bits
-  l = rand ();
-  v.u |= (uint32_t) l << 31;
+  b32u32_u v = {.u = wyhash64 ()};
   return v.f;
 }
 
@@ -153,11 +168,12 @@ check (float x, float y)
 static void
 check_random (int seed, int nthreads)
 {
+  init_rand_state (seed);
+
   ref_init ();
   ref_fesetround (rnd);
   fesetround(rnd1[rnd]);
   float x, y;
-  srand (seed);
   for (uint64_t n = 0; n < CORE_MATH_TESTS; n += nthreads)
   {
     x = get_random ();

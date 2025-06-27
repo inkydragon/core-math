@@ -51,25 +51,20 @@ int rnd2[] = { MPFR_RNDN,    MPFR_RNDZ,     MPFR_RNDU, MPFR_RNDD   };
 int rnd = 0;
 int keep = 0;
 
-typedef union { uint32_t n; float x; } union_t;
+typedef union { uint32_t n; float f; } union_t;
 
-float
+static inline float
 asfloat (uint32_t n)
 {
-  union_t u;
-  u.n = n;
-  return u.x;
+  union_t u = {.n = n};
+  return u.f;
 }
 
 static inline uint32_t
 asuint (float f)
 {
-  union
-  {
-    float f;
-    uint32_t i;
-  } u = {f};
-  return u.i;
+  union_t u = {.f = f};
+  return u.n;
 }
 
 /* define our own is_nan function to avoid depending from math.h */
@@ -153,7 +148,7 @@ fix_underflow (float x, float y)
   mpfr_clear (t);
 }
 
-void
+static void
 doit (uint32_t n)
 {
   float x, y, z;
@@ -273,7 +268,7 @@ doit (uint32_t n)
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
 static inline int issignaling(float x) {
-  union_t _x = {.x = x};
+  union_t _x = {.f = x};
 
   return !(_x.n & (1ull << 22));
 }
@@ -282,38 +277,43 @@ static inline int issignaling(float x) {
 static void
 check_signaling_nan (void)
 {
-  float snan = asfloat (0x7f800001ul);
-  float y = cr_function_under_test (snan);
-  // check that foo(NaN) = NaN
-  if (!is_nan (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %la=%x\n",
-             y, asuint (y));
-    exit (1);
-  }
-  // check that the signaling bit disappeared
-  if (issignaling (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
-             asuint (y));
-    exit (1);
-  }
-  // also test sNaN with sign bit set
-  snan = asfloat (0xff800001ul);
-  y = cr_function_under_test (snan);
-  // check that foo(NaN) = NaN
-  if (!is_nan (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %la=%x\n",
-             y, asuint (y));
-    exit (1);
-  }
-  // check that the signaling bit disappeared
-  if (issignaling (y))
-  {
-    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%x\n",
-             asuint (y));
-    exit (1);
+  // Signaling NaNs have encoding from 0x7f800001 to 0x7fbfffff
+  float snan;
+  for (uint32_t u = 0x7f800001ul; u < 0x7fc00000ul; u++) {
+    snan = asfloat (u);
+    float y = cr_function_under_test (snan);
+    // check that foo(NaN) = NaN
+    if (!is_nan (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %la=%x\n",
+               u, y, asuint (y));
+      exit (1);
+    }
+    // check that the signaling bit disappeared
+    if (issignaling (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
+               u, asuint (y));
+      exit (1);
+    }
+    // also test sNaN with sign bit set
+    uint32_t v = 0x80000000ul + u;
+    snan = asfloat (v);
+    y = cr_function_under_test (snan);
+    // check that foo(NaN) = NaN
+    if (!is_nan (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %la=%x\n",
+               v, y, asuint (y));
+      exit (1);
+    }
+    // check that the signaling bit disappeared
+    if (issignaling (y))
+    {
+      fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
+               v, asuint (y));
+      exit (1);
+    }
   }
 }
 
@@ -347,6 +347,62 @@ check_exceptions_aux (uint32_t n)
     fprintf (stderr, "Error, for x=%a, underflow exception set (y=%a)\n", x, y);
     exit (1);
   }
+
+  /* Check that all flags are not reset */
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_UNDERFLOW)){
+    printf ("Underflow exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_DIVBYZERO)){
+    printf ("Division by zero exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check inexact flag is not reset
+  feraiseexcept (FE_INEXACT);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_INEXACT)){
+    printf ("Inexact exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check invalid flag is not reset
+  feraiseexcept (FE_INVALID);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_INVALID)){
+    printf ("Invalid exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
+
+  // check overflow flag is not reset
+  feraiseexcept (FE_OVERFLOW);
+  y = cr_function_under_test(x);
+  if (!fetestexcept (FE_OVERFLOW)){
+    printf ("Overflow exception was reset for x=%la (y=%la)\n", x, y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+  exit(1);
+#endif
+  }
 }
 
 // check that no overflow/underflor/inexact is set for input NaN, Inf, 0
@@ -354,31 +410,20 @@ check_exceptions_aux (uint32_t n)
 static void
 check_exceptions (void)
 {
-  // check +sNaN and -sNaN
-  check_exceptions_aux (0x7f800001);
-  check_exceptions_aux (0xff800001);
-  // check +qNaN and -qNaN
-  check_exceptions_aux (0x7fc00000);
-  check_exceptions_aux (0xffc00000);
-  // check +Inf and -Inf
-  check_exceptions_aux (0x7f800000);
-  check_exceptions_aux (0xff800000);
-  // check +0 and -0
-  check_exceptions_aux (0x0);
-  check_exceptions_aux (0x80000000);
+	// checking all Inf, sNaN, qNaN, 0
+	for (uint32_t u = 0x7f800000; u <= 0x80000000; u++) {
+		check_exceptions_aux (u);
+		check_exceptions_aux (u ^ 0x80000000); // -u
+	}
 }
 
 static int doloop (void)
 {
-  // check sNaN
-  doit (0x7f800001);
-  doit (0xff800001);
-  // check qNaN
-  doit (0x7fc00000);
-  doit (0xffc00000);
-  // check +Inf and -Inf
-  doit (0x7f800000);
-  doit (0xff800000);
+  // checking all Inf, sNaN and qNaN
+	for (uint32_t u = 0x7f800000; u < 0x80000000; u++) {
+		doit (u);
+		doit (u ^ 0x80000000); // -u
+	}
 
   check_signaling_nan ();
 

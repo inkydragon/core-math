@@ -98,7 +98,7 @@ float cr_sinhf(float x){
     float sgn = __builtin_copysignf(2.0f, x);
     if(ux>=0xff000000u) {
       if(ux<<8) return x + x; // nan
-      return sgn*__builtin_inff(); // +-inf
+      return sgn*1.0f/0.0f; // +-inf
     }
     float r = sgn*0x1.fffffep127f;
 #ifdef CORE_MATH_SUPPORT_ERRNO

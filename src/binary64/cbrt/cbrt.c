@@ -58,7 +58,7 @@ typedef struct
   uint32_t res3;
 } fpcr_bitfield;
 
-inline static unsigned int _mm_getcsr()
+inline static unsigned int _mm_getcsr(void)
 {
   union
   {
@@ -80,7 +80,7 @@ static inline int get_rounding_mode (fexcept_t *flagp)
 {
   /* Warning: on __aarch64__ (for example cfarm103), FE_UPWARD=0x400000
      instead of 0x800. */
-#if defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)
+#if defined(__x86_64__) || defined(__aarch64__) ||  defined(__arm64__) || defined(_M_ARM64)
   *flagp = _mm_getcsr ();
   return ((*flagp)>>13) & 3;
 #else

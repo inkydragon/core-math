@@ -24,8 +24,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define MPFR_WANT_FLOAT128
+
+// clang and the Intel compiler do not support yet _Float128
+#if defined(__clang__) || defined(__INTEL_CLANG_COMPILER)
+#define mpfr_float128 __float128
+#endif
+
 #include <mpfr.h>
 #include "fenv_mpfr.h"
+
 typedef union {
   unsigned __int128 a;
   __float128 f;

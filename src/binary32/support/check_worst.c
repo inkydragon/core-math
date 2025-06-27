@@ -361,6 +361,62 @@ check (float x, float y)
     }
   }
 #endif
+
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  z1 = cr_function_under_test(x, y);
+  if (!fetestexcept (FE_UNDERFLOW)) {
+    printf ("Underflow exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit(1);
+#endif
+  }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  z1 = cr_function_under_test(x, y);
+  if (!fetestexcept (FE_DIVBYZERO)) {
+    printf ("Division by zero exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit(1);
+#endif
+  }
+
+  /* Check that all flags are not reset */
+  // check inexact flag is not reset
+  feraiseexcept (FE_INEXACT);
+  z1 = cr_function_under_test(x, y);
+  if (!fetestexcept (FE_INEXACT)) {
+    printf ("Inexact exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit(1);
+#endif
+  }
+
+  // check invalid flag is not reset
+  feraiseexcept (FE_INVALID);
+  z1 = cr_function_under_test(x, y);
+  if (!fetestexcept (FE_INVALID)) {
+    printf ("Invalid exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit(1);
+#endif
+  }
+
+  // check overflow flag is not reset
+  feraiseexcept (FE_OVERFLOW);
+  z1 = cr_function_under_test(x, y);
+  if (!fetestexcept (FE_OVERFLOW)) {
+    printf ("Overflow exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit(1);
+#endif
+  }
 }
 
 void
@@ -443,7 +499,7 @@ check_signaling_nan (void)
   }
 
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (snan, 1.0f);
+  y = cr_function_under_test (snan, 2.0f);
   // check that foo(NaN,1.0) = NaN
   if (!is_nan (y))
   {
@@ -462,7 +518,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 1.0f);
+    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 2.0f);
     exit (1);
   }
 
@@ -518,7 +574,7 @@ check_signaling_nan (void)
   // also check sNaN with sign bit set
   snan = asfloat (0xff800001);
   feclearexcept (FE_INVALID);
-  y = cr_function_under_test (snan, 1.0f);
+  y = cr_function_under_test (snan, 2.0f);
   // check that foo(NaN,x) = NaN
   if (!is_nan (y))
   {
@@ -537,7 +593,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 1.0f);
+    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 2.0f);
     exit (1);
   }
 

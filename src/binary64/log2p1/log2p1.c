@@ -37,6 +37,7 @@ SOFTWARE.
 #include <errno.h>
 #include "dint_log2p1.h"
 
+
 /*
   Approximation tables
 */
@@ -1871,10 +1872,10 @@ cr_log2p1_fast (double *h, double *l, double x, int e, d64u64 v)
   if (e < -5) /* e <= -6 thus |x| < 2^-5 */
   {
     double lo;
-    if (e <= -970)
+    if (e <= -969)
     {
-      /* then |x| might be as small as 2^-970, thus h=x/log(2) might in the
-         binade [2^-970,2^-969), with ulp(h) = 2^-1022, and if |l| < ulp(h),
+      /* then |x| might be as small as 2^-969, thus h=x/log(2) might in the
+         binade [2^-969,2^-968), with ulp(h) = 2^-1021, and if |l| < ulp(h),
          then l.ulp() might be smaller than 2^-1074. We defer that case to
          the accurate path. */
       *h = *l = 0;
@@ -1982,6 +1983,7 @@ cr_log2p1_fast (double *h, double *l, double x, int e, d64u64 v)
   return 0x1.23p-68; /* 2^-67.82 < 0x1.23p-68 */
 }
 
+
 double
 cr_log2p1 (double x)
 {
@@ -1990,6 +1992,9 @@ cr_log2p1 (double x)
   if (__builtin_expect (e == 0x400 || x == 0 || x <= -1.0, 0))
     /* case NaN/Inf, +/-0 or x <= -1 */
   {
+    static const d64u64 minf = {.u = 0xffful << 52};
+    if (e == 0x400 && x != minf.f) /* NaN or + Inf*/
+      return x + x;
     if (x <= -1.0) /* we use the fact that NaN < -1 is false */
     {
       /* log2p(x<-1) is NaN, log2p(-1) is -Inf and raises DivByZero */
@@ -2006,7 +2011,7 @@ cr_log2p1 (double x)
         return 1.0 / -0.0;
       }
     }
-    return x + x; /* +/-0, NaN or +Inf */
+    return x + x; /* +/-0 */
   }
 
   /* now x > -1 */

@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <math.h>
+#include <math.h> // for signgam
 #include <limits.h>
 
 // Warning: clang also defines __GNUC__
@@ -120,7 +120,7 @@ float cr_lgammaf(float x){
   if(__builtin_expect(t.u>=(0xffu<<23), 0)){ // NaN or Inf
     if(t.u==(0xffu<<23)){ // +-inf
       signgam = 1;
-      return __builtin_inff();
+      return 1.0f/0.0f;
     }
     return x + x; // nan
   }
@@ -129,6 +129,9 @@ float cr_lgammaf(float x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE;
 #endif
+      t.f = x;
+      // gamma(+0) = +Inf, gamma(-0) = -Inf
+      if(!(t.u<<1)) signgam = 1 - 2*(t.u >> 31);
       return 1.0f/0.0f;
     }
     if(x==1.0f || x==2.0f) {

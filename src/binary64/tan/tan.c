@@ -2251,15 +2251,18 @@ cr_tan (double x)
   int e = (t.u >> 52) & 0x7ff;
 
   if (__builtin_expect (e == 0x7ff, 0)) /* NaN, +Inf and -Inf. */
-    {
+  {
 #ifdef CORE_MATH_SUPPORT_ERRNO
-      if ((t.u << 1) == 0x7ffull<<53) // Inf
-        errno = EDOM;
+    if ((t.u << 1) == 0x7ffull<<53) // Inf
+      errno = EDOM;
 #endif
-      t.u = ~0ull;
-      return t.f;
+    if ((t.u << 1) != 0x7ff8ull<<49){
+      return 0.0 / 0.0;
     }
-
+    t.u = ~0ull;
+    return t.f;
+  }
+  
   /* now x is a regular number */
 
   /* For |x| <= 0x1.d12ed0af1a27ep-27, tan(x) rounds to x (to nearest):

@@ -67,7 +67,7 @@ typedef struct
   uint32_t res3;
 } fpcr_bitfield;
 
-inline static unsigned int _mm_getcsr()
+inline static unsigned int _mm_getcsr(void)
 {
   union
   {
@@ -97,8 +97,14 @@ static inline int get_rounding_mode (void)
 #endif
 }
 
+#if (defined(__clang__) && __clang_major__ >= 14) || (defined(__GNUC__) && __GNUC__ >= 14 && __BITINT_MAXWIDTH__ && __BITINT_MAXWIDTH__ >= 128)
+typedef unsigned _BitInt(128) u128;
+typedef _BitInt(128) i128;
+#else
 typedef unsigned __int128 u128;
 typedef __int128 i128;
+#endif
+
 typedef uint64_t u64;
 typedef int64_t i64;
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__

@@ -48,7 +48,7 @@ static __attribute__((noinline)) float as_special(float x){
     errno = ERANGE;
 #endif
     feraiseexcept(FE_DIVBYZERO);
-    return -__builtin_inff(); // to raise FE_DIVBYZERO
+    return -1.0f/0.0f; // to raise FE_DIVBYZERO
   }
   if(ax > 0xff000000u) return x + x; // nan
 #ifdef CORE_MATH_SUPPORT_ERRNO

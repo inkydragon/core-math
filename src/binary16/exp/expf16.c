@@ -38,7 +38,7 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_expf16(_Float16 x){
-	static const uint16_t x0 = 0xcc55; // binary representation of x0 in order to compare uint16_t rather than flt16
+	static const uint16_t u0 = 0xcc55; // binary representation of x0=-0x1.154p+4 in order to compare uint16_t rather than flt16
  	static const _Float16 x1 = 0x1.62cp3; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
 	static const float tb[] = // tabulate value of exp(log(2)*i/2^6) for i in [0, 63]
 		{0x1p+0f, 0x1.02c9a2p+0f, 0x1.059b0cp+0f, 0x1.087452p+0f,  
@@ -63,7 +63,7 @@ _Float16 cr_expf16(_Float16 x){
 		if (v.u == 0xfc00) return 0x0p0;
 		else return x + x;
 	}
-	else if (v.u > x0) return 0x1p-25f;
+	else if (v.u > u0) return 0x1p-25f; // x < -0x1.aap+25
 	else if (x > x1) return 0x1.ffcp15f + 0x1p5f;
 	else {
 		float xf = x; // exact conversion from _Float16 to float

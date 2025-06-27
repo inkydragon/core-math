@@ -70,7 +70,7 @@ _Float16 cr_exp2f16(_Float16 x){
 	}
 	float xp = __builtin_fmaf(minus_one_over_thirtytwo, j, xf);
 	// xf = j/32 + xp = (j>>5) + i/32 + xp
-	// so exp(xf) = 2^(j>>5) * 2^(i/32) * 2^xp
+	// so 2^xf = 2^(j>>5) * 2^(i/32) * 2^xp
 	xp = __builtin_fmaf(__builtin_fmaf(0x1.ebfbep-3f, xp, 0x1.62e43p-1f), xp, 1.0f);
 	b32u32_u w = {.f = xp * tb[i]};
 	w.u += (jint >> 5) * (1l << 23);

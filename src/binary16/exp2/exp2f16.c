@@ -38,47 +38,43 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_exp2f16(_Float16 x){
-	uint16_t x0 = 0xce40; // binary representation of x0 in order to compare uint16_t rather than flt16
- 	_Float16 x1 = 0x1.ffcp3f; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
-	static const float tb[] = // tabulate value of 2^(i/2^6) for i in [-2^5, 2^5], size(tb) = 2^6 + 1
-		{0xb.504f3p-4f, 0xb.6fd92p-4f, 0xb.8fbafp-4f, 0xb.aff5bp-4f,
-		 0xb.d08a4p-4f, 0xb.f179ap-4f, 0xc.12c4dp-4f, 0xc.346cdp-4f,
-		 0xc.5672ap-4f, 0xc.78d75p-4f, 0xc.9b9bep-4f, 0xc.bec15p-4f,
-		 0xc.e248cp-4f, 0xd.06334p-4f, 0xd.2a81ep-4f, 0xd.4f35bp-4f,
-		 0xd.744fdp-4f, 0xd.99d16p-4f, 0xd.bfbb8p-4f, 0xd.e60f5p-4f,
-		 0xe.0ccdfp-4f, 0xe.33f89p-4f, 0xe.5b907p-4f, 0xe.8396ap-4f,
-		 0xe.ac0c7p-4f, 0xe.d4f3p-4f, 0xe.fe4bap-4f, 0xf.281778p-4f,
-		 0xf.5257dp-4f, 0xf.7d0dfp-4f, 0xf.a83b3p-4f, 0xf.d3e0cp-4f,
-		 0x1p+0f, 0x1.02c9a4p+0f, 0x1.059b0ep+0f, 0x1.087452p+0f,
-		 0x1.0b5586p+0f, 0x1.0e3ec4p+0f, 0x1.11301ep+0f, 0x1.1429aap+0f,
-		 0x1.172b84p+0f, 0x1.1a35bep+0f, 0x1.1d4874p+0f, 0x1.2063bap+0f,
-		 0x1.2387a6p+0f, 0x1.26b456p+0f, 0x1.29e9ep+0f, 0x1.2d285ap+0f,
-		 0x1.306fep+0f, 0x1.33c08cp+0f, 0x1.371a74p+0f, 0x1.3a7db4p+0f,
-		 0x1.3dea64p+0f, 0x1.4160a2p+0f, 0x1.44e086p+0f, 0x1.486a2cp+0f,
-		 0x1.4bfdaep+0f, 0x1.4f9b28p+0f, 0x1.5342b6p+0f, 0x1.56f474p+0f,
-		 0x1.5ab07ep+0f, 0x1.5e76f2p+0f, 0x1.6247ecp+0f, 0x1.662388p+0f,
-		 0x1.6a09e6p+0f};
+	static const b16u16_u x0 = {.f = -0x1.9p+4}; // smallest _Float16 such that 2^x0- < MIN_SUBNORMALIZE <= 2^x0
+ 	static const b16u16_u x1 = {.f = 0x1.ffcp+3f}; // largest _Float16 such that 2^x1 <= MAX_FLOAT16 < 2^x1+
+	static const float tb[] = // tabulate value of 2^(i/64) for i in [0, 63]
+		{0x1p+0f, 0x1.059b0ep+0f, 0x1.0b5586p+0f, 0x1.11301ep+0f,  
+		 0x1.172b84p+0f, 0x1.1d4874p+0f, 0x1.2387aap+0f, 0x1.29e9ep+0f,  
+		 0x1.306fep+0f, 0x1.371a74p+0f, 0x1.3dea64p+0f, 0x1.44e086p+0f,  
+		 0x1.4bfdaep+0f, 0x1.5342b6p+0f, 0x1.5ab07ep+0f, 0x1.6247ecp+0f,  
+		 0x1.6a09e6p+0f, 0x1.71f75ep+0f, 0x1.7a1148p+0f, 0x1.82589ap+0f,  
+		 0x1.8ace54p+0f, 0x1.93737cp+0f, 0x1.9c4918p+0f, 0x1.a5503cp+0f,  
+		 0x1.ae89fap+0f, 0x1.b7f77p+0f, 0x1.c199bep+0f, 0x1.cb720ep+0f,  
+		 0x1.d5818cp+0f, 0x1.dfc976p+0f, 0x1.ea4afap+0f, 0x1.f5076ap+0f};
 	b16u16_u v = {.f = x};
-	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-		if (v.u == 0xfc00) return 0x0p0f;
-		else return x + x;
+	if ((v.u & 0x7fff) > 0x4bff) { // in this case, we have x > min(x0, x1) in abs value
+		if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
+			if (v.u == 0xfc00) return 0x0p0;
+			else return x + x;
+		}
+		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
+		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
-	else if (v.u > x0) return (_Float16) 0x1p-25f;
-	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p5f; 
-	else if (v.u == 0x11c5) return (_Float16) 0x1.004p+0f - 0x1p-12f; // only one wrong case
-	else {
-		float k = __builtin_roundevenf((float) x); 
-		float xp = -k + x;
-		int i = 0x1p6f * xp;
-		float xpp = __builtin_fmaf((float) i, -0x1p-6f, xp); // x = k + i/2^6 + xpp
-																		   									 // So, 2^x = 2^k * 2^(i/2^6) * 2^xpp
-
-		// result
-		xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(0x1.c64d84p-5f, xpp, 0x1.ebfbep-3f), xpp, 0x1.62e43p-1f), xpp, 1.0f);
-		b32u32_u w = {.f = xpp * tb[i + 32]};
-    w.u += (int) k * (1 << 23);
-  	return w.f;
+	float xf = x; // exact conversion from _Float16 to float
+	static const float thirtytwo = 0x1p5f;
+	static const float minus_one_over_thirtytwo = -0x1p-5f;
+	float j = __builtin_roundevenf(thirtytwo * xf);
+	uint32_t jint = j;
+	int i = jint & 0x1f;
+	if (i == 0) { // two only wrong cases
+		if (v.u == 0x11c5) return 0x1.004p+0f - 0x1p-12f;
+		if (v.u == 0xa39d) return 0x1.facp-1f - 0x1p-13f;
 	}
+	float xp = __builtin_fmaf(minus_one_over_thirtytwo, j, xf);
+	// xf = j/32 + xp = (j>>5) + i/32 + xp
+	// so exp(xf) = 2^(j>>5) * 2^(i/32) * 2^xp
+	xp = __builtin_fmaf(__builtin_fmaf(0x1.ebfbep-3f, xp, 0x1.62e43p-1f), xp, 1.0f);
+	b32u32_u w = {.f = xp * tb[i]};
+	w.u += (jint >> 5) * (1l << 23);
+	return w.f; // conversion float -> _Float16 (with rounding)
 }
 
 // dummy function since GNU libc does not provide it

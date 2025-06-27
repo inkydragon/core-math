@@ -40,7 +40,7 @@ typedef union {float f; uint32_t u;} b32u32_u;
 _Float16 cr_exp2f16(_Float16 x){
 	static const b16u16_u x0 = {.f = -0x1.9p+4}; // smallest _Float16 such that 2^x0- < MIN_SUBNORMALIZE <= 2^x0
  	static const b16u16_u x1 = {.f = 0x1.ffcp+3f}; // largest _Float16 such that 2^x1 <= MAX_FLOAT16 < 2^x1+
-	static const float tb[] = // tabulate value of 2^(i/64) for i in [0, 63]
+	static const float tb[] = // tabulate value of 2^(i/32) for i in [0, 31]
 		{0x1p+0f, 0x1.059b0ep+0f, 0x1.0b5586p+0f, 0x1.11301ep+0f,  
 		 0x1.172b84p+0f, 0x1.1d4874p+0f, 0x1.2387aap+0f, 0x1.29e9ep+0f,  
 		 0x1.306fep+0f, 0x1.371a74p+0f, 0x1.3dea64p+0f, 0x1.44e086p+0f,  

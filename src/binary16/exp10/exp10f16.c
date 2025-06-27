@@ -39,48 +39,57 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_exp10f16(_Float16 x){
-	uint16_t x0 = 0xc786; // binary representation of x0 in order to compare uint16_t rather than flt16
- 	_Float16 x1 = 0x1.344p2f; // largest _Float16 such that 10^x1 <= MAX_FLOAT16 < 10^x1+
-	static const float tb[] = // tabulate value of 10^(i/2^6) for i in [-2^5*log(2)/log(10), 2^5*log(2)/log(10)], size(tb) = 39
-		{0x8.13b01p-4f, 0x8.5f6eep-4f, 0x8.adf41p-4f, 0x8.ff59ap-4f,
-		 0x9.53ba8p-4f, 0x9.ab32bp-4f, 0xa.05df3p-4f, 0xa.63dep-4f,  
-		 0xa.c54e5p-4f, 0xb.2a506p-4f, 0xb.9305cp-4f, 0xb.ff911p-4f,  
-		 0xc.70165p-4f, 0xc.e4bacp-4f, 0xd.5da52p-4f, 0xd.dafd7p-4f,  
-		 0xe.5ced3p-4f, 0xe.e39f8p-4f, 0xf.6f41p-4f, 0x1p+0f,  
-		 0x1.0960c6p+0f, 0x1.13198p+0f, 0x1.1d2d64p+0f, 0x1.279fcap+0f,  
-		 0x1.32742ap+0f, 0x1.3dae1ep+0f, 0x1.49515p+0f, 0x1.5561aap+0f,  
-		 0x1.61e31ep+0f, 0x1.6ed9eap+0f, 0x1.7c4a4p+0f, 0x1.8a38ap+0f,  
-		 0x1.98a9a4p+0f, 0x1.a7a218p+0f, 0x1.b726fp+0f, 0x1.c73d52p+0f,  
-		 0x1.d7ea92p+0f, 0x1.e93436p+0f, 0x1.fb1ffcp+0f};
+	static const b16u16_u x0 = {.f = -0x1.e18p+2f}; // smallest _Float16 such that 10^x0- < MIN_SUBNORMALIZE <= 10^x0
+ 	static const b16u16_u x1 = {.f = 0x1.344p+2f}; // largest _Float16 such that 10^x1 <= MAX_FLOAT16 < 10^x1+
+	static const float tb[] = // tabulate value of 10^(log10(2)*i/32) for i in [0, 63]
+		{0x1p+0f, 0x1.02c9a4p+0f, 0x1.059b0ep+0f, 0x1.087452p+0f,  
+		 0x1.0b5586p+0f, 0x1.0e3ec4p+0f, 0x1.11301ep+0f, 0x1.1429aap+0f,  
+		 0x1.172b84p+0f, 0x1.1a35bep+0f, 0x1.1d4874p+0f, 0x1.2063b8p+0f,  
+		 0x1.2387a6p+0f, 0x1.26b456p+0f, 0x1.29e9ep+0f, 0x1.2d285ap+0f,  
+		 0x1.306fep+0f, 0x1.33c08cp+0f, 0x1.371a74p+0f, 0x1.3a7db4p+0f,
+		 0x1.3dea68p+0f, 0x1.4160a2p+0f, 0x1.44e086p+0f, 0x1.486a2cp+0f,  
+		 0x1.4bfdaep+0f, 0x1.4f9b28p+0f, 0x1.5342b6p+0f, 0x1.56f474p+0f,  
+		 0x1.5ab07ep+0f, 0x1.5e76f2p+0f, 0x1.6247ecp+0f, 0x1.662388p+0f,  
+		 0x1.6a09dep+0f, 0x1.6dfb24p+0f, 0x1.71f75ep+0f, 0x1.75feb6p+0f,  
+		 0x1.7a1148p+0f, 0x1.7e2f34p+0f, 0x1.82589ap+0f, 0x1.868d9ap+0f,  
+		 0x1.8ace54p+0f, 0x1.8f1aeap+0f, 0x1.93737cp+0f, 0x1.97d82ap+0f,  
+		 0x1.9c4918p+0f, 0x1.a0c668p+0f, 0x1.a5503cp+0f, 0x1.a9e6b6p+0f,  
+		 0x1.ae89fap+0f, 0x1.b33a2cp+0f, 0x1.b7f77p+0f, 0x1.bcc1eap+0f,  
+		 0x1.c199bep+0f, 0x1.c67f12p+0f, 0x1.cb720ep+0f, 0x1.d072d4p+0f,  
+		 0x1.d5818ep+0f, 0x1.da9e6p+0f, 0x1.dfc974p+0f, 0x1.e502eep+0f,  
+		 0x1.ea4af6p+0f, 0x1.efa1cp+0f, 0x1.f50766p+0f, 0x1.fa7c1ap+0f};
 	b16u16_u v = {.f = x};
-	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-		if (v.u == 0xfc00) return 0x0p0f;
-		else return x + x;
+	if ((v.u & 0x7fff) > 0x44d1) { // in this case, we have x > min(x0, x1) in abs value
+		if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
+			if (v.u == 0xfc00) return 0x0p0;
+			else return x + x;
+		}
+		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
+		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
-	else if (v.u > x0) return (_Float16) 0x1p-25f;
-	else if (x > x1) return (_Float16) 0x1.ffcp15f + 0x1p5f; 
-	else {
-		if (x == -0x1.c28p+0) return 0x1.1ccp-6f + 0x1p-18f;
-		if (x == 0x1p+2) return 0x1.388p+13f;
-		if (x == 0x1p+1) return 0x1.9p+6f;
-		if (x == 0x1.8p+1) return 0x1.f4p+9f;
-		if (x == 0x1p+0) return 0x1.4p3f;
-		if (x == -0x1.2ap-6) return 0x1.ebp-1f - 0x1p-13f;
-		if (x == -0x1.b5p-3) return 0x1.394p-1f - 0x1p-13f;
-		float log10_on_log2 = 0x1.a934fp1f;
-		float minus_log2_on_log10 = -0x1.344136p-2f;
-		float k = __builtin_roundevenf((float) x * log10_on_log2); 
-		float xp = __builtin_fmaf(minus_log2_on_log10, k, (float) x);
-		int i = 0x1p6f * xp;
-		float xpp = __builtin_fmaf((float) i, -0x1p-6f, xp); // x = klog(2)/log(10) + i/2^6 + xpp
-																		   									 // So, 10^x = 2^k * 10^(i/2^6) * 10^xpp
-
-		// result
-		xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(__builtin_fmaf(0x1.2b9e52p0f, xpp, 0x1.046efap1f), xpp, 0x1.53524ep1f), xpp, 0x1.26bb1cp1f), xpp, 1.0f);
-		b32u32_u w = {.f = xpp * tb[i + 19]};
-    w.u += (int) k * (1 << 23);
-  	return w.f;
+	// 7 wrong cases
+	if (x == -0x1.c28p+0f) return 0x1.1ccp-6f + 0x1p-18f;
+	if (x == -0x1.d98p-10f) return 0x1.fdcp-1f + 0x1p-13f;
+	if (x == -0x1.b5p-3f) return 0x1.394p-1f - 0x1p-13f;
+	if (!(v.u & 0x81ff)) { // exact cases (x = 1, 2, 3, 4)
+		if (x == 0x1p+1f) return 0x1.9p+6f;
+		if (x == 0x1.8p+1f) return 0x1.f4p+9f;
+		if (x == 0x1p+2f) return 0x1.388p+13f;
+		if (x == 0x1p+0f) return 0x1.4p+3f;
 	}
+	float xf = x; // exact conversion from _Float16 to float
+	static const float sixtyfour_over_log10_2 = 0x1.a934fp+7f; 
+	static const float minus_log10_2_over_sixtyfour = -0x1.344136p-8f;
+	float j = __builtin_roundevenf(sixtyfour_over_log10_2 * xf);
+	uint32_t jint = j;
+	int i = jint & 0x3f;
+	float xp = __builtin_fmaf(minus_log10_2_over_sixtyfour, j, xf);
+	// xf = j*log10(2)/32 + xp = (j>>5)*log10(2) + log10(2)*i/32 + xp
+	// so 10^xf = 2^(j>>5) * 10^(log10(2)*i/32) * 10^exp(xp)
+	xp = __builtin_fmaf(__builtin_fmaf(0x1.53524ep1f, xp, 0x1.26bb1cp1f), xp, 1.0f);; 
+	b32u32_u w = {.f = xp * tb[i]};
+	w.u += (jint >> 6) * (1l << 23);
+	return w.f; // conversion float -> _Float16 (with rounding)
 }
 
 // dummy function since GNU libc does not provide it

@@ -58,16 +58,14 @@ _Float16 cr_exp2f16(_Float16 x){
 		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
 		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
+	if (v.u == 0x11c5) return 0x1.004p+0f - 0x1p-12f; // two wrong cases
+	if (v.u == 0xa39d) return 0x1.facp-1f - 0x1p-13f;
 	float xf = x; // exact conversion from _Float16 to float
 	static const float thirtytwo = 0x1p5f;
 	static const float minus_one_over_thirtytwo = -0x1p-5f;
 	float j = __builtin_roundevenf(thirtytwo * xf);
 	uint32_t jint = j;
 	int i = jint & 0x1f;
-	if (i == 0) { // two only wrong cases
-		if (v.u == 0x11c5) return 0x1.004p+0f - 0x1p-12f;
-		if (v.u == 0xa39d) return 0x1.facp-1f - 0x1p-13f;
-	}
 	float xp = __builtin_fmaf(minus_one_over_thirtytwo, j, xf);
 	// xf = j/32 + xp = (j>>5) + i/32 + xp
 	// so 2^xf = 2^(j>>5) * 2^(i/32) * 2^xp

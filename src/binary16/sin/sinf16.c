@@ -38,21 +38,6 @@ SOFTWARE.
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {double f; uint64_t u;} b64u64_u;
 
-// convert x to double, assuming x is not NaN, Inf or 0
-static double to_double (_Float16 x) {
-  b16u16_u v = {.f = x};
-  b64u64_u w;
-  uint64_t u = v.u, au = u & 0x7fff;
-  if (au < 0x400) { // subnormal case
-    uint64_t nbZero = __builtin_clz(au); // number of leading 0 on 32 bits
-    w.u = (au << (21 + nbZero)) + (0x3f00000000000000 - ((nbZero - 21) << 52));
-  } else
-    // 1 is encoded by 0x3c00 in _Float16, and by 0x3ff0 0000 0000 0000 in double 
-    w.u = (au << 42) + 0x3f00000000000000;
-  w.u |= (u >> 15) << 63; // sign
-  return w.f;
-}
-
 _Float16 cr_sinf16(_Float16 x){
 	b16u16_u t = {.f = x};
 	if ((t.u & 0x7c00) == 0x7c00) return 0.0f / 0.0f;
@@ -76,7 +61,7 @@ _Float16 cr_sinf16(_Float16 x){
 		 0x6.1f78a9abaa59cp-4, 0x7.8ad74e01bd8e8p-4, 0x8.e39d9cd734628p-4, 0xa.267992848eeb8p-4,  
 		 0xb.504f333f9de58p-4, 0xc.5e40358a8b9fp-4, 0xd.4db3148750d18p-4, 0xe.1c5978c05ed78p-4,  
 		 0xe.c835e79946a2p-4, 0xf.4fa0ab6316edp-4, 0xf.b14be7fbae578p-4, 0xf.ec46d1e89293p-4};
-	static const double tb_sin[] = // tabulate value of so,(i*pi/32) for i in [0, 63]
+	static const double tb_sin[] = // tabulate value of sin(i*pi/32) for i in [0, 63]
 		{0x0p+0, 0x1.917a6bc29b42cp-4, 0x3.1f17078d34c14p-4, 0x4.a5018bb567c14p-4,  
 		 0x6.1f78a9abaa58cp-4, 0x7.8ad74e01bd8ecp-4, 0x8.e39d9cd73464p-4, 0xa.267992848eebp-4,  
 		 0xb.504f333f9de6p-4, 0xc.5e40358a8ba08p-4, 0xd.4db3148750d18p-4, 0xe.1c5978c05ed8p-4,  
@@ -93,14 +78,15 @@ _Float16 cr_sinf16(_Float16 x){
 		 -0xe.c835e79946a28p-4, -0xe.1c5978c05ed88p-4, -0xd.4db3148750d28p-4, -0xc.5e40358a8bap-4,  
 		 -0xb.504f333f9de7p-4, -0xa.267992848eedp-4, -0x8.e39d9cd73464p-4, -0x7.8ad74e01bd9p-4,  
 		 -0x6.1f78a9abaa5b8p-4, -0x4.a5018bb567c2p-4, -0x3.1f17078d34c36p-4, -0x1.917a6bc29b425p-4};
-	double xd = to_double (x);
+	double xd = x;
 	double j = __builtin_roundeven(thirtytwo_over_pi * xd);
 	int i = (uint64_t) j & 0x3f;
 	double xp = __builtin_fma(minus_pi_over_thirtytwo, j, xd);
 	// xd = j*pi/32 + xp = 2kpi + i*pi/32 + xp with k an integer
 	// so sin(xd) = sin(i*pi/32 + xp) = sin(i*pi/32)cos(xp) + cos(i*pi/32)sin(xp)
 	double xp2 = xp*xp;
-	return tb_sin[i] * (1.0-0.5*xp2+0x1.5555p-5*xp2*xp2) + tb_cos[i] * (xp - 0x1.5555p-3*xp*xp2);
+	return tb_sin[i] * (1.0 + xp2 * (-0.5 + xp2 * 0x1.5555p-5)) + tb_cos[i] * (xp - 0x1.5555p-3 * xp * xp2);
+	// return tb_sin[i] * (1.0-0.5*xp2+0x1.5555p-5*xp2*xp2) + tb_cos[i] * (xp - 0x1.5555p-3*xp*xp2);
 }
 
 // dummy function since GNU libc does not provide it

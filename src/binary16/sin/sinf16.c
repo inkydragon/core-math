@@ -86,7 +86,6 @@ _Float16 cr_sinf16(_Float16 x){
 	// so sin(xd) = sin(i*pi/32 + xp) = sin(i*pi/32)cos(xp) + cos(i*pi/32)sin(xp)
 	double xp2 = xp*xp;
 	return tb_sin[i] * (1.0 + xp2 * (-0.5 + xp2 * 0x1.5555p-5)) + tb_cos[i] * (xp - 0x1.5555p-3 * xp * xp2);
-	// return tb_sin[i] * (1.0-0.5*xp2+0x1.5555p-5*xp2*xp2) + tb_cos[i] * (xp - 0x1.5555p-3*xp*xp2);
 }
 
 // dummy function since GNU libc does not provide it

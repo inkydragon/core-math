@@ -66,7 +66,7 @@ static double poly12(double z, const double *c){
 }
 
 float cr_acosf(float x){
-  const double pi2 = 0x1.921fb54442d18p+0;
+  static const double pi2 = 0x1.921fb54442d18p+0; // approximates pi/2
   static const double o[] = {0, 0x1.921fb54442d18p+1};
   double xs = x, r;
   b32u32_u t = {.f = x};
@@ -79,11 +79,10 @@ float cr_acosf(float x){
        -0x1.9ea97c4e2c21fp+6, 0x1.200b8261cc61bp+8, -0x1.2274c2799a5c7p+9, 0x1.a558a59cc19d3p+9,
        -0x1.aca4b6a529ffp+9, 0x1.228744703f813p+9, -0x1.d7dbb0b322228p+7, 0x1.5c2018c0c0105p+5};
     /* avoid spurious underflow */
-    if (__builtin_expect(ax < 0x40000000u, 0)) // |x| < 2^-63
-      /* GCC <= 11 wrongly assumes the rounding is to nearest and
-         performs a constant folding here:
-         https://gcc.gnu.org/bugzilla/show_bug.cgi?id=57245 */
-      return (float) pi2;
+    if (__builtin_expect(ax < 0x40000000u, 0)) { // |x| < 2^-63
+      static const float pi2h = 0x1.921fb6p+0f, pi2l = -0x1.777a5cp-25f;
+      return pi2h + pi2l;
+    }
     double z = xs, z2 = z*z, z4 = z2*z2, z8 = z4*z4, z16=z8*z8;
     r = z*((((b[0] + z2*b[1]) + z4*(b[2] + z2*b[3])) + z8*((b[4] + z2*b[5]) + z4*(b[6] + z2*b[7]))) +
 		  z16*(((b[8] + z2*b[9]) + z4*(b[10] + z2*b[11])) + z8*((b[12] + z2*b[13]) + z4*(b[14] + z2*b[15]))));

@@ -43,7 +43,7 @@ _Float16 cr_cosf16(_Float16 x){
 	if ((t.u & 0x7c00) == 0x7c00) return 0.0f / 0.0f;
 	static const double sixteen_over_pi = 0x1.45f306dc9c883p+2;
 	static const double minus_pi_over_sixteen = -0x1.921fb54442d18p-3;
-	static const double tb_cos[] = // tabulate value of cos(i*pi/32) for i in [0, 63]
+	static const double tb_cos[] = // tabulate value of cos(i*pi/16) for i in [0, 32]
 		{0x1p+0, 0xf.b14be7fbae58p-4, 0xe.c835e79946a3p-4, 0xd.4db3148750d18p-4,  
 		 0xb.504f333f9de68p-4, 0x8.e39d9cd734648p-4, 0x6.1f78a9abaa59p-4, 0x3.1f17078d34c1ap-4,  
 		 0x4.69898cc51701cp-56, -0x3.1f17078d34c1p-4, -0x6.1f78a9abaa588p-4, -0x8.e39d9cd73463p-4,  
@@ -52,7 +52,7 @@ _Float16 cr_cosf16(_Float16 x){
 		 -0xb.504f333f9de7p-4, -0x8.e39d9cd73464p-4, -0x6.1f78a9abaa5b4p-4, -0x3.1f17078d34c32p-4,  
 		 -0xd.3c9ca64f4505p-56, 0x3.1f17078d34c18p-4, 0x6.1f78a9abaa59cp-4, 0x8.e39d9cd734628p-4,  
 		 0xb.504f333f9de58p-4, 0xd.4db3148750d18p-4, 0xe.c835e79946a2p-4, 0xf.b14be7fbae578p-4};
-	static const double tb_sin[] = // tabulate value of sin(i*pi/32) for i in [0, 63]
+	static const double tb_sin[] = // tabulate value of sin(i*pi/16) for i in [0, 32]
 		{0x0p+0, 0x3.1f17078d34c14p-4, 0x6.1f78a9abaa58cp-4, 0x8.e39d9cd73464p-4,  
 		 0xb.504f333f9de6p-4, 0xd.4db3148750d18p-4, 0xe.c835e79946a3p-4, 0xf.b14be7fbae58p-4,  
 		 0x1p+0, 0xf.b14be7fbae58p-4, 0xe.c835e79946a3p-4, 0xd.4db3148750d28p-4,  
@@ -65,10 +65,10 @@ _Float16 cr_cosf16(_Float16 x){
 	double j = __builtin_roundeven(sixteen_over_pi * xd);
 	int i = (uint64_t) j & 0x1f;
 	double xp = __builtin_fma(minus_pi_over_sixteen, j, xd);
-	// xd = j*pi/32 + xp = 2kpi + i*pi/32 + xp with k an integer
-	// so cos(xd) = cos(i*pi/32 + xp) = cos(i*pi/32)cos(xp) - sin(i*pi/32)sin(xp)
+	// xd = j*pi/16 + xp = 2kpi + i*pi/16 + xp with k an integer
+	// so cos(xd) = cos(i*pi/16 + xp) = cos(i*pi/16)cos(xp) - sin(i*pi/16)sin(xp)
 	double xp2 = xp*xp;
-	return tb_cos[i] * (1.0-0.5*xp2+0x1.5555p-5*xp2*xp2) - tb_sin[i] * (xp - 0x1.5555p-3*xp*xp2);
+	return tb_cos[i] * (1.0 + xp2 * (-0.5 + xp2 * 0x1.5555p-5)) - tb_sin[i] * (xp - 0x1.5555p-3*xp*xp2);
 }
 
 // dummy function since GNU libc does not provide it

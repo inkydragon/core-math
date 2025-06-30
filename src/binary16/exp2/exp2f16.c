@@ -38,8 +38,8 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_exp2f16(_Float16 x){
-	static const b16u16_u x0 = {.f = -0x1.9p+4}; // smallest _Float16 such that 2^x0- < MIN_SUBNORMALIZE <= 2^x0
- 	static const b16u16_u x1 = {.f = 0x1.ffcp+3f}; // largest _Float16 such that 2^x1 <= MAX_FLOAT16 < 2^x1+
+	static const b32u32_u x0 = {.f = -0x1.9p+4}; // smallest _Float16 such that 2^x0- < MIN_SUBNORMALIZE <= 2^x0
+ 	static const b32u32_u x1 = {.f = 0x1.ffcp+3f}; // largest _Float16 such that 2^x1 <= MAX_FLOAT16 < 2^x1+
 	static const float tb[] = // tabulate value of 2^(i/32) for i in [0, 31]
 		{0x1p+0f, 0x1.059b0ep+0f, 0x1.0b5586p+0f, 0x1.11301ep+0f,  
 		 0x1.172b84p+0f, 0x1.1d4874p+0f, 0x1.2387aap+0f, 0x1.29e9ep+0f,  
@@ -49,24 +49,23 @@ _Float16 cr_exp2f16(_Float16 x){
 		 0x1.8ace54p+0f, 0x1.93737cp+0f, 0x1.9c4918p+0f, 0x1.a5503cp+0f,  
 		 0x1.ae89fap+0f, 0x1.b7f77p+0f, 0x1.c199bep+0f, 0x1.cb720ep+0f,  
 		 0x1.d5818cp+0f, 0x1.dfc976p+0f, 0x1.ea4afap+0f, 0x1.f5076ap+0f};
-	b16u16_u v = {.f = x};
-	if ((v.u & 0x7fff) > 0x4bff) { // in this case, we have x > min(x0, x1) in abs value
-		if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-			if (v.u == 0xfc00) return 0x0p0;
+	b32u32_u v = {.f = x};
+	if (v.u == 0x3a38a000) return 0x1.004p+0f - 0x1p-12f; // two wrong cases
+	if (v.u == 0xbc73a000) return 0x1.facp-1f - 0x1p-13f;
+	if ((v.u & 0x7fffffff) > 0x417fe000) { // in this case, we have x > min(x0, x1) in abs value
+		if ((v.u & 0x7f800000) == 0x7f800000) { // if x is nan or x is inf
+			if (v.u == 0xff800000) return 0x0p0;
 			else return x + x;
 		}
 		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
 		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
-	if (v.u == 0x11c5) return 0x1.004p+0f - 0x1p-12f; // two wrong cases
-	if (v.u == 0xa39d) return 0x1.facp-1f - 0x1p-13f;
-	float xf = x; // exact conversion from _Float16 to float
 	static const float thirtytwo = 0x1p5f;
 	static const float minus_one_over_thirtytwo = -0x1p-5f;
-	float j = __builtin_roundevenf(thirtytwo * xf);
+	float j = __builtin_roundevenf(thirtytwo * v.f);
 	uint32_t jint = j;
 	int i = jint & 0x1f;
-	float xp = __builtin_fmaf(minus_one_over_thirtytwo, j, xf);
+	float xp = __builtin_fmaf(minus_one_over_thirtytwo, j, v.f);
 	// xf = j/32 + xp = (j>>5) + i/32 + xp
 	// so 2^xf = 2^(j>>5) * 2^(i/32) * 2^xp
 	xp = __builtin_fmaf(__builtin_fmaf(0x1.ebfbep-3f, xp, 0x1.62e43p-1f), xp, 1.0f);

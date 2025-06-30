@@ -72,12 +72,13 @@ _Float16 cr_log10f16(_Float16 x){
 		 0x9.24925p-27f, 0x8.fb824p-27f, 0x8.d3dcbp-27f, 0x8.ad8f3p-27f,  
 		 0x8.88938ap-27f, 0x8.64bfd8p-27f, 0x8.4218b8p-27f, 0x8.208136p-27f};
 
-	if (x == 0x1.394p-1f) return -0x1.b5p-3f + 0x1p-15f; // some wrong cases
-	if (x == 0x1.388p+13f) return 0x1p+2f;
-	if (x == 0x1.f84p+6f) return 0x1.0ccp+1f + 0x1p-11f;
-	if (x == 0x1.f4p+9f) return 0x1.8p+1f;
+        // deal with some exceptional cases
+        if (t.u == 0x38e5) return -0x1.b5p-3f + 0x1p-15f; // x=1253/2048
+        if (t.u == 0x70e2) return 0x1p+2f; // x=10000
+        if (t.u == 0x57e1) return 0x1.0ccp+1f + 0x1p-11f; // x=2017/16
+        if (t.u == 0x63d0) return 0x1.8p+1f; // x=1000
 	b32u32_u xf = {.f = x};
-	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormal numbers
+	int expo = (xf.u >> 23) - 127; // used float instead of float16 to avoid working with subnormal numbers
 	uint32_t i = (xf.u & 0x007c0000) >> 18;
 	xf.f = (xf.u & 0x0003ffff) * tl[i];
 	// We have, x = 2^expo * (1 + i2^-5 + xf.f)

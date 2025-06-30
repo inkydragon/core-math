@@ -112,7 +112,6 @@ then
 fi
 # Please uncomment the lines below if your Fortran compiler supports the REAL128 kind.
 # echo "! quad unary functions"
-# for I in rsqrt sqrt
 # for I in cbrt rsqrt sqrt
 # do
 # 	echo "interface"
@@ -120,6 +119,18 @@ fi
 # 	echo "     use, intrinsic :: iso_fortran_env, only: real128"
 # 	echo "     implicit none"
 # 	echo "     real(kind=real128), intent(in), value :: x"
+# 	echo "     real(kind=real128) :: cr_${I}q"
+# 	echo "   end function cr_${I}q"
+# 	echo "end interface"
+# done
+# echo "! quad binary functions"
+# for I in hypot
+# do
+# 	echo "interface"
+# 	echo "   pure function cr_${I}q(x, y) bind(c,name='cr_${I}q')"
+# 	echo "     use, intrinsic :: iso_fortran_env, only: real128"
+# 	echo "     implicit none"
+# 	echo "     real(kind=real128), intent(in), value :: x, y"
 # 	echo "     real(kind=real128) :: cr_${I}q"
 # 	echo "   end function cr_${I}q"
 # 	echo "end interface"

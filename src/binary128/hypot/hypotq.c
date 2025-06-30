@@ -89,6 +89,15 @@ typedef union {
   __float128 f;
 } b128u128_u;
 
+#if (defined(__x86_64__) && (defined(__APPLE__) || defined(_WIN32)))
+static inline __float128 local_nanq(__attribute__((unused)) const char *tagp){
+  b128u128_u u;
+  u.a = ~(u128)0u;
+  return u.f;
+}
+#define __builtin_nanf128(tagp) local_nanq(tagp)
+#endif
+
 // get high part of unsigned 64x64 bit multiplication
 static inline u64 mhuu(u64 _a, u64 _b){
   return ((u128)_a*_b)>>64;
@@ -267,7 +276,7 @@ __attribute__((noinline)) char getclass(u128 x){
 
 __float128 cr_hypotq(__float128 x, __float128 y) {
   unsigned flagp = _mm_getcsr(), oflagp = flagp, rm = flagp&_MM_ROUND_MASK;
-  const u64 smsk = 1l<<63;
+  const u64 smsk = 1ll<<63;
   b128u128_u X = {.a = reinterpret_f128_as_u128(x)};
   b128u128_u Y = {.a = reinterpret_f128_as_u128(y)};
 
@@ -325,14 +334,14 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
   }
 
   int dn = xn - yn;
-  a.a <<= 15; a.b[1] |= 1ul<<63;
+  a.a <<= 15; a.b[1] |= 1ull<<63;
   b128u128_u v, dv;
   if(__builtin_expect(dn>56, 0)){
     // if x or y is too small compare to the other number
     // return the largest number
     v.a = a.a|1;
   } else {
-    b.a <<= 15; b.b[1] |= 1ul<<63;
+    b.a <<= 15; b.b[1] |= 1ull<<63;
     b128u128_u a2128 = {.a = sqrhU(a.a)}, b2 = {.a = sqrhU(b.a>>dn)};
     a2128.a += b2.a;
     char overflow = b2.b[1]>a2128.b[1];
@@ -341,12 +350,12 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
     int s = 1 - overflow + nz;
     a2128.a <<= s;
     xn += overflow;
-    const u64 rsqrt_2[] = {~0ul,0xb504f333f9de6484}; // 2^64/sqrt(2)
+    const u64 rsqrt_2[] = {~0ull,0xb504f333f9de6484ull}; // 2^64/sqrt(2)
     u64 rx = a2128.b[1], r = rsqrt9(rx);
     u128 r2 = (u128)r*rsqrt_2[i];
     unsigned shft = 2-i;
     a2128.a >>= shft;
-    a2128.b[1] |= 1ul<<(62+i);
+    a2128.b[1] |= 1ull<<(62+i);
     r = r2>>64;
     u128 sx = mhuU(r, a2128.a);
     i128 h  = mhuU(r, sx)<<2, ds = mhIU(h, sx);
@@ -401,10 +410,12 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
       // set overflow exception for result which is indeed overflow as well as rounded to infinity
       if(v.b[1] == 0x7fffull<<48 || over){
 	flagp |= FE_OVERFLOW;
+#ifdef CORE_MATH_SUPPORT_ERRNO
 	errno = ERANGE;
+#endif
       }
     } else {
-      unsigned frac = v.b[0]&0x7ffful; // fractional part
+      unsigned frac = v.b[0]&0x7fffull; // fractional part
       u64 rnd;
       if(__builtin_expect(rm==_MM_ROUND_NEAREST, 1)){
 	rnd = frac>>14;  // round to nearest tie to even
@@ -439,7 +450,7 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
     // set inexact and underflow flags only if hypot is really inexact
     if(__builtin_expect(frac, 1)){
       flagp |= FE_INEXACT;
-      if(v.b[1]<(1ul<<48)) flagp |= FE_UNDERFLOW;
+      if(v.b[1]<(1ull<<48)) flagp |= FE_UNDERFLOW;
     }
   }
   if(__builtin_expect(oflagp!=flagp, 0)) _mm_setcsr(flagp);

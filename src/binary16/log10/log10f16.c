@@ -52,7 +52,7 @@ _Float16 cr_log10f16(_Float16 x){
 		else if (t.u >> 15) return 0.0f / 0.0f;
 		else return x + x;
 	}
-	float log10_2 = 0x1.344136p-2;
+	static const float log10_2 = 0x1.344136p-2;
 	static const float tb[] = // tabulate values of log10(1 + i2^-5) for i in [0, 31]
 		{0x0p+0f, 0x3.6bd21p-8f, 0x6.bd7e48p-8f, 0x9.f688dp-8f,  
 		 0xd.1854fp-8f, 0x1.02428cp-4f, 0x1.31b306p-4f, 0x1.5fe804p-4f,  

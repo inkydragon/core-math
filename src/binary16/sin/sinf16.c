@@ -39,9 +39,9 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {double f; uint64_t u;} b64u64_u;
 
 _Float16 cr_sinf16(_Float16 x){
-	b16u16_u t = {.f = x};
-	if ((t.u & 0x7c00) == 0x7c00) return 0.0f / 0.0f;
-	if (!(t.u & 0x7fff)) return x;
+	b64u64_u xd = {.f = x};
+	if ((xd.u & 0x7ff0000000000000) == 0x7ff0000000000000) return 0.0f / 0.0f;
+	if (!(xd.u & 0x7fffffffffffffff)) return x;
 	static const double thirtytwo_over_pi = 0x1.45f306dc9c883p+3;
 	static const double minus_pi_over_thirtytwo = -0x1.921fb54442d18p-4;
 	static const double tb_cos[] = // tabulate value of cos(i*pi/32) for i in [0, 63]
@@ -78,10 +78,9 @@ _Float16 cr_sinf16(_Float16 x){
 		 -0xe.c835e79946a28p-4, -0xe.1c5978c05ed88p-4, -0xd.4db3148750d28p-4, -0xc.5e40358a8bap-4,  
 		 -0xb.504f333f9de7p-4, -0xa.267992848eedp-4, -0x8.e39d9cd73464p-4, -0x7.8ad74e01bd9p-4,  
 		 -0x6.1f78a9abaa5b8p-4, -0x4.a5018bb567c2p-4, -0x3.1f17078d34c36p-4, -0x1.917a6bc29b425p-4};
-	double xd = x;
-	double j = __builtin_roundeven(thirtytwo_over_pi * xd);
-	int i = (uint64_t) j & 0x3f;
-	double xp = __builtin_fma(minus_pi_over_thirtytwo, j, xd);
+	double j = __builtin_roundeven(thirtytwo_over_pi * xd.f);
+	int i = (int) j & 0x3f;
+	double xp = __builtin_fma(minus_pi_over_thirtytwo, j, xd.f);
 	// xd = j*pi/32 + xp = 2kpi + i*pi/32 + xp with k an integer
 	// so sin(xd) = sin(i*pi/32 + xp) = sin(i*pi/32)cos(xp) + cos(i*pi/32)sin(xp)
 	double xp2 = xp*xp;

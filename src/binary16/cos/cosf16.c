@@ -34,13 +34,12 @@ SOFTWARE.
 
 #pragma STDC FENV_ACCESS ON
 
-
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {double f; uint64_t u;} b64u64_u;
 
 _Float16 cr_cosf16(_Float16 x){
-	b16u16_u t = {.f = x};
-	if ((t.u & 0x7c00) == 0x7c00) return 0.0f / 0.0f;
+	b64u64_u xd = {.f = x};
+	if ((xd.u & 0x7ff0000000000000) == 0x7ff0000000000000) return 0.0f / 0.0f;
 	static const double sixteen_over_pi = 0x1.45f306dc9c883p+2;
 	static const double minus_pi_over_sixteen = -0x1.921fb54442d18p-3;
 	static const double tb_cos[] = // tabulate value of cos(i*pi/16) for i in [0, 31]
@@ -61,10 +60,9 @@ _Float16 cr_cosf16(_Float16 x){
 		 -0xb.504f333f9de6p-4, -0xd.4db3148750d18p-4, -0xe.c835e79946a2p-4, -0xf.b14be7fbae578p-4,  
 		 -0x1p+0, -0xf.b14be7fbae58p-4, -0xe.c835e79946a28p-4, -0xd.4db3148750d28p-4,  
 		 -0xb.504f333f9de7p-4, -0x8.e39d9cd73464p-4, -0x6.1f78a9abaa5b8p-4, -0x3.1f17078d34c36p-4};
-	double xd = x;
-	double j = __builtin_roundeven(sixteen_over_pi * xd);
+	double j = __builtin_roundeven(sixteen_over_pi * xd.f);
 	int i = (int) j & 0x1f;
-	double xp = __builtin_fma(minus_pi_over_sixteen, j, xd);
+	double xp = __builtin_fma(minus_pi_over_sixteen, j, xd.f);
 	// xd = j*pi/16 + xp = 2kpi + i*pi/16 + xp with k an integer
 	// so cos(xd) = cos(i*pi/16 + xp) = cos(i*pi/16)cos(xp) - sin(i*pi/16)sin(xp)
 	double xp2 = xp*xp;

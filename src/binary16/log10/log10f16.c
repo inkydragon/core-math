@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -45,10 +46,17 @@ https://dl.acm.org/doi/10.1145/98267.98294 */
 
 _Float16 cr_log10f16(_Float16 x){
 	b16u16_u t = {.f = x};
-	if (t.u == 0) return neginf.f;
+	if (t.f == 0) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+		errno = ERANGE;
+#endif
+		return neginf.f;
+	}
 	else if (t.u >> 10 >= 0x1f) {
-		if (t.u == 0x8000) return neginf.f;
-		else if (t.u >> 15) return 0.0f / 0.0f;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+		errno = EDOM;
+#endif
+		if (t.u >> 15) return 0.0f / 0.0f;
 		else return x + x;
 	}
 	static const float log10_2 = 0x1.344136p-2;

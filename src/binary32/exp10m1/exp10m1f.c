@@ -85,7 +85,7 @@ float cr_exp10m1f(float x){
 		    r = 0x1.26bb1bbb55516p+1 + z * 0x1.53524c73cea69p+1;
 		  }
 		} else {
-		  if (__builtin_expect(ux == 0xb6fa215bu, 0)) return -0x1.1ff87ep-16 + 0x1p-68;
+		  if (__builtin_expect(ux == 0xb6fa215bu, 0)) return -0x1.1ff87ep-16f + 0x1p-68f;
 		  r = 0x1.26bb1bbb55516p+1 + z * (0x1.53524c73ea62fp+1 + z * 0x1.0470591de2c75p+1);
 		}
 	      } else {

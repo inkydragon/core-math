@@ -45,14 +45,14 @@ arithmetic. ACM Trans. Math. Softw. 16, 4 (1990), 378–400.
 https://dl.acm.org/doi/10.1145/98267.98294 */
 
 _Float16 cr_logf16(_Float16 x){
-	b16u16_u t = {.f = x};
-	if (t.u == 0) return neginf.f;
-	else if (t.u >> 10 >= 0x1f) {
-		if (t.u == 0x8000) return neginf.f;
-		else if (t.u >> 15) return 0.0f / 0.0f;
+	b32u32_u xf = {.f = x};
+	if (xf.u == 0) return neginf.f;
+	else if (xf.u >> 23 >= 0xff) {
+		if (xf.u == 0x80000000) return neginf.f;
+		else if (xf.u >> 31) return 0.0f / 0.0f;
 		else return x + x;
 	}
-	float log2 = 0x1.62e430p-1;
+	static const float log2 = 0x1.62e430p-1;
 	static const float tb[] = // tabulate values of log(1 + i2^-5) for i in [0, 31]
 		{0x0p+0f, 0x7.e0a6cp-8f, 0xf.85186p-8f, 0x1.6f0d28p-4f,  
 		 0x1.e27076p-4f, 0x2.52aa6p-4f, 0x2.bfe61p-4f, 0x3.2a4b54p-4f,  
@@ -71,7 +71,6 @@ _Float16 cr_logf16(_Float16 x){
 		 0x9.d89d9p-27f, 0x9.a90e8p-27f, 0x9.7b426p-27f, 0x9.4f209p-27f,  
 		 0x9.24925p-27f, 0x8.fb824p-27f, 0x8.d3dcbp-27f, 0x8.ad8f3p-27f,  
 		 0x8.88889p-27f, 0x8.64b8ap-27f, 0x8.42108p-27f, 0x8.208168p-27f};
-	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormal numbers
 	int i = (xf.u & 0x007c0000) >> 18;
 	xf.f = (xf.u & 0x0003ffff) * tl[i];

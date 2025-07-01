@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -50,6 +51,10 @@ _Float16 cr_expf16(_Float16 x){
 		 0x1.ae89fap+0f, 0x1.b7f77p+0f, 0x1.c199bep+0f, 0x1.cb720ep+0f,  
 		 0x1.d5819p+0f, 0x1.dfc974p+0f, 0x1.ea4afap+0f, 0x1.f50766p+0f};
 	b32u32_u v = {.f = x};
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (v.f > x1.f || v.f < -0x1.368p+3f)
+		errno = ERANGE;
+#endif
 	if ((v.u & 0x7fffffff) > 0x41316000) { // in this case, we have x > min(x0, x1) in abs value
 		if ((v.u & 0x7f800000) == 0x7f800000) { // if x is nan or x is inf
 			if (v.u == 0xff800000) return 0x0p0;

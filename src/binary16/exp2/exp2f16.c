@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -38,7 +39,7 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_exp2f16(_Float16 x){
-	static const b32u32_u x0 = {.f = -0x1.9p+4}; // smallest _Float16 such that 2^x0- < MIN_SUBNORMALIZE <= 2^x0
+	static const b32u32_u x0 = {.f = -0x1.8fcp+4}; // smallest _Float16 such that 2^x0- < MIN_SUBNORMALIZE <= 2^x0
  	static const b32u32_u x1 = {.f = 0x1.ffcp+3f}; // largest _Float16 such that 2^x1 <= MAX_FLOAT16 < 2^x1+
 	static const float tb[] = // tabulate value of 2^(i/32) for i in [0, 31]
 		{0x1p+0f, 0x1.059b0ep+0f, 0x1.0b5586p+0f, 0x1.11301ep+0f,  
@@ -52,6 +53,10 @@ _Float16 cr_exp2f16(_Float16 x){
 	b32u32_u v = {.f = x};
 	if (v.u == 0x3a38a000) return 0x1.004p+0f - 0x1p-12f; // two wrong cases
 	if (v.u == 0xbc73a000) return 0x1.facp-1f - 0x1p-13f;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (v.f > x1.f || v.f < -0x1.cp+3f)
+		errno = ERANGE;
+#endif
 	if ((v.u & 0x7fffffff) > 0x417fe000) { // in this case, we have x > min(x0, x1) in abs value
 		if ((v.u & 0x7f800000) == 0x7f800000) { // if x is nan or x is inf
 			if (v.u == 0xff800000) return 0x0p0;
@@ -71,6 +76,10 @@ _Float16 cr_exp2f16(_Float16 x){
 	xp = __builtin_fmaf(__builtin_fmaf(0x1.ebfbep-3f, xp, 0x1.62e43p-1f), xp, 1.0f);
 	b32u32_u w = {.f = xp * tb[i]};
 	w.u += (jint >> 5) * (1l << 23);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (w.u >> 23 <= 0x380 && !(w.u << 9))
+		errno = 0;
+#endif
 	return w.f; // conversion float -> _Float16 (with rounding)
 }
 

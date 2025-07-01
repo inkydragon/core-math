@@ -77,7 +77,7 @@ is_nan (_Float16 x)
 {
   uint16_t u = asuint (x);
   int e = u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u << 6) != 0;
+  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) != 0;
 }
 
 /* define our own is_inf function to avoid depending from math.h */
@@ -86,7 +86,7 @@ is_inf (_Float16 x)
 {
   uint16_t u = asuint (x);
   int e =  u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u << 6) == 0;
+  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) == 0;
 }
 
 static int

@@ -26,6 +26,8 @@ SOFTWARE.
 
 #define _GNU_SOURCE // needed to define expf10
 #include <stdint.h>
+#include <errno.h>
+#include <fenv.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -59,6 +61,12 @@ _Float16 cr_exp10f16(_Float16 x){
 		 0x1.d5818ep+0f, 0x1.da9e6p+0f, 0x1.dfc974p+0f, 0x1.e502eep+0f,  
 		 0x1.ea4af6p+0f, 0x1.efa1cp+0f, 0x1.f50766p+0f, 0x1.fa7c1ap+0f};
 	b16u16_u v = {.f = x};
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (v.f > x1.f || v.f <= -0x1.0dcp+2)
+		errno = ERANGE;
+	if (v.f == x1.f && !((fegetround() >> 10) % 2))
+		errno = ERANGE;
+#endif
 	if ((v.u & 0x7fff) > 0x44d1) { // in this case, we have x > min(x0, x1) in abs value
 		if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
 			if (v.u == 0xfc00) return 0x0p0;

@@ -67,6 +67,16 @@ _Float16 cr_exp10f16(_Float16 x){
 		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
 		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
+	// 7 wrong cases
+	if (v.u == 0xbf0a) return 0x1.1ccp-6f + 0x1p-18f;
+	if (v.u == 0x9766) return 0x1.fdcp-1f + 0x1p-13f;
+	if (v.u == 0xb2d4) return 0x1.394p-1f - 0x1p-13f;
+	if (!(v.u & 0x81ff)) { // exact cases (x = 1, 2, 3, 4)
+		if (v.u == 0x4000) return 0x1.9p+6f;
+		if (v.u == 0x4200) return 0x1.f4p+9f;
+		if (v.u == 0x4400) return 0x1.388p+13f;
+		if (v.u == 0x3c00) return 0x1.4p+3f;	
+	}
 	float xf = x; // exact conversion from _Float16 to float
 	static const float sixtyfour_over_log10_2 = 0x1.a934fp+7f; 
 	static const float minus_log10_2_over_sixtyfour = -0x1.344136p-8f;

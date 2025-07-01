@@ -41,7 +41,7 @@ typedef union {float f; uint32_t u;} b32u32_u;
 _Float16 cr_exp10f16(_Float16 x){
 	static const b16u16_u x0 = {.f = -0x1.e18p+2f}; // smallest _Float16 such that 10^x0- < MIN_SUBNORMALIZE <= 10^x0
  	static const b16u16_u x1 = {.f = 0x1.344p+2f}; // largest _Float16 such that 10^x1 <= MAX_FLOAT16 < 10^x1+
-	static const float tb[] = // tabulate value of 10^(log10(2)*i/32) for i in [0, 63]
+	static const float tb[] = // tabulate value of 10^(log10(2)*i/64) for i in [0, 63]
 		{0x1p+0f, 0x1.02c9a4p+0f, 0x1.059b0ep+0f, 0x1.087452p+0f,  
 		 0x1.0b5586p+0f, 0x1.0e3ec4p+0f, 0x1.11301ep+0f, 0x1.1429aap+0f,  
 		 0x1.172b84p+0f, 0x1.1a35bep+0f, 0x1.1d4874p+0f, 0x1.2063b8p+0f,  
@@ -67,16 +67,6 @@ _Float16 cr_exp10f16(_Float16 x){
 		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
 		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
-	// 7 wrong cases
-	if (v.u == 0xbf0a) return 0x1.1ccp-6f + 0x1p-18f;
-	if (v.u == 0x9766) return 0x1.fdcp-1f + 0x1p-13f;
-	if (v.u == 0xb2d4) return 0x1.394p-1f - 0x1p-13f;
-	if (!(v.u & 0x81ff)) { // exact cases (x = 1, 2, 3, 4)
-		if (v.u == 0x4000) return 0x1.9p+6f;
-		if (v.u == 0x4200) return 0x1.f4p+9f;
-		if (v.u == 0x4400) return 0x1.388p+13f;
-		if (v.u == 0x3c00) return 0x1.4p+3f;
-	}
 	float xf = x; // exact conversion from _Float16 to float
 	static const float sixtyfour_over_log10_2 = 0x1.a934fp+7f; 
 	static const float minus_log10_2_over_sixtyfour = -0x1.344136p-8f;
@@ -84,8 +74,8 @@ _Float16 cr_exp10f16(_Float16 x){
 	uint32_t jint = j;
 	int i = jint & 0x3f;
 	float xp = __builtin_fmaf(minus_log10_2_over_sixtyfour, j, xf);
-	// xf = j*log10(2)/32 + xp = (j>>5)*log10(2) + log10(2)*i/32 + xp
-	// so 10^xf = 2^(j>>5) * 10^(log10(2)*i/32) * 10^exp(xp)
+	// xf = j*log10(2)/64 + xp = (j>>6)*log10(2) + log10(2)*i/64 + xp
+	// so 10^xf = 2^(j>>6) * 10^(log10(2)*i/64) * 10^xp
 	xp = __builtin_fmaf(__builtin_fmaf(0x1.53524ep1f, xp, 0x1.26bb1cp1f), xp, 1.0f);; 
 	b32u32_u w = {.f = xp * tb[i]};
 	w.u += (jint >> 6) * (1l << 23);

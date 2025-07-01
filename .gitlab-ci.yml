@@ -11,6 +11,26 @@ check:
     # x86-64-v2 is needed for rsqrtq
     - EXTRA_CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
+check_errno:
+  stage: test
+  image: debian:latest
+  before_script:
+    - ci/00-prepare-docker.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    # x86-64-v2 is needed for rsqrtq
+    - EXTRA_CFLAGS="-DCORE_MATH_SUPPORT_ERRNO -march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+
+check_inexact:
+  stage: test
+  image: debian:latest
+  before_script:
+    - ci/00-prepare-docker.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    # x86-64-v2 is needed for rsqrtq
+    - EXTRA_CFLAGS="-DCORE_MATH_CHECK_INEXACT -march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+
 check_sanitize:
   stage: test
   image: debian:latest

@@ -63,7 +63,7 @@ _Float16 cr_cosf16(_Float16 x){
 		 -0xb.504f333f9de7p-4, -0x8.e39d9cd73464p-4, -0x6.1f78a9abaa5b8p-4, -0x3.1f17078d34c36p-4};
 	double xd = x;
 	double j = __builtin_roundeven(sixteen_over_pi * xd);
-	int i = (uint64_t) j & 0x1f;
+	int i = (int) j & 0x1f;
 	double xp = __builtin_fma(minus_pi_over_sixteen, j, xd);
 	// xd = j*pi/16 + xp = 2kpi + i*pi/16 + xp with k an integer
 	// so cos(xd) = cos(i*pi/16 + xp) = cos(i*pi/16)cos(xp) - sin(i*pi/16)sin(xp)

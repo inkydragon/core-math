@@ -81,7 +81,7 @@ _Float16 cr_exp10f16(_Float16 x){
 	static const float sixtyfour_over_log10_2 = 0x1.a934fp+7f; 
 	static const float minus_log10_2_over_sixtyfour = -0x1.344136p-8f;
 	float j = __builtin_roundevenf(sixtyfour_over_log10_2 * xf);
-	uint32_t jint = j;
+	int32_t jint = j;
 	int i = jint & 0x3f;
 	float xp = __builtin_fmaf(minus_log10_2_over_sixtyfour, j, xf);
 	// xf = j*log10(2)/64 + xp = (j>>6)*log10(2) + log10(2)*i/64 + xp

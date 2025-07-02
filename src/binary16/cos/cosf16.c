@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -66,6 +67,12 @@ _Float16 cr_cosf16(_Float16 x){
 	// xd = j*pi/16 + xp = 2kpi + i*pi/16 + xp with k an integer
 	// so cos(xd) = cos(i*pi/16 + xp) = cos(i*pi/16)cos(xp) - sin(i*pi/16)sin(xp)
 	double xp2 = xp*xp;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (xd.u << 1 == 0x8101480000000000)
+		errno = ERANGE;
+	if (xd.u << 1 == 0x80cc600000000000)
+		errno = ERANGE;
+#endif
 	return tb_cos[i] * (1.0 + xp2 * (-0.5 + xp2 * 0x1.5555p-5)) - tb_sin[i] * (xp - 0x1.5555p-3*xp*xp2);
 }
 

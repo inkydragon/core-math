@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -42,6 +43,16 @@ _Float16 cr_sinf16(_Float16 x){
 	b64u64_u xd = {.f = x};
 	if ((xd.u & 0x7ff0000000000000) == 0x7ff0000000000000) return 0.0f / 0.0f;
 	if (!(xd.u & 0x7fffffffffffffff)) return x;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (xd.u << 1 < 0x7e20000000000000)
+		errno = ERANGE;
+	if (((xd.u + (1ull << 52)) & 0x7fefffffffffffff) == 0x4086300000000000)
+		errno = ERANGE;
+	if (xd.u == 0x3f10000000000000 && 0x1p0f + 0x1.8p-24f == 0x1p0f)
+		errno = ERANGE;
+	if (xd.u == 0xbf10000000000000 && -0x1p0f - 0x1.8p-24f == -0x1p0f)
+		errno = ERANGE;
+#endif
 	static const double thirtytwo_over_pi = 0x1.45f306dc9c883p+3;
 	static const double minus_pi_over_thirtytwo = -0x1.921fb54442d18p-4;
 	static const double tb_cos[] = // tabulate value of cos(i*pi/32) for i in [0, 63]

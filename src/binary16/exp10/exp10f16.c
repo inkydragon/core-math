@@ -94,7 +94,7 @@ _Float16 cr_exp10f16(_Float16 x){
 	float xp = __builtin_fmaf(minus_log10_2_over_sixtyfour, j, xf);
 	// xf = j*log10(2)/64 + xp = (j>>6)*log10(2) + log10(2)*i/64 + xp
 	// so 10^xf = 2^(j>>6) * 10^(log10(2)*i/64) * 10^xp
-	xp = __builtin_fmaf(__builtin_fmaf(0x1.53524ep1f, xp, 0x1.26bb1cp1f), xp, 1.0f);; 
+	xp = __builtin_fmaf(__builtin_fmaf(0x1.53524ep1f, xp, 0x1.26bb1cp1f), xp, 1.0f);
 	b32u32_u w = {.f = xp * tb[i]};
 	w.u += (jint >> 6) * (1l << 23);
 	return w.f; // conversion float -> _Float16 (with rounding)

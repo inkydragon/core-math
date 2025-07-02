@@ -60,6 +60,9 @@ _Float16 cr_expf16(_Float16 x){
 			if (v.u == 0xff800000) return 0x0p0;
 			else return x + x;
 		}
+                /* With -DCORE_MATH_SUPPORT_ERRNO, gcc 14.2.0 emits a spurious
+                   underflow for x=0x1.63p+3 (for example). This is due
+                   to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=120910. */
 		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
 		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}

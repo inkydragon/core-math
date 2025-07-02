@@ -111,7 +111,8 @@ if [ "$CFLAGS" == "" ]; then
       # (https://gitlab.inria.fr/core-math/core-math/-/issues/8)
       # -fhonor-nans is needed to disable warnings about __builtin_nan()
       # (https://clang.llvm.org/docs/DiagnosticsReference.html#wnan-infinity-disabled)
-      export CFLAGS="-O3 -march=native -Wshadow -fno-finite-math-only -frounding-math -fhonor-nans"
+      # clang does not define trapping-math by default
+      export CFLAGS="-O3 -march=native -Wshadow -fno-finite-math-only -frounding-math -fhonor-nans -ftrapping-math"
    elif [ "$CC" == "icx" ]; then
       # icx needs -fp-model=precise and doesn't like -fsignaling-nans
       export CFLAGS="-fp-model=precise -O3 -march=native -Wshadow -fno-finite-math-only -frounding-math"
@@ -119,6 +120,7 @@ if [ "$CFLAGS" == "" ]; then
       # -march=native is not supported by gcc 14 on ppc64le
       export CFLAGS="-O3 -mcpu=native -Wshadow -fno-finite-math-only -frounding-math -fsignaling-nans"
    else
+      # gcc defines trapping-math by default
       export CFLAGS="-O3 -march=native -Wshadow -fno-finite-math-only -frounding-math -fsignaling-nans"
    fi
    unset MACHINE

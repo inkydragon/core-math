@@ -64,7 +64,7 @@ _Float16 cr_exp10f16(_Float16 x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	if (v.f > x1.f || v.f <= -0x1.0dcp+2)
 		errno = ERANGE;
-	if (v.f == x1.f && 0x1.fffffep127f + 0x1p104f == 0x1.fffffep127f)
+	if (v.f == x1.f && 0x1p0f + 0x1.8p-24f != 0x1p0f)
 		errno = ERANGE;
 #endif
 	if ((v.u & 0x7fff) > 0x44d1) { // in this case, we have x > min(x0, x1) in abs value

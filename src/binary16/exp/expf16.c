@@ -69,7 +69,7 @@ _Float16 cr_expf16(_Float16 x){
 	static const float thirtytwo_over_log2 = 0x1.715476p+5f;
 	static const float minus_log2_over_thirtytwo = -0x1.62e430p-6f;
 	float j = __builtin_roundevenf(thirtytwo_over_log2 * v.f);
-	uint32_t jint = j;
+	int32_t jint = j;
 	int i = jint & 0x1f;
 	float xp = __builtin_fmaf(minus_log2_over_thirtytwo, j, v.f);
 	// xf = j*log(2)/32 + xp = (j>>5)*log(2) + log(2)*i/32 + xp

@@ -68,7 +68,7 @@ _Float16 cr_exp2f16(_Float16 x){
 	static const float thirtytwo = 0x1p5f;
 	static const float minus_one_over_thirtytwo = -0x1p-5f;
 	float j = __builtin_roundevenf(thirtytwo * v.f);
-	uint32_t jint = j;
+	int32_t jint = j;
 	int i = jint & 0x1f;
 	float xp = __builtin_fmaf(minus_one_over_thirtytwo, j, v.f);
 	// xf = j/32 + xp = (j>>5) + i/32 + xp

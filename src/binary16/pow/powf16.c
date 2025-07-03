@@ -1,0 +1,58 @@
+/* Correctly-rounded power function for binary16 value.
+
+Copyright (c) 2025 Maxence Ponsardin.
+
+This file is part of the CORE-MATH project
+(https://core-math.gitlabpages.inria.fr/).
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/
+
+#include <stdint.h>
+#include <errno.h>
+#include <math.h> // only used during performance tests
+
+// Warning: clang also defines __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#endif
+
+#pragma STDC FENV_ACCESS ON
+
+typedef union {_Float16 f; uint16_t u;} b16u16_u;
+typedef union {double f; uint64_t u;} b64u64_u;
+
+int isint(b16u16_u v) {
+	if (v.f == 0.0f) return 1;
+	return (v.u & 0x7fff) >> 10 > 25 - __builtin_ctz(0x400 | v.u);
+}
+
+_Float16 cr_powf16(_Float16 x, _Float16 y){
+	b16u16_u vx = {.f = x}, vy = {.f = y};
+	if ((vx.u & 0x7fff) == 0x3c00) { // |x| = 1
+		if (vx.u >> 15) { // x = -1
+
+	}
+	return x + y;
+}
+
+// dummy function since GNU libc does not provide it
+_Float16 powf16 (_Float16 x, _Float16 y) {
+	return (_Float16) powf ((float) x, (float) y);
+}

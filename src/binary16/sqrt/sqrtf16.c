@@ -39,6 +39,9 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_sqrtf16(_Float16 x){
+        /* Musl does not set errno=EDOM for negative x, thus we might get a
+           missing errno=EDOM: https://www.openwall.com/lists/musl/2025/07/03/3
+        */
 	return (_Float16) sqrtf ((float) x);
 }
 

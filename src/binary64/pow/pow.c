@@ -1259,6 +1259,8 @@ static void exp_3 (qint64_t *r, qint64_t *x) {
   (a) either y is an integer, 2 <= y <= 34, or
   (b) x=2^E*m with m odd and y = 2^F*n with -5 <= F < 0, n odd, 3 <= n <= 34
   exact is non-zero iff x^y is exactly representable in binary64.
+  Note: [2] says 2 <= y <= 35 and 3 <= n <= 35, but the value 35 is not
+  possible, since 3^35 has 56 bits.
 */
 static char
 exact_pow (double *r, double x, double y, const dint64_t *z,
@@ -1916,7 +1918,7 @@ double cr_pow (double x, double y) {
 #endif /* ENABLE_ZIV2 */
 
   /* Note: exact and midpoint cases should be filtered by
-     exact_pow() above, and should not enter the 2rd iteration.
+     exact_pow() above, and should not enter the 2nd iteration.
      Thus check.sh might fail when POW_ITERATION | 2 == 0
      or POW_ITERATION | 4 == 0. */
 

@@ -219,6 +219,7 @@ is_exact (float x, float y)
   /* All cases such that x^y might be exact are:
      (a) |x| = 1
      (b) y integer, 0 <= y <= 15
+         (where 15 is the largest integer k such that 3^k fits in 24 bits)
      (c) y<0: x=1 or (x=2^e and |y|=n*2^-k with 2^k dividing e)
      (d) y>0: y=n*2^f with -4 <= f <= -1 and 1 <= n <= 15
      In cases (b)-(d), the low 16 bits of the encoding of y are zero,

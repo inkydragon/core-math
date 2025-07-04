@@ -56,8 +56,10 @@ _Float16 cr_rsqrtf16(_Float16 x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	if (x == 0.0f)
 		errno = ERANGE;
-        /* Musl does not set errno=EDOM for negative x, thus we might get a
-           missing errno=EDOM: https://www.openwall.com/lists/musl/2025/07/03/3
+        /* Musl does not set errno, thus we might get a
+           missing errno=EDOM:
+	   https://www.openwall.com/lists/musl/2025/07/03/3
+	   https://www.openwall.com/lists/musl/2025/07/03/5
         */
 #endif
 	return 1.0f / sqrtf ((float) x);

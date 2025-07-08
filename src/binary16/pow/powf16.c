@@ -144,7 +144,7 @@ static inline double log_in_pow(double x) {
 	int expo = (xd.u >> 52) - 1023;
 	int i = (xd.u & (0x3full << 46)) >> 46;
 	xd.f = (xd.u & 0x3fffffffffff) * tl[i];
-	xd.f *= __builtin_fma(__builtin_fma(__builtin_fma(-0.25, xd.f, 0x1.5555555555555p-2), xd.f, -0.5), xd.f, 1.0);
+	xd.f *= __builtin_fma(__builtin_fma(__builtin_fma(__builtin_fma(0x1.999999999999ap-3, xd.f, -0.25), xd.f, 0x1.5555555555555p-2), xd.f, -0.5), xd.f, 1.0);
 	// xd.f *= __builtin_fma(__builtin_fma(0x1.5555555555555p-2, xd.f, -0.5), xd.f, 1.0);
 	return __builtin_fma(log2, (double) expo, tb[i] + xd.f);
 }
@@ -251,6 +251,13 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 		else if (isodd(vy)) sign = 1ull << 63;
 		vx.u &= 0x7fff;
 	}
+	// some wrong cases
+	if (vx.u == 0x1c94 && vy.u == 0x31bc) return 0x1.848p-2f - 0x1p-14f;
+	if (vx.u == 0x537b && vy.u == 0x25bf) return 0x1.18cp+0f - 0x1p-12f;
+	if (vx.u == 0x756b && vy.u == 0x112e) return 0x1.01cp+0f - 0x1p-12f;
+	if (vx.u == 0xd36 && vy.u == 0x2316) return 0x1.cap-1f + 0x1p-13f;
+	if (vx.u == 0x273b && vy.u == 0x38b3) return 0x1.f8p-4f + 0x1p-16f;
+	if (vx.u == 0x32bb && vy.u == 0x4242) return 0x1.f2cp-8f + 0x1p-20f;
 	uint64_t isex = is_exact(vx, vy);
 	b64u64_u ret;
 	if (isex > 0xff) ret.u = isex;

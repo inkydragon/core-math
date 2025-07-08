@@ -258,13 +258,21 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 	if (vx.u == 0xd36 && vy.u == 0x2316) return 0x1.cap-1f + 0x1p-13f;
 	if (vx.u == 0x273b && vy.u == 0x38b3) return 0x1.f8p-4f + 0x1p-16f;
 	if (vx.u == 0x32bb && vy.u == 0x4242) return 0x1.f2cp-8f + 0x1p-20f;
+	if (vx.u == 0x4d47 && vy.u == 0x9d5f) return 0x1.f8p-1 - 0x1p-13;
+	if (vx.u == 0x2e27 && vy.u == 0xc107) return 0x1.688p+8 - 0x1p-4;
+	if (vx.u == 0x14cb && vy.u == 0xbe46) return 0x1.35cp+15 - 0x1p-3;
+	if (vx.u == 0x7abf && vy.u == 0x8cc5) return 0x1.fe8p-1 - 0x1p-13;
+	if (vx.u == 0x650c && vy.u == 0x9bed) return 0x1.f2p-1 + 0x1p-13;
+	if (vx.u == 0x29a0 && vy.u == 0xb5cf) return 0x1.8ep+1 + 0x1p-11;
+	if (vx.u == 0x17e9 && vy.u == 0xb1cf) return 0x1.8ep+1 + 0x1p-11;
+	if (vx.u == 0x5988 && vy.u == 0x9443) return 0x1.fd4p-1 + 0x1p-13;
 	uint64_t isex = is_exact(vx, vy);
 	b64u64_u ret;
 	if (isex > 0xff) ret.u = isex;
 	else if (isex) {
 		ret.f = exp_in_pow(log_in_pow(vx.f) * vy.f);
 		// Test if ret is exact :
-		b64u64_u test_exact1 = {.f = fast_pow(x, isex >> 4)};
+		b64u64_u test_exact1 = {.f = fast_pow(vx.f, isex >> 4)};
 		b64u64_u test_exact2 = {.u = (ret.u + (0x1ull << 40)) & (0xfffffeull << 40)};
 		test_exact2.f = fast_pow(test_exact2.f, isex & 0xf);
 		if (test_exact1.u == test_exact2.u) ret.u = (ret.u + (1ull << 40)) & (0xfffffeull << 40);

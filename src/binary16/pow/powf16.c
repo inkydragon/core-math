@@ -66,12 +66,12 @@ static inline uint64_t is_exact(b16u16_u x, b16u16_u y) {
 	if (!(x.u & 0x3ff)) { // x = 2^E with E >= -14
 		int E = (x.u >> 10) - 15;
 		int yE = E * y.f;
-		if ((y.u >> 10) + __builtin_ctz(y.u | 0x400) + __builtin_ctz(E) >= 25 && -25 <= yE && yE <= 15) return (0x3ffull + yE) << 52;
+		if (((y.u >> 10) & 0x1f) + __builtin_ctz(y.u | 0x400) + __builtin_ctz(E) >= 25 && -25 <= yE && yE <= 15) return (0x3ffull + yE) << 52;
 	}
 	else if (__builtin_ctz(x.u) + __builtin_clz(x.u) == 31) { // x = 2^E with E < -14
 		int E = -24 + __builtin_ctz(x.u);
 		int yE = E * y.f;
-		if ((y.u >> 10) + __builtin_ctz(y.u | 0x400) + __builtin_ctz(E) >= 25 && -25 <= yE && yE <= 15) return (0x3ffull + yE) << 52;
+		if (((y.u >> 10) & 0x1f) + __builtin_ctz(y.u | 0x400) + __builtin_ctz(E) >= 25 && -25 <= yE && yE <= 15) return (0x3ffull + yE) << 52;
 	}
 	// S_2 and S_3
 	if (!(y.u & 0xff)) { // return (n << 4) + 2^-F
@@ -204,11 +204,11 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 #endif
 			return 0.0f / 0.0f;
 		}
-		return ((vy.u & 0x7fff) > 0x7c000 && !(vy.u & 0x0200)) ? y + y : x;
-		// 1^y = y except if y = sNaN
+		return ((vy.u & 0x7fff) > 0x7c00 && !(vy.u & 0x0200)) ? y + y : x;
+		// 1^y = 1 except if y = sNaN
 	}
 	if (!(vy.u & 0x7fff)) // y = 0
-		return ((vy.u & 0x7fff) > 0x7c000 && !(vy.u & 0x0200)) ? x + x : one.f;
+		return ((vx.u & 0x7fff) > 0x7c00 && !(vx.u & 0x0200)) ? x + x : one.f;
 		// x^0 = 1 except if x = sNaN
 	if ((vy.u & 0x7fff) >= 0x7c00) { // y = Inf/NaN
 		// the case |x| = 1 was checked above
@@ -262,14 +262,14 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 	b64u64_u ret;
 	if (isex > 0xff) ret.u = isex;
 	else if (isex) {
-		ret.f = exp_in_pow(log_in_pow(x) * y);
+		ret.f = exp_in_pow(log_in_pow(vx.f) * vy.f);
 		// Test if ret is exact :
 		b64u64_u test_exact1 = {.f = fast_pow(x, isex >> 4)};
 		b64u64_u test_exact2 = {.u = (ret.u + (0x1ull << 40)) & (0xfffffeull << 40)};
 		test_exact2.f = fast_pow(test_exact2.f, isex & 0xf);
 		if (test_exact1.u == test_exact2.u) ret.u = (ret.u + (1ull << 40)) & (0xfffffeull << 40);
 	}
-	else ret.f = exp_in_pow(log_in_pow(x) * y);
+	else ret.f = exp_in_pow(log_in_pow(vx.f) * vy.f);
 	ret.u += sign;
 	return ret.f;
 }

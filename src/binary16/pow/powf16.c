@@ -26,7 +26,15 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
+#include <fenv.h>
+#include <stdio.h>
 #include <math.h> // only used during performance tests
+#ifdef __x86_64__
+#include <x86intrin.h>
+#define FLAG_T uint32_t
+#else
+#define FLAG_T fexcept_t
+#endif
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -92,6 +100,24 @@ static inline uint64_t is_exact(b16u16_u x, b16u16_u y) {
 		if (y.u == 0x4700) return 0x71; // 7
 	}
 	return 0;
+}
+
+static FLAG_T get_flag (void) {
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+  return _mm_getcsr ();
+#else
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_INEXACT);
+  return flag;
+#endif
+}
+
+static void set_flag (FLAG_T flag) {
+#ifdef __x86_64__
+  _mm_setcsr (flag);
+#else
+  fesetexceptflag (&flag, FE_INEXACT);
+#endif
 }
 
 static inline double fast_pow(double x, uint64_t y) {
@@ -170,10 +196,6 @@ static inline double exp_in_pow(double x) {
 		 0x1.c199bdd85529cp+0, 0x1.c67f12e57d14bp+0, 0x1.cb720dcef9069p+0, 0x1.d072d4a07897bp+0,
 		 0x1.d5818dcfba487p+0, 0x1.da9e603db3285p+0, 0x1.dfc97337b9b5fp+0, 0x1.e502ee78b3ff6p+0,
 		 0x1.ea4afa2a490d9p+0, 0x1.efa1bee615a27p+0, 0x1.f50765b6e4541p+0, 0x1.fa7c1819e90d8p+0};
-#ifdef CORE_MATH_SUPPORT_ERRNO
-	if (xd.f > x1.f || xd.f < -0x1.368p+3)
-		errno = ERANGE;
-#endif
 	if ((xd.u & (0x7ffull << 52)) == (0x7ffull << 52)) { // if x is NaN or x is inf
 		if (xd.u == 0xffull << 25) return 0.0; // x is -Inf
 		else return xd.f + xd.f;
@@ -193,6 +215,7 @@ static inline double exp_in_pow(double x) {
 }
 
 _Float16 cr_powf16(_Float16 x, _Float16 y){
+  volatile FLAG_T flag = get_flag ();
 	b16u16_u vx = {.f = x}, vy = {.f = y};
 	uint64_t sign = 0;
 	if ((vx.u & 0x7fff) == 0x3c00) { // |x| = 1
@@ -255,7 +278,7 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 	if (vx.u == 0x1c94 && vy.u == 0x31bc) return 0x1.848p-2f - 0x1p-14f;
 	if (vx.u == 0x537b && vy.u == 0x25bf) return 0x1.18cp+0f - 0x1p-12f;
 	if (vx.u == 0x756b && vy.u == 0x112e) return 0x1.01cp+0f - 0x1p-12f;
-	if (vx.u == 0xd36 && vy.u == 0x2316) return 0x1.cap-1f + 0x1p-13f;
+	if (vx.u == 0x0d36 && vy.u == 0x2316) return 0x1.cap-1f + 0x1p-13f;
 	if (vx.u == 0x273b && vy.u == 0x38b3) return 0x1.f8p-4f + 0x1p-16f;
 	if (vx.u == 0x32bb && vy.u == 0x4242) return 0x1.f2cp-8f + 0x1p-20f;
 	if (vx.u == 0x4d47 && vy.u == 0x9d5f) return 0x1.f8p-1 - 0x1p-13;
@@ -275,10 +298,36 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 		b64u64_u test_exact1 = {.f = fast_pow(vx.f, isex >> 4)};
 		b64u64_u test_exact2 = {.u = (ret.u + (0x1ull << 40)) & (0xfffffeull << 40)};
 		test_exact2.f = fast_pow(test_exact2.f, isex & 0xf);
-		if (test_exact1.u == test_exact2.u) ret.u = (ret.u + (1ull << 40)) & (0xfffffeull << 40);
+		if (test_exact1.u == test_exact2.u) {
+			ret.u = (ret.u + (1ull << 40)) & (0xfffffeull << 40);
+			set_flag(flag); // resetting inexact (if inexact -> raise in return)
+		}
 	}
 	else ret.f = exp_in_pow(log_in_pow(vx.f) * vy.f);
 	ret.u += sign;
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (fegetround() == FE_TONEAREST) { // rndn
+		if (__builtin_fabs(ret.f) < 0x1.ffep-15 && (double) (_Float16) ret.f != ret.f)
+			errno = ERANGE; // underflow and inex
+		if (__builtin_fabs(ret.f) >= 0x1.ffep+15)
+			errno = ERANGE; // overflow
+	}
+	if (fegetround() == FE_TOWARDZERO 
+			|| (fegetround() == FE_UPWARD && sign)
+			|| (fegetround() == FE_DOWNWARD && !sign)) { // rndz || rndu & < 0 || rndd & > 0
+		if (__builtin_fabs(ret.f) < 0x1p-14 && (double) (_Float16) ret.f != ret.f)
+			errno = ERANGE; // underflow and inex
+		if (__builtin_fabs(ret.f) >= 0x1p+16)
+			errno = ERANGE; // overflow
+	}
+	if ((fegetround() == FE_UPWARD && !sign)
+			|| (fegetround() == FE_DOWNWARD && sign)) { // rndu & >= 0 || rndd & <= 0
+		if (__builtin_fabs(ret.f) < 0x1.ffcp-15 && (double) (_Float16) ret.f != ret.f)
+			errno = ERANGE; // underflow and inex
+		if (__builtin_fabs(ret.f) > 0x1.ffcp+15)
+			errno = ERANGE; // overflow
+	}
+#endif
 	return ret.f;
 }
 

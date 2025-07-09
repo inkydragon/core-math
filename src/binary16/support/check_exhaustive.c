@@ -52,7 +52,7 @@ int rnd = 0;
 
 typedef union { uint16_t n; _Float16 x; } union_t;
 
-float
+_Float16
 asfloat (uint16_t n)
 {
   union_t u;
@@ -63,12 +63,9 @@ asfloat (uint16_t n)
 static inline uint16_t
 asuint (_Float16 f)
 {
-  union
-  {
-    _Float16 f;
-    uint16_t i;
-  } u = {f};
-  return u.i;
+	union_t u;
+	u.x = f;
+	return u.n;
 }
 
 /* define our own is_nan function to avoid depending from math.h */

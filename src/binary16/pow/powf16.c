@@ -73,12 +73,12 @@ static inline uint64_t is_exact(b16u16_u x, b16u16_u y) {
 	// S_1
 	if (!(x.u & 0x3ff)) { // x = 2^E with E >= -14
 		int E = (x.u >> 10) - 15;
-		int yE = E * y.f;
+		int yE = E * (float) y.f;
 		if (((y.u >> 10) & 0x1f) + __builtin_ctz(y.u | 0x400) + __builtin_ctz(E) >= 25 && -25 <= yE && yE <= 15) return (0x3ffull + yE) << 52;
 	}
 	else if (__builtin_ctz(x.u) + __builtin_clz(x.u) == 31) { // x = 2^E with E < -14
 		int E = -24 + __builtin_ctz(x.u);
-		int yE = E * y.f;
+		int yE = E * (float) y.f;
 		if (((y.u >> 10) & 0x1f) + __builtin_ctz(y.u | 0x400) + __builtin_ctz(E) >= 25 && -25 <= yE && yE <= 15) return (0x3ffull + yE) << 52;
 	}
 	// S_2 and S_3
@@ -232,7 +232,7 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 	}
 	if (!(vy.u & 0x7fff)) // y = 0
 		return ((vx.u & 0x7fff) > 0x7c00 && !(vx.u & 0x0200)) ? x + x : one.f;
-		// x^0 = 1 except if x = sNaN
+	// x^0 = 1 except if x = sNaN
 	if ((vy.u & 0x7fff) >= 0x7c00) { // y = Inf/NaN
 		// the case |x| = 1 was checked above
 		if ((vx.u & 0x7fff) > 0x7c00) return x + x; // x = NaN

@@ -330,7 +330,7 @@ check_signaling_nan (void)
   for (uint16_t u1 = 0x7c01u; u1 < 0x7e00u; u1++) {
     snan = asfloat (u1);
 		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
-			_Float16 x2 = asfloat((_Float16) u2);
+			_Float16 x2 = asfloat((uint16_t) u2);
     	_Float16 y = cr_function_under_test (snan, x2);
     	// check that foo(NaN, x) = NaN
     	if (!is_nan (y))
@@ -373,7 +373,7 @@ check_signaling_nan (void)
     // also test sNaN with sign bit set
     snan = asfloat (0x8000 + u1);
 		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
-			_Float16 x2 = asfloat((_Float16) u2);
+			_Float16 x2 = asfloat((uint16_t) u2);
     	_Float16 y = cr_function_under_test (snan, x2);
     	// check that foo(NaN, x) = NaN
     	if (!is_nan (y))
@@ -479,7 +479,7 @@ check_exceptions (void)
 
 static int doloop (void)
 {
-
+	
 	//checking all sNaN, qNaN, Inf
 	for (uint16_t u1 = 0x7c00; u1 < 0x8000; u1++) {
 		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {

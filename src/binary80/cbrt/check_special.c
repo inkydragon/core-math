@@ -167,6 +167,75 @@ check_exact (void)
   }
 }
 
+// When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
+static inline int issignaling(long double x) {
+  b80u80_t u = {.f = x};
+
+  return !(u.m >> 63);
+}
+
+
+static void
+check_invalid (void)
+{
+  b80u80_t u;
+  u.e = 0x7fffu;
+  u.m = 0xc000000000000000ull;
+  long double snan = u.f;
+  u.e = 0xffffu;
+  long double minsnan = u.f;
+
+  /* Check sNaN */
+  feclearexcept (FE_INVALID);
+  long double y = cr_cbrtl (snan);
+  // check that cbrtf(sNaN) = NaN
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %La\n", y);
+    exit (1);
+  }
+  // check that the signaling bit desappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got %La\n", y);
+    exit (1);
+  }
+  // check the invalid exception was set
+  int flag = fetestexcept (FE_INVALID);
+  if(!flag)
+  {
+    printf ("Missing invalid exception for x=sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  /* Check -sNaN */
+  feclearexcept (FE_INVALID);
+  y =cr_cbrtl (minsnan);
+  // check that cbrtf(-sNaN) = NaN
+  if (!is_nan (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be NaN, got %La\n", y);
+    exit (1);
+  }
+  // check that the signaling bit desappeared
+  if (issignaling (y))
+  {
+    fprintf (stderr, "Error, foo(sNaN) should be qNaN, got %La\n", y);
+    exit (1);
+  }
+  // check the invalid exception was set
+  flag = fetestexcept (FE_INVALID);
+  if(!flag)
+  {
+    printf ("Missing invalid exception for x=-sNaN\n");
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -211,6 +280,8 @@ main (int argc, char *argv[])
 
   ref_init();
   ref_fesetround (rnd);
+
+  check_invalid ();
 
   printf ("Checking exact values\n");
   check_exact ();

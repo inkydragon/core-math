@@ -52,7 +52,7 @@ int rnd = 0;
 
 typedef union { uint16_t n; _Float16 x; } union_t;
 
-float
+_Float16
 asfloat (uint16_t n)
 {
   union_t u;
@@ -63,12 +63,9 @@ asfloat (uint16_t n)
 static inline uint16_t
 asuint (_Float16 f)
 {
-  union
-  {
-    _Float16 f;
-    uint16_t i;
-  } u = {f};
-  return u.i;
+	union_t u;
+	u.x = f;
+	return u.n;
 }
 
 /* define our own is_nan function to avoid depending from math.h */
@@ -77,7 +74,7 @@ is_nan (_Float16 x)
 {
   uint16_t u = asuint (x);
   int e = u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u << 6) != 0;
+  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) != 0;
 }
 
 /* define our own is_inf function to avoid depending from math.h */
@@ -86,7 +83,7 @@ is_inf (_Float16 x)
 {
   uint16_t u = asuint (x);
   int e =  u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u << 6) == 0;
+  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) == 0;
 }
 
 static int
@@ -330,7 +327,7 @@ check_signaling_nan (void)
   for (uint16_t u1 = 0x7c01u; u1 < 0x7e00u; u1++) {
     snan = asfloat (u1);
 		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
-			_Float16 x2 = asfloat((_Float16) u2);
+			_Float16 x2 = asfloat((uint16_t) u2);
     	_Float16 y = cr_function_under_test (snan, x2);
     	// check that foo(NaN, x) = NaN
     	if (!is_nan (y))
@@ -373,7 +370,7 @@ check_signaling_nan (void)
     // also test sNaN with sign bit set
     snan = asfloat (0x8000 + u1);
 		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
-			_Float16 x2 = asfloat((_Float16) u2);
+			_Float16 x2 = asfloat((uint16_t) u2);
     	_Float16 y = cr_function_under_test (snan, x2);
     	// check that foo(NaN, x) = NaN
     	if (!is_nan (y))
@@ -479,7 +476,7 @@ check_exceptions (void)
 
 static int doloop (void)
 {
-
+	
 	//checking all sNaN, qNaN, Inf
 	for (uint16_t u1 = 0x7c00; u1 < 0x8000; u1++) {
 		for (uint32_t u2 = 0; u2 < 0x10000; u2++) {

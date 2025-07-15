@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -38,48 +39,45 @@ typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
 
 _Float16 cr_expf16(_Float16 x){
-	static const uint16_t x0 = 0xcc55; // binary representation of x0 in order to compare uint16_t rather than flt16
- 	static const _Float16 x1 = 0x1.62cp3; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
-	static const float tb[] = // tabulate value of exp(i/2^6) for i in [-2^6*log(2)/2, 2^6*log(2)/2], size(tb) = 45
-		{0xb.587fcp-4f, 0xb.863cfp-4f, 0xb.b4b29p-4f, 0xb.e3e38p-4f,
-		 0xc.13d2bp-4f, 0xc.44832p-4f, 0xc.75f7dp-4f, 0xc.a8340p-4f,
-		 0xc.db3a8p-4f, 0xd.0f0edp-4f, 0xd.43b41p-4f, 0xd.792d8p-4f,
-		 0xd.af7e9p-4f, 0xd.e6aaap-4f, 0xe.1eb51p-4f, 0xe.57a17p-4f,
-		 0xe.91735p-4f, 0xe.cc2e4p-4f, 0xf.07d6p-4f, 0xf.446e3p-4f,
-		 0xf.81fabp-4f, 0xf.c07f5p-4f, 0x1p0f, 0x1.04080ap+0f,
-		 0x1.082056p+0f, 0x1.0c4924p+0f, 0x1.1082b6p+0f, 0x1.14cd5p+0f,
-		 0x1.192938p+0f, 0x1.1d96bp+0f, 0x1.221604p+0f, 0x1.26a77ap+0f,
-		 0x1.2b4b58p+0f, 0x1.3001ecp+0f, 0x1.34cb82p+0f, 0x1.39a862p+0f,
-		 0x1.3e98dep+0f, 0x1.439d44p+0f, 0x1.48b5e4p+0f, 0x1.4de30ep+0f,
-		 0x1.532518p+0f, 0x1.587c54p+0f, 0x1.5de918p+0f, 0x1.636bbap+0f,
-		 0x1.690492p+0f};
-
-	b16u16_u v = {.f = x};
-	if ((v.u & 0x7c00) == 0x7c00) { // if x is nan or x is inf
-		if (v.u == 0xfc00) return 0x0p0;
-		else return x + x;
+	static const b32u32_u x0 = {.f = -0x1.154p+4f}; // smallest _Float16 such that exp(x0-) < MIN_SUBNORMALIZE <= exp(x0)
+ 	static const b32u32_u x1 = {.f = 0x1.62cp3f}; // largest _Float16 such that exp(x1) <= MAX_FLOAT16 < exp(x1+)
+	static const float tb[] = // tabulate value of exp(log(2)*i/32) for i in [0, 31]
+		{0x1p+0f, 0x1.059b0cp+0f, 0x1.0b5586p+0f, 0x1.11301ep+0f,  
+		 0x1.172b84p+0f, 0x1.1d4874p+0f, 0x1.2387a6p+0f, 0x1.29e9ep+0f,  
+		 0x1.306fep+0f, 0x1.371a74p+0f, 0x1.3dea64p+0f, 0x1.44e086p+0f,  
+		 0x1.4bfdaep+0f, 0x1.5342b6p+0f, 0x1.5ab07ep+0f, 0x1.6247ecp+0f,  
+		 0x1.6a09e6p+0f, 0x1.71f75ep+0f, 0x1.7a1148p+0f, 0x1.82589ap+0f,  
+		 0x1.8ace54p+0f, 0x1.93737cp+0f, 0x1.9c4918p+0f, 0x1.a5503cp+0f,  
+		 0x1.ae89fap+0f, 0x1.b7f77p+0f, 0x1.c199bep+0f, 0x1.cb720ep+0f,  
+		 0x1.d5819p+0f, 0x1.dfc974p+0f, 0x1.ea4afap+0f, 0x1.f50766p+0f};
+	b32u32_u v = {.f = x};
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (v.f > x1.f || v.f < -0x1.368p+3f)
+		errno = ERANGE;
+#endif
+	if ((v.u & 0x7fffffff) > 0x41316000) { // in this case, we have x > min(x0, x1) in abs value
+		if ((v.u & 0x7f800000) == 0x7f800000) { // if x is nan or x is inf
+			if (v.u == 0xff800000) return 0x0p0;
+			else return x + x;
+		}
+                /* With -DCORE_MATH_SUPPORT_ERRNO, gcc 14.2.0 emits a spurious
+                   underflow for x=0x1.63p+3 (for example). This is due
+                   to https://gcc.gnu.org/bugzilla/show_bug.cgi?id=120910. */
+		else if (v.u > x0.u) return 0x1p-25f; // x smaller than x0
+		else if (v.f > x1.f) return 0x1.ffcp15f + 0x1p5f; // x greater than x1
 	}
-	else if (v.u > x0) return 0x1p-25f;
-	else if (x > x1) return 0x1.ffcp15f + 0x1p5f;
-	else {
-          float xf = x; // exact conversion from _Float16 to float
-		static const float minus_log2 = -0x1.62e430p-1f;
-		static const float inv_log2 = 0x1.715476p0f;
-		float k = __builtin_roundevenf(inv_log2 * xf);
-		float xp = __builtin_fmaf(k, minus_log2, xf); // xp is a float such that |xp| is minimal and x = klog(2) + xp
-		int i = 0x1p6f * xp;
-    if ((uint16_t) (i & 0x80000001) <= 1) { // some wrong cases
-			if (xf == 0x1.de4p-8f) return 0x1.01cp+0f + 0x1p-12f;
-			if (xf == 0x1.73cp-6f) return 0x1.05cp+0f + 0x1p-12f;
-    }
-		float xpp = __builtin_fmaf((float) i , -0x1p-6f, xp); // x = klog(2) + i/2^6 + xpp
-																													// So, exp(x) = 2^k * exp(i/2^6) * exp(xpp)
-		// result
-    xpp = __builtin_fmaf(__builtin_fmaf(__builtin_fmaf(xpp, 0x1.555644p-3f, 0.5f), xpp, 1.0f), xpp, 1.0f);
-		b32u32_u w = {.f = xpp * tb[i + 22]};
-		w.u += (int32_t) k * (1l << 23);
-		return w.f; // conversion float -> _Float16 (with rounding)
-	}
+	static const float thirtytwo_over_log2 = 0x1.715476p+5f;
+	static const float minus_log2_over_thirtytwo = -0x1.62e430p-6f;
+	float j = __builtin_roundevenf(thirtytwo_over_log2 * v.f);
+	int32_t jint = j;
+	int i = jint & 0x1f;
+	float xp = __builtin_fmaf(minus_log2_over_thirtytwo, j, v.f);
+	// xf = j*log(2)/32 + xp = (j>>5)*log(2) + log(2)*i/32 + xp
+	// so exp(xf) = 2^(j>>5) * exp(log(2)*i/32) * exp(xp)
+	xp = __builtin_fmaf(__builtin_fmaf(0.5f, xp, 1.0f), xp, 1.0f);
+	b32u32_u w = {.f = xp * tb[i]};
+	w.u += (jint >> 5) * (1l << 23);
+	return w.f; // conversion float -> _Float16 (with rounding)
 }
 
 // dummy function since GNU libc does not provide it

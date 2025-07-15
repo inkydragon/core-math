@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -45,15 +46,22 @@ arithmetic. ACM Trans. Math. Softw. 16, 4 (1990), 378–400.
 https://dl.acm.org/doi/10.1145/98267.98294 */
 
 _Float16 cr_logf16(_Float16 x){
-	b16u16_u t = {.f = x};
-	if (t.u == 0) return neginf.f;
-	else if (t.u >> 10 >= 0x1f) {
-		if (t.u == 0x8000) return neginf.f;
-		else if (t.u >> 15) return 0.0f / 0.0f;
+	b32u32_u xf = {.f = x};
+	if (xf.f == 0) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+		errno = ERANGE;
+#endif 
+		return neginf.f;
+	}
+	else if (xf.u >> 23 >= 0xff) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+		errno = EDOM;
+#endif 
+		if (xf.u >> 31) return 0.0f / 0.0f;
 		else return x + x;
 	}
-	float log2 = 0x1.62e430p-1;
-	static const float tb[] = // tabulate values of log(1 + i2^-5)
+	static const float log2 = 0x1.62e430p-1;
+	static const float tb[] = // tabulate values of log(1 + i2^-5) for i in [0, 31]
 		{0x0p+0f, 0x7.e0a6cp-8f, 0xf.85186p-8f, 0x1.6f0d28p-4f,  
 		 0x1.e27076p-4f, 0x2.52aa6p-4f, 0x2.bfe61p-4f, 0x3.2a4b54p-4f,  
 		 0x3.91fef8p-4f, 0x3.f7230cp-4f, 0x4.59d728p-4f, 0x4.ba38ccp-4f,  
@@ -62,7 +70,7 @@ _Float16 cr_logf16(_Float16 x){
 		 0x7.c4a3d8p-4f, 0x8.12a95p-4f, 0x8.5f397p-4f, 0x8.aa61fp-4f,  
 		 0x8.f42fbp-4f, 0x9.3caf1p-4f, 0x9.83ebap-4f, 0x9.c9f07p-4f,  
 		 0xa.0ec7fp-4f, 0xa.527c3p-4f, 0xa.95169p-4f, 0xa.d6a02p-4f};
-	static const float tl[] = // tabulate values of 1 / (1 + i2^-5)
+	static const float tl[] = // tabulate values of 1 / (1 + i2^-5) for i in [0, 31]
 		{0x1p-23f, 0xf.83e1p-27f, 0xf.0f0f1p-27f, 0xe.a0ea1p-27f,  
 		 0xe.38e39p-27f, 0xd.d67c9p-27f, 0xd.79436p-27f, 0xd.20d21p-27f,  
 		 0xc.ccccdp-27f, 0xc.7ce0cp-27f, 0xc.30c31p-27f, 0xb.e82fap-27f,  
@@ -71,7 +79,6 @@ _Float16 cr_logf16(_Float16 x){
 		 0x9.d89d9p-27f, 0x9.a90e8p-27f, 0x9.7b426p-27f, 0x9.4f209p-27f,  
 		 0x9.24925p-27f, 0x8.fb824p-27f, 0x8.d3dcbp-27f, 0x8.ad8f3p-27f,  
 		 0x8.88889p-27f, 0x8.64b8ap-27f, 0x8.42108p-27f, 0x8.208168p-27f};
-	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormal numbers
 	int i = (xf.u & 0x007c0000) >> 18;
 	xf.f = (xf.u & 0x0003ffff) * tl[i];

@@ -25,6 +25,8 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
+#include <fenv.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -34,14 +36,34 @@ SOFTWARE.
 
 #pragma STDC FENV_ACCESS ON
 
-
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {double f; uint64_t u;} b64u64_u;
 
 _Float16 cr_hypotf16(_Float16 x, _Float16 y){
 	b64u64_u tx = {.f = x};
 	b64u64_u ty = {.f = y};
-	return sqrt(tx.f * tx.f + ty.f * ty.f);
+	double ret = sqrt(tx.f * tx.f + ty.f * ty.f);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (fegetround() == FE_TONEAREST) { // check if rounding mode is rndn
+		if (ret < 0x1.ffep-15 && (double) (_Float16) ret != ret) // underflow and inex
+			errno = ERANGE;
+		if (ret >= 0x1.ffep+15)
+			errno = ERANGE;
+	}
+	if (fegetround() & 0x400) { // check if rounding mode is rndz/rndd
+		if (ret < 0x1p-14 && (double) (_Float16) ret != ret) // underflow and inex
+			errno = ERANGE;
+		if (ret > 0x1p+16)
+			errno = ERANGE;
+	}
+	if (fegetround() == FE_UPWARD) { // check if rounding mode is rndu
+		if (ret < 0x1.ffcp-15 && (double) (_Float16) ret != ret) // underflow and inex
+			errno = ERANGE;
+		if (ret > 0x1.ffcp+15)
+			errno = ERANGE;
+	}
+#endif
+	return ret; 
 }
 
 // dummy function since GNU libc does not provide it

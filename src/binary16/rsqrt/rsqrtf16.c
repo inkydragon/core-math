@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h>
 
 // Warning: clang also defines __GNUC__
@@ -52,6 +53,15 @@ _Float16 cr_rsqrtf16(_Float16 x){
 		t.u = (expo << 10) + 0x312;
 		return 0x1p-20 + t.f;
 	}
+#ifdef CORE_MATH_SUPPORT_ERRNO
+	if (x == 0.0f)
+		errno = ERANGE;
+        /* Musl does not set errno, thus we might get a
+           missing errno=EDOM:
+	   https://www.openwall.com/lists/musl/2025/07/03/3
+	   https://www.openwall.com/lists/musl/2025/07/03/5
+        */
+#endif
 	return 1.0f / sqrtf ((float) x);
 }
 

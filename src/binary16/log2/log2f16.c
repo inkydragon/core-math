@@ -25,6 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
+#include <errno.h>
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__
@@ -36,17 +37,29 @@ SOFTWARE.
 
 typedef union {_Float16 f; uint16_t u;} b16u16_u;
 typedef union {float f; uint32_t u;} b32u32_u;
-b16u16_u neginf = {.u = 0xfc00};
+static const b16u16_u neginf = {.u = 0xfc00};
+
+/* This code is largely inspired by TANG, P. T. P. Table-driven
+implementation of the logarithm function in IEEE floating-point
+arithmetic. ACM Trans. Math. Softw. 16, 4 (1990), 378–400.
+https://dl.acm.org/doi/10.1145/98267.98294 */
 
 _Float16 cr_log2f16(_Float16 x){
-	b16u16_u t = {.f = x};
-	if (t.u == 0) return neginf.f;
-	else if (t.u >> 10 >= 0x1f) {
-		if (t.u == 0x8000) return neginf.f;
-		else if (t.u >> 15) return 0.0f / 0.0f;
+	b32u32_u xf = {.f = x};
+	if (xf.f == 0) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+		errno = ERANGE;
+#endif
+		return neginf.f;
+	}
+	else if (xf.u >> 23 >= 0xff) {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+		errno = EDOM;
+#endif
+		if (xf.u >> 31) return 0.0f / 0.0f;
 		else return x + x;
 	}
-	static const float tb[] =
+	static const float tb[] = // tabulate value of log2(1 + i2^-5) for i in [0, 31]
 		{0x0p+0f, 0xb.5d69cp-8f, 0x1.663f7p-4f, 0x2.118b1p-4f,
 		 0x2.b80348p-4f, 0x3.59ebc4p-4f, 0x3.f782d8p-4f, 0x4.9101e8p-4f,
 		 0x5.269e1p-4f, 0x5.b8887p-4f, 0x6.46eeap-4f, 0x6.d1fbp-4f,
@@ -55,7 +68,7 @@ _Float16 cr_log2f16(_Float16 x){
 		 0xb.35004p-4f, 0xb.a58ffp-4f, 0xc.1404fp-4f, 0xc.80731p-4f,
 		 0xc.eaedp-4f, 0xd.53848p-4f, 0xd.ba4a4p-4f, 0xe.1f4e5p-4f,
 		 0xe.829fbp-4f, 0xe.e44cdp-4f, 0xf.44636p-4f, 0xf.a2f04p-4f};
-	static const float tl[] =
+	static const float tl[] = // tabulate value of 1 / (1 + i2^-5) for i in [0, 31]
 		{0x1p-23f, 0xf.83e1p-27f, 0xf.0f0f1p-27f, 0xe.a0ea1p-27f,
 		 0xe.38e39p-27f, 0xd.d67c9p-27f, 0xd.79436p-27f, 0xd.20d21p-27f,
 		 0xc.ccccdp-27f, 0xc.7ce0cp-27f, 0xc.30c31p-27f, 0xb.e82fap-27f,
@@ -64,12 +77,11 @@ _Float16 cr_log2f16(_Float16 x){
 		 0x9.d89d9p-27f, 0x9.a90e8p-27f, 0x9.7b426p-27f, 0x9.4f209p-27f,
 		 0x9.24925p-27f, 0x8.fb824p-27f, 0x8.d3dcbp-27f, 0x8.ad8f3p-27f,
 		 0x8.88889p-27f, 0x8.64ba18p-27f, 0x8.42108p-27f, 0x8.20821p-27f};
-	b32u32_u xf = {.f = x};
 	int expo = (xf.u >> 23) - 127; // used float instead of flaot16 to avoid working with subnormalized
 	int i = (xf.u & 0x007c0000) >> 18;
 	xf.f = (xf.u & 0x0003ffff) * tl[i];
 	// We have, x = 2^expo * (1 + i2^-5 + xf.f)
-	// Thus, log(x) = expo log(2) + log(1 + i2^-5) + log(1 + xf.f / (1 + i2^-5))
+	// Thus, log2(x) = expo + log2(1 + i2^-5) + log2(1 + xf.f / (1 + i2^-5))
 	xf.f *= __builtin_fmaf(__builtin_fmaf(0x1.ec709ep-2f, xf.f, -0x1.715476p-1f), xf.f, 0x1.715476p+0f);
 	return (float) expo + tb[i] + xf.f;
 }

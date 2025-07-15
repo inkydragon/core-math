@@ -3,5 +3,5 @@
 static inline TYPE_UNDER_TEST random_under_test (void)
 {
   /* sample in [0,2pi] */
-  return 2 * pi * ((TYPE_UNDER_TEST) rand() / (TYPE_UNDER_TEST) RAND_MAX);
+  return (TYPE_UNDER_TEST) (2 * pi * ((double) rand() / (double) RAND_MAX));
 }

@@ -56,7 +56,9 @@ static __attribute__((noinline)) float as_special(float x){
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE;
 #endif
-    return -1.0f/0.0f; // -inf
+    // on cfarm103, returning -1.0f/0.0f yields -0x1.fffffep+127 with gcc 14.2.0
+    t.u = 0xff800000u;
+    return t.f; // -inf
   }
   if(ax > 0xff000000u) return x + x; // nan
 #ifdef CORE_MATH_SUPPORT_ERRNO

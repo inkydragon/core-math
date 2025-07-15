@@ -293,6 +293,7 @@ check_invalid (void)
   long double minInf = v.f;
 
 
+  /* Check hypotl(qNaN,+/-Inf), don't need to test the opposite because it's the same result */
   // Check hypot(qNaN,+Inf)
   feclearexcept (FE_DIVBYZERO);
   long double z = cr_hypotl (qnan,inf);
@@ -311,7 +312,7 @@ check_invalid (void)
   flag = fetestexcept (FE_DIVBYZERO);
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
-       qnan, inf, z);
+       qnan, minInf, z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -323,7 +324,7 @@ check_invalid (void)
   flag = fetestexcept (FE_DIVBYZERO);
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
-       qnan, inf, z);
+       minqnan, inf, z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -335,7 +336,57 @@ check_invalid (void)
   flag = fetestexcept (FE_DIVBYZERO);
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
-       qnan, inf, z);
+       minqnan, minInf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  /* Check hypot(+/-Inf, +/-Inf) */
+
+  // Check hypot(Inf, Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (inf,inf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       inf, inf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(Inf, -Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (inf,minInf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       inf, minInf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(-Inf, Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (minInf,inf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       minInf, inf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(-Inf, -Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (minInf,minInf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       minInf, minInf, z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

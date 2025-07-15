@@ -283,24 +283,62 @@ check_invalid (void)
   v.e = 0x7fff;
   v.m = 0xc000000000000000ul;
   long double qnan = v.f;
-  //v.e = 0xffff;
-  //long double minqnan = v.f;
+  v.e = 0xffff;
+  long double minqnan = v.f;
 
   v.e = 0x7fff;
   v.m = 0x8000000000000000ul;
   long double inf = v.f;
-  //v.e = 0xffff;
-  //long double minInf = v.f;
+  v.e = 0xffff;
+  long double minInf = v.f;
 
 
-  // Check hypot(qNaN,+/-Inf)
+  // Check hypot(qNaN,+Inf)
   feclearexcept (FE_DIVBYZERO);
   long double z = cr_hypotl (qnan,inf);
-  //b80u80_t res = {.f = y};
   int flag = fetestexcept (FE_DIVBYZERO);
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
        qnan, inf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(qNaN,-Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (qnan,minInf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       qnan, inf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(-qNaN,+Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (minqnan,inf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       qnan, inf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(-qNaN,-Inf)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (minqnan,minInf);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       qnan, inf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
 }
 

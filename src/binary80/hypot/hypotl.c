@@ -124,7 +124,7 @@ cr_hypotl (long double x, long double y)
         return sx.f + sy.f;
       // now one is qNaN and the other is either Inf or a normal number
       if (x_exp == 0x4000 && y_exp == 0x4000) // x=qNaN and y=Inf (or converse)
-        return 1.0L / 0.0L;
+        return ((sx.m >> 60) == 0x8) ? sx.f * sx.f : sy.f * sy.f;
       return sx.f + sy.f;
     }
     // now neither x nor y is NaN, at least one is Inf

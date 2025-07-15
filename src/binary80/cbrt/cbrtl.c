@@ -351,7 +351,7 @@ cr_cbrtl (long double x)
 
   // check NaN, Inf, 0: cbrtl(x) = x
   if (__builtin_expect (e == 32767 || (e == 0 && v.m == 0), 0))
-    return x;
+    return x+x;
 
   // save inexact flag
   fexcept_t flagp;

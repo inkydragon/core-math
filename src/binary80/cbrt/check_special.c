@@ -180,7 +180,7 @@ check_invalid (void)
 {
   b80u80_t u;
   u.e = 0x7fffu;
-  u.m = 0xc000000000000000ull;
+  u.m = 0xa000000000000001ull;
   long double snan = u.f;
   u.e = 0xffffu;
   long double minsnan = u.f;
@@ -204,7 +204,7 @@ check_invalid (void)
   int flag = fetestexcept (FE_INVALID);
   if(!flag)
   {
-    printf ("Missing invalid exception for x=sNaN\n");
+    printf ("Missing invalid exception for x=%La (y=%La)\n", snan, y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -229,7 +229,7 @@ check_invalid (void)
   flag = fetestexcept (FE_INVALID);
   if(!flag)
   {
-    printf ("Missing invalid exception for x=-sNaN\n");
+    printf ("Missing invalid exception for x=%La (y=%La)\n", minsnan, y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

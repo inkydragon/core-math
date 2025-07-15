@@ -386,7 +386,7 @@ check_signaling_nan (void)
 {
   b80u80_t u;
   u.e = 0x7fffu;
-  u.m = 0xc000000000000000ull;
+  u.m = 0xa000000000000001ull;
   long double snan = u.f;
   long double y = cr_function_under_test (snan);
   // check that foo(NaN) = NaN
@@ -403,7 +403,7 @@ check_signaling_nan (void)
   }
   // check also sNaN with the sign bit set
   u.e = 0xffffu;
-  u.m = 0xc000000000000000ull;
+  u.m = 0xa000000000000001ull;
   snan = u.f;
   y = cr_function_under_test (snan);
   // check that foo(NaN) = NaN

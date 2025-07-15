@@ -123,8 +123,8 @@ check_aux (long double x, long double y)
   {
     printf("FAIL x,y=%La,%La ref=%La z=%La\n", x,y,t,z);
 #ifdef DO_NOT_ABORT
-    return 1;
-#else
+//    return 1;
+//#else
     exit(1);
 #endif
   }
@@ -266,6 +266,44 @@ check_near_exact (void)
   }
 }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
+/* define our own is_inf function to avoid depending from math.h */
+static inline int
+is_inf (long double x)
+{
+  b80u80_t v = {.f = x};
+  return ((v.e & (uint64_t)0x7fff) == 0x7fff && (v.m == ((uint64_t)1 << 63)));
+}
+#endif
+
+static void
+check_invalid (void)
+{
+  b80u80_t v;
+  v.e = 0x7fff;
+  v.m = 0xc000000000000000ul;
+  long double qnan = v.f;
+  //v.e = 0xffff;
+  //long double minqnan = v.f;
+
+  v.e = 0x7fff;
+  v.m = 0x8000000000000000ul;
+  long double inf = v.f;
+  //v.e = 0xffff;
+  //long double minInf = v.f;
+
+
+  // Check hypot(qNaN,+/-Inf)
+  feclearexcept (FE_DIVBYZERO);
+  long double z = cr_hypotl (qnan,inf);
+  //b80u80_t res = {.f = y};
+  int flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       qnan, inf, z);
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -307,6 +345,8 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  check_invalid ();
 
   ref_init();
   ref_fesetround(rnd);

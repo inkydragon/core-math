@@ -123,10 +123,10 @@ cr_hypotl (long double x, long double y)
       if (is_nan (sx) && is_nan (sy)) // x = y = qNaN
         return sx.f + sy.f;
       // now one is qNaN and the other is either Inf or a normal number
-      if (x_exp != 0x4000 || y_exp != 0x4000) // x=qNaN and y=Inf (or converse)
+      if (x_exp != 0x4000 || y_exp != 0x4000) // x or y is not qNaN/Inf
         return sx.f + sy.f;
     }
-    // now neither x nor y is NaN, at least one is Inf
+    // now neither x nor y is sNaN, at least one is Inf
     return ((sx.m >> 60) == 0x8) ? sx.f * sx.f : sy.f * sy.f; // condition runs from 0x0 to 0xb (included)
   }
 

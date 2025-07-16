@@ -306,12 +306,14 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(!is_inf(z)){
   printf("Error, foo(qNaN, +Inf) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
+#endif
 
   // Check hypot(qNaN,-Inf)
   feclearexcept (FE_DIVBYZERO);
@@ -325,12 +327,14 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(!is_inf(z)){
   printf("Error, foo(qNaN, -Inf) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
+#endif
 
   // Check hypot(-qNaN,+Inf)
   feclearexcept (FE_DIVBYZERO);
@@ -344,12 +348,14 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(!is_inf(z)){
   printf("Error, foo(-qNaN, +Inf) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
+#endif
 
   // Check hypot(-qNaN,-Inf)
   feclearexcept (FE_DIVBYZERO);
@@ -363,12 +369,14 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(!is_inf(z)){
   printf("Error, foo(-qNaN, -Inf) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
+#endif
 
   // Check hypot(+Inf, qNaN)
   feclearexcept (FE_DIVBYZERO);
@@ -382,12 +390,14 @@ check_invalid (void)
 #endif
   }
 
+#ifdef CORE_MATH_SUPPORT_ERRNO
   if(!is_inf(z)){
   printf("Error, foo(+Inf, qNaN) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
+#endif
 
   /* Check hypot(+/-Inf, +/-Inf) */
 
@@ -434,6 +444,18 @@ check_invalid (void)
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
        minInf, minInf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(-Inf, 1) test with normal number
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (minInf,1);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%d (z=%La)\n",
+       minInf, 1, z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

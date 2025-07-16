@@ -306,6 +306,13 @@ check_invalid (void)
 #endif
   }
 
+  if(!is_inf(z)){
+  printf("Error, foo(qNaN, +Inf) should be +Inf, got %La \n", z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
   // Check hypot(qNaN,-Inf)
   feclearexcept (FE_DIVBYZERO);
   z = cr_hypotl (qnan,minInf);
@@ -313,6 +320,13 @@ check_invalid (void)
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
        qnan, minInf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  if(!is_inf(z)){
+  printf("Error, foo(qNaN, -Inf) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -330,6 +344,13 @@ check_invalid (void)
 #endif
   }
 
+  if(!is_inf(z)){
+  printf("Error, foo(-qNaN, +Inf) should be +Inf, got %La \n", z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
   // Check hypot(-qNaN,-Inf)
   feclearexcept (FE_DIVBYZERO);
   z = cr_hypotl (minqnan,minInf);
@@ -337,6 +358,32 @@ check_invalid (void)
   if(flag){
     printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
        minqnan, minInf, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  if(!is_inf(z)){
+  printf("Error, foo(-qNaN, -Inf) should be +Inf, got %La \n", z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  // Check hypot(+Inf, qNaN)
+  feclearexcept (FE_DIVBYZERO);
+  z = cr_hypotl (inf, qnan);
+  flag = fetestexcept (FE_DIVBYZERO);
+  if(flag){
+    printf("Spurious divbyzero exception for x=%La y=%La (z=%La)\n",
+       inf, qnan, z);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
+  }
+
+  if(!is_inf(z)){
+  printf("Error, foo(+Inf, qNaN) should be +Inf, got %La \n", z);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

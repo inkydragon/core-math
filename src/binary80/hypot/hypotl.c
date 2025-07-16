@@ -31,7 +31,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <fenv.h>
 #include <errno.h>
-#include <stdio.h>
 
 #if (defined(__clang__) && __clang_major__ >= 14) || (defined(__GNUC__) && __GNUC__ >= 14 && __BITINT_MAXWIDTH__ && __BITINT_MAXWIDTH__ >= 128)
 typedef unsigned _BitInt(128) u128;
@@ -125,12 +124,11 @@ cr_hypotl (long double x, long double y)
         return sx.f + sy.f;
       // now one is qNaN and the other is either Inf or a normal number
       if (x_exp == 0x4000 && y_exp == 0x4000) // x=qNaN and y=Inf (or converse)
-        return ((sx.m >> 60) == 0xb) ? sx.f * sx.f : sy.f * sy.f;
-        //return sy.f * sy.f;
+        return ((sx.m >> 60) == 0x8) ? sx.f * sx.f : sy.f * sy.f; // condition runs from 0x0 to 0xb (included)
       return sx.f + sy.f;
     }
     // now neither x nor y is NaN, at least one is Inf
-    return ((sx.m >> 60) == 0x8) ? sx.f * sx.f : sy.f * sy.f;
+    return ((sx.m >> 60) == 0x8) ? sx.f * sx.f : sy.f * sy.f; // condition runs from 0x0 to 0xb (included)
   }
 
   if (__builtin_expect (y_exp == -0x3fff, 0)) { // y is 0 or subnormal

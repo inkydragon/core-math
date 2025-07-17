@@ -472,11 +472,11 @@ check_subnormal(void)
     long double x = ldexpl (1.0L, k);
     long double vals [3] = {x, x+exp, x-exp};
 
-    for (int i = 1; i <= 3; i++)
-    {
-      check (vals[1], vals[i]);
+    for (int i = 0; i < 3; i++) {
+      for (int j = 0; j < 3; j++) {
+        check(vals[i], vals[j]);
+      }
     }
-    check (vals[2], vals[3]);
   }
 }
 

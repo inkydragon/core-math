@@ -4349,6 +4349,6 @@
 0x1.87d2f21fd284594p-16384,0x1.d9090fc84491389cp-16383
 0x1.703d175978c14568p-16384,0x1.ddbfbc5e776632ep-16383
 0x1.703d175978c14568p-16384,0x1.ddbfbc5e776632e4p-16383
-# gnu libc error's values
+# other non-regression tests (failures with GNU libc test suite)
 0x1p-16384,0x8p-16448
 0x2p-16384, 0x8p-16448

@@ -46,9 +46,6 @@ typedef unsigned __int128 u128;
 
 #pragma STDC FENV_ACCESS ON
 
-#define TRACEX 0x1p-16384L
-#define TRACEY 0x8p-16448L
-
 typedef union {long double f; struct {uint64_t m; uint16_t e;};} b80u80_t;
 
 // return non-zero iff x is a NaN (assuming x_exp = 0x4000)
@@ -101,9 +98,6 @@ cr_hypotl (long double x, long double y)
   int x_exp = (sx.e & 0x7fff) - 0x3fff;
   int y_exp = (sy.e & 0x7fff) - 0x3fff;
 
-  if(x == TRACEX && y == TRACEY) printf("(104) x=%La, y=%La x_exp=%d, y_exp=%d\n", x, y, x_exp, y_exp);
-
-
   if (x_exp - y_exp - (sx.m < sy.m) < 0) // swap x and y
   {
     uint64_t m = sx.m;
@@ -137,12 +131,13 @@ cr_hypotl (long double x, long double y)
     return (sx.m == 0x8000000000000000ull) ? sx.f * sx.f : sy.f * sy.f;
   }
 
+  uint64_t mx = sx.m, my = sy.m;
+
   if (__builtin_expect (y_exp == -0x3fff, 0)) { // y is 0 or subnormal
-    if(x == TRACEX && y == TRACEY) printf("(138) x=%La, y=%La x_exp=%d, y_exp=%d\n", x, y, x_exp, y_exp);
-    if (__builtin_expect (sy.m == 0, 0)) // y = 0
-    {       if(x == TRACEX && y == TRACEY) printf("(140) x=%La, y=%La x_exp=%d, y_exp=%d\n", x, y, x_exp, y_exp);
+    if (__builtin_expect (my == 0, 0)) // y = 0
+    {
       /* hypot(±0, ±0) is +0 */
-      if (x_exp == -0x3fff && sx.m == 0){
+      if (x_exp == -0x3fff && mx == 0){
         return +0.0L;
       }
       else // hypot(x,0) = |x|
@@ -151,23 +146,20 @@ cr_hypotl (long double x, long double y)
         return sx.f;    // |x|
       }
     }
-      if(x == TRACEX && y == TRACEY) printf("(154) x=%La, y=%La x_exp=%d, y_exp=%d, sy.m=%ld, sx.m=%ld\n", x, y, x_exp, y_exp, sy.m, sx.m);
 
     // normalize y
-    int k = __builtin_clzll (sy.m);
-    sy.m <<= k;
+    int k = __builtin_clzll (my);
+    my <<= k;
     y_exp -= k - 1;
-    if(x == TRACEX && y == TRACEY) printf("(162) x=%La, y=%La x_exp=%d, y_exp=%d k=%d\n", x, y, x_exp, y_exp, k);
     if (x_exp == -0x3fff) // x is subnormal too
     {
       k = __builtin_clzll (sx.m); // x cannot be 0
-      sx.m <<= k;
+      mx <<= k;
       x_exp -= k - 1;
-      if(x == TRACEX && y == TRACEY) printf("(165) x=%La, y=%La x_exp=%d, y_exp=%d k=%d\n", x, y, x_exp, y_exp, k);
     }
   }
 
-  // now x = sx.m * 2^(x_exp-63)
+  // now x = mx * 2^(x_exp-63) and y = my * 2^(y_exp-63)
 
   int d = x_exp - y_exp;
   /* assume without loss of generality x = m with 2^63 <= m < 2^64,
@@ -179,12 +171,11 @@ cr_hypotl (long double x, long double y)
      If d < 32, this is always false since y = my/2^d with my >= 2^63,
      thus y^2 >= 2^126/2^62 = 2^64 > m+1/4.
   */
-  if (d >= 32) { // |y| < ulp(x) thus hypot(x,y) = |x| or nextabove(|x|)
-    if(x == TRACEX && y == TRACEY) printf("(182) x=%La, y=%La x_exp=%d, y_exp=%d, d=%d\n", x, y, x_exp, y_exp, d);
+  if (d >= 32) { // hypot(x,y) = |x| or nextabove(|x|)
     double z = 1.0;
     if (d == 32) {
-      u128 yy = (u128) sy.m * (u128) sy.m;
-      uint64_t h = yy >> 64, l = yy, m = sx.m;
+      u128 yy = (u128) my * (u128) my;
+      uint64_t h = yy >> 64, l = yy, m = mx;
 #define ONE_FOURTH 0x4000000000000000ull
       /* The midpoint case l == ONE_FOURTH and m odd cannot happen,
          since if m + 1/4 = y^2 with y = k + 1/2, then y^2 = k^2 + k + 1/4
@@ -208,15 +199,15 @@ cr_hypotl (long double x, long double y)
 #endif
       }
     }
-    if(x == TRACEX && y == TRACEY) printf("(213) x=%La, y=%La x_exp=%d, y_exp=%d\n", x, y, x_exp, y_exp);
+    if (sx.e == 0) // subnormal case, result is always inexact
+      feraiseexcept (FE_UNDERFLOW);
     return sx.f;
   }
-    if(x == TRACEX && y == TRACEY) printf("(216) x=%La, y=%La x_exp=%d, y_exp=%d\n", x, y, x_exp, y_exp);
 
   // now 0 <= d < 32
   int dd = d + d; // 0 <= dd < 64
-  u128 xx = (u128) sx.m * (u128) sx.m;
-  u128 yy = (u128) sy.m * (u128) sy.m;
+  u128 xx = (u128) mx * (u128) mx;
+  u128 yy = (u128) my * (u128) my;
   u128 hh = xx + (yy >> dd);
   u128 ll = (dd > 0) ? yy << (128 - dd) : 0;
   if (hh < xx) { // overflow

@@ -851,21 +851,23 @@ __float128 cr_expq(__float128 x) {
   u64 k = (u128)0xb17217f7d1cf79ac*fs[0]>>64;
   m.a += m.b[1]*(u128)k>>84;
   res.a = mhUU(res.a, m.a);
-  u64 s = (rm==_MM_ROUND_NEAREST)<<10;
-  if(__builtin_expect(((res.b[0]+s+6)&0x7ff) <= 6, 0)) as_expq_accurate(&el, res.b, gf.a);
   u64 rnd;
-  el += 16382;
-  if(__builtin_expect(el>=0, 1)){
+  if(__builtin_expect(el>=-16382, 1)){
+    u64 s = (rm==_MM_ROUND_NEAREST)<<10;
+    if(__builtin_expect(((res.b[0]+s+6)&0x7ff) <= 6, 0))as_expq_accurate(&el, res.b, gf.a);
     rnd = (res.b[0]>>10)&1;
     res.a >>= 11;
+    el += 16382;
   } else {
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE;
 #endif
     flagp |= FE_UNDERFLOW;
-    if(11-el<128){
-      rnd = (res.a>>(10-el))&1;
-      res.a >>= 11-el;
+    if(el>-16499){
+      u128 s = (u128)(rm==_MM_ROUND_NEAREST)<<(-16372-el);
+      if(__builtin_expect(((res.a+s+6)&(((u128)2<<(-16372-el))-1)) <= 6, 0)) as_expq_accurate(&el, res.b, gf.a);
+      rnd = (res.a>>(-16372-el))&1;
+      res.a >>= -16371-el;
     } else {
       rnd = 0;
       res.a = 0;

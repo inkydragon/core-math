@@ -1,6 +1,6 @@
 /* Correctly-rounded natural exponential function for binary16 value.
 
-Copyright (c) 2025 Paul Zimmermann
+Copyright (c) 2025 Maxence Ponsardin and Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -27,7 +27,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // only used during performance tests
-#include <stdio.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1033,6 +1032,12 @@ static const b32u32_u T2[] = {
 
 _Float16 cr_expf16(_Float16 x){
   b16u16_u v = {.f = x};
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  if (v.f > 0x1.62cp3f || v.f < -0x1.368p+3f)
+    errno = ERANGE;
+#endif
+  /* We decompose x into x1 + x2, and use exp(x) = exp(x1) * exp(x2),
+     where binary32 approximations of exp(x1) and exp(x2) are tabulated. */
   uint16_t u = v.u;
   uint16_t i1 = u >> 5;
   uint16_t i2 = ((u >> 10) << 5) | (u & 0x1f);

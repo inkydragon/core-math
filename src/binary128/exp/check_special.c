@@ -161,14 +161,14 @@ int main(int argc, char *argv[]){
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
 
+  unsigned int seed = getpid();
+  for(int i = 0; i < MAX_THREADS; i++)
+    Seed[i] = seed + i;
+
   printf("Checking random values in subnormal range\n");
   check_subnormal ();
   
   printf("Checking random values\n");
-  
-  unsigned int seed = getpid();
-  for(int i = 0; i < MAX_THREADS; i++)
-    Seed[i] = seed + i;
   
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for

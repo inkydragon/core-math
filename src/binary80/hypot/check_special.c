@@ -462,6 +462,24 @@ check_invalid (void)
   }
 }
 
+static void
+check_subnormal(void)
+{
+  printf ("Check subnormal output range\n");
+  long double exp = ldexpl(1.0L, -16445);
+  for (int k = -16445; k <= -16383; k++)
+  {
+    long double x = ldexpl (1.0L, k);
+    long double vals [3] = {x, x+exp, x-exp};
+
+    for (int i = 1; i <= 3; i++)
+    {
+      check (vals[1], vals[i]);
+    }
+    check (vals[2], vals[3]);
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -505,6 +523,7 @@ main (int argc, char *argv[])
     }
 
   check_invalid ();
+  check_subnormal ();
 
   ref_init();
   ref_fesetround(rnd);

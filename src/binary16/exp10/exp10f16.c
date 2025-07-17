@@ -533,7 +533,7 @@ static const b32u32_u T1[] = {
  {.u = 0x7ff80000}, {.u = 0x7ffc0000},
 };
 
-/* For 0 <= i2 < 2^12, T2[i2] stores the binary32 approximation of y2=exp10(x2)
+/* For 0 <= i2 < 2^11, T2[i2] stores the binary32 approximation of y2=exp10(x2)
    to nearest, where x2 = (-1)^s*2^(e-25)*l, where i2 decomposes into
    s*2^11+e*2^e+l, with 0 <= s <= 1, 0 <= e, l < 2^5 (with e-24 instead
    of e-25 when e=0), such that any non-singular float16 number x decomposes

@@ -84,6 +84,8 @@ error2 (__float128 x, __float128 y, __float128 z)
 }
 
 static void check(__float128 x){
+  ref_init();
+  ref_fesetround(rnd);
   __float128 y1 = ref_expq(x), y2 = cr_expq(x);
   if(!is_equal(y1, y2)) {
     error2 (x, y1, y2);
@@ -121,8 +123,11 @@ check_subnormal (void)
   __int128 m1 = 0x162d918ce2421ull;
   m1 = (m1<<64) + 0xd65ff90ac8f4ce66ull;
   m1 = -m1;
-  __int128 step = (m1 - m0) / (CORE_MATH_TESTS / 1000);
+  __int128 step = (m1 - m0) / (CORE_MATH_TESTS / 10);
   m0 += rand_r (Seed);
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
   for (__int128 m = m0; m < m1; m += step) {
     __float128 x = (__float128) m * 0x1p-99;
     check (x);

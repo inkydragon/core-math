@@ -470,11 +470,16 @@ check_subnormal(void)
   for (int k = -16445; k <= -16383; k++)
   {
     long double x = ldexpl (1.0L, k);
-    long double vals [3] = {x, x+exp, x-exp};
+    long double xVals [3] = {x, x+exp, x-exp};
 
-    for (int i = 0; i < 3; i++) {
-      for (int j = 0; j < 3; j++) {
-        check(vals[i], vals[j]);
+    for (int l = -16445; l <= -16383; l++){
+      long double y = ldexpl (1.0L, l);
+      long double yVals [3] = {y, y+exp, y-exp};
+
+      for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+          check(xVals[i], yVals[j]);
+        }
       }
     }
   }

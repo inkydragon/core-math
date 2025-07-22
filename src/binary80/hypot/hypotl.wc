@@ -345,6 +345,8 @@
 0x3.8a8778181a14805p-16385,0x0.97260d7de781dc8p-16385
 0x2.cd492622fdccdep-16385,0x1.2f5068b6c586a64p-16385
 0x0.5ec0fba54fa3d7cp-16385,0x0.236d2d8005920bp-16385
+0x2.000000000000001p-16385,0x0.00000003fffffffp-16385
+0x0.0001fffffffffffp-16385,0x0.0000000007fffffp-16385
 # corner cases where hypot(x,y) rounds to the smallest normal for RNDU
 # but we still have underflow
 0x1.93bca18bcbc3c9ep-16385,0x1.f5f3d546f15cedccp-16383

@@ -466,21 +466,19 @@ static void
 check_subnormal(void)
 {
   printf ("Check subnormal output range\n");
-  long double exp = ldexpl(1.0L, -16445);
+  long double u = ldexpl(1.0L, -16445); // smallest denormal
   for (int k = -16445; k <= -16383; k++)
   {
     long double x = ldexpl (1.0L, k);
-    long double xVals [3] = {x, x+exp, x-exp};
-
     for (int l = -16445; l <= -16383; l++){
       long double y = ldexpl (1.0L, l);
-      long double yVals [3] = {y, y+exp, y-exp};
-
-      for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-          check(xVals[i], yVals[j]);
+#define N 3 // test x-N*u up to x+N*u
+      for (int i = -N; i <= N; i++) {
+        for (int j = -N; j <= N; j++) {
+          check(x + (long double) i * u, y + (long double) j * u);
         }
       }
+#undef N
     }
   }
 }

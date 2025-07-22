@@ -89,7 +89,7 @@ is_snan (b80u80_t s)
 long double
 cr_hypotl (long double x, long double y)
 {
-    // save the inexact flag
+  // save the inexact flag
   fexcept_t flag;
   fegetexceptflag (&flag, FE_INEXACT);
 
@@ -179,8 +179,12 @@ cr_hypotl (long double x, long double y)
 #define ONE_FOURTH 0x4000000000000000ull
       /* The midpoint case l == ONE_FOURTH and m odd cannot happen,
          since if m + 1/4 = y^2 with y = k + 1/2, then y^2 = k^2 + k + 1/4
-         thus m = k^2+k is always even. */
-      if (h > m || (h == m && l > ONE_FOURTH))
+         thus m = k^2+k is always even.
+         However, if x is subnormal (x_exp < -16382), then if d==32 we have
+         y_exp < -16414, thus x^2 + y^2 < (x + u/2)^2 where u = 2^-16445.
+         Then when x is subnormal we never round upwards for rounding to
+         nearest. */
+      if (x_exp >= -16382 && (h > m || (h == m && l > ONE_FOURTH)))
         z = 0x1.0000000000001p+0; // z + 0x1p-53 will round upwards for RNDN
       // else y^2 < m+1/4: z + 0x1p-53 will round downwards for RNDN
     }
@@ -255,9 +259,11 @@ cr_hypotl (long double x, long double y)
   z.e = 16509 + high;      // ensure 2^126 <= z < 2^128
   z.f = __builtin_sqrtl (z.f);
   u128 th = z.m;
-
-  /* For RNDU, it can be that z.f rounds to 2^64. */
-  x_exp += z.e - 16446;
+  /* Warning: for RNDU, z.f might be rounded to 2^64, in which case
+     z.e = 16447 instead of 16446 as expected. */
+  if (__builtin_expect (z.e > 16446, 0))
+    // we should have z.e = 16447 and th = 2^63
+    th = th << 1;
 
   /* sqrt(x^2+y^2) ~ th * 2^(x_exp - 63) with 2^63 <= th < 2^64
      thus 2^x_exp <= sqrt(x^2+y^2) < 2^(x_exp + 1)

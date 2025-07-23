@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <math.h> // only used during performance tests
+#include <math.h> // for sqrtf
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

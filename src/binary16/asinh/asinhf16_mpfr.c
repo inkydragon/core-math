@@ -30,12 +30,12 @@ SOFTWARE.
 /* code from MPFR */
 
 _Float16
-ref_asin (_Float16 x)
+ref_asinh (_Float16 x)
 {
   mpfr_t y;
   mpfr_init2 (y, 11);
   mpfr_set_flt (y, (float) x, MPFR_RNDN);
-  int inex = mpfr_asin (y, y, rnd2[rnd]);
+  int inex = mpfr_asinh (y, y, rnd2[rnd]);
   mpfr_subnormalize (y, inex, rnd2[rnd]);
   _Float16 ret = (_Float16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);

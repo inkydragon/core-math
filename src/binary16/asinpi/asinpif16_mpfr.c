@@ -1,4 +1,4 @@
-/* Correctly-rounded arc-sine function for binary16 value.
+/* Correctly-rounded half-revolution arc-sine function for binary16 value.
 
 Copyright (c) 2025 Paul Zimmermann
 
@@ -30,12 +30,12 @@ SOFTWARE.
 /* code from MPFR */
 
 _Float16
-ref_asin (_Float16 x)
+ref_asinpi (_Float16 x)
 {
   mpfr_t y;
   mpfr_init2 (y, 11);
   mpfr_set_flt (y, (float) x, MPFR_RNDN);
-  int inex = mpfr_asin (y, y, rnd2[rnd]);
+  int inex = mpfr_asinpi (y, y, rnd2[rnd]);
   mpfr_subnormalize (y, inex, rnd2[rnd]);
   _Float16 ret = (_Float16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);

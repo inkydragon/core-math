@@ -27,7 +27,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <fenv.h>
-#include <stdio.h>
 #include <math.h> // only used during performance tests
 #ifdef __x86_64__
 #include <x86intrin.h>

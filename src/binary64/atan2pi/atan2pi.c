@@ -32,7 +32,6 @@ SOFTWARE.
    to maintain this code if atan2 is fixed or improved.
 */
 
-#include <stdio.h>
 #include <stdint.h>
 #include <math.h> // needed to provide atan2pi() since glibc does not have it
 #include <errno.h>

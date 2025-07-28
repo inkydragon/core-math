@@ -1,4 +1,4 @@
-/* Correctly-rounded arc-tangent for binary16 value.
+/* Correctly-rounded half-revolution arc-tangent for binary16 value.
 
 Copyright (c) 2025 Paul Zimmermann
 
@@ -24,6 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#include <stdio.h>
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // only used for performance tests
@@ -41,38 +42,38 @@ typedef union {float f; uint32_t u;} b32u32_u;
 
 /* Degree-7 minimax polynomial for atan(x) over [0,0.25], with relative error
    bounded by 2^-25.419, with coefficients of odd degree only, and degree-1
-   coefficient forced to 1. Coefficients were later optimized to reduce the
-   number of exceptions.
+   coefficient forced to 1.
 */
 static const float p0[] = {0x1.fffffcp-1, -0x1.55546cp-2, 0x1.98d0ep-3,
                            -0x1.0c7c54p-3};
 
 /* degree-4 minimax polynomial for atan(x) over [0.25,0.5], with relative error
-   bounded by 2^-22.573 */
-static const float p1[] = {0x1.411612p-14, 0x1.ff076cp-1, 0x1.1ee64cp-6,
+   bounded by 2^-22.573, and coefficients later optimized */
+static const float p1[] = {0x1.411612p-14, 0x1.ff076ep-1, 0x1.1ee64cp-6,
                            -0x1.a6fc96p-2, 0x1.81dd3ep-3};
 
 /* degree-4 minimax polynomial for atan(x) over [0.5,0.75], with relative error
-   bounded by 2^-21.757 */
-static const float p2[] = {-0x1.95964cp-8, 0x1.0bad76p+0, -0x1.e652e2p-4,
+   bounded by 2^-21.757, and coefficients later optimized */
+static const float p2[] = {-0x1.95964cp-8, 0x1.0bad74p+0, -0x1.e652e2p-4,
                            -0x1.e70ab4p-3, 0x1.a5eb88p-4};
 
 /* degree-4 minimax polynomial for atan(x) over [0.75,1], with relative error
-   bounded by 2^-23.027 */
-static const float p3[] = {-0x1.f75b16p-6, 0x1.2d3d1p+0, -0x1.882376p-2,
-                           0x1.d18c96p-13, 0x1.6aa268p-6};
+   bounded by 2^-23.027, and coefficients later optimized */
+static const float p3[] = {-0x1.f75b26p-6, 0x1.2d3d1cp+0, -0x1.882376p-2,
+                           0x1.d18c84p-13, 0x1.6aa26p-6};
 
-_Float16 cr_atanf16 (_Float16 x)
+_Float16 cr_atanpif16 (_Float16 x)
 {
   b32u32_u v = {.f = x};
   uint32_t u = v.u;
   uint32_t au = u & 0x7fffffffu;
 
-#define HALF_PI 0x1.921fb6p+0f
+#define HALF_PI 0x1.921fb6p+0f // approximation of pi/2
+#define INV_PI  0x1.45f306p-2f // approximation of 1/pi
 
   if (au >= 0x7f800000u) { // NaN or Inf
     if (au == 0x7f800000u) // +/-Inf
-      return (u == 0x7f800000u) ? HALF_PI : -HALF_PI;
+      return (u == 0x7f800000u) ? 0.5f : -0.5f;
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = EDOM;
 #endif
@@ -80,6 +81,8 @@ _Float16 cr_atanf16 (_Float16 x)
   }
   
   float t = v.f;
+
+  // we first approximate atan(x), then divide by pi
 
   // for x < 0 we use atan(-x) = -atan(x)
   int neg = u >> 31;
@@ -91,32 +94,42 @@ _Float16 cr_atanf16 (_Float16 x)
 
   // for x > 1 we use atan(x) = pi/2 - atan(1/x)
   int reduce = au > 0x3f800000u;
-  if (reduce) t = 1.0f / t;
+  if (reduce) {
+    // deal with exceptional cases
+    if (au == 0x3fd24000u) return s * 0x1.4dbffep-2f; // |x| = 0x1.a48p+0
+    if (au == 0x42ba4000u) return s * 0x1.fc8002p-2f; // |x| = 0x1.748p+6
+    if (au == 0x412ca000u) return s * 0x1.e1dffep-2f;  // |x| = 0x1.594p+3
+    if (au == 0x41fb4000u) return s * 0x1.f5a002p-2f; // |x| = 0x1.f68p+4
+    t = 1.0f / t;
+    v.f = t;
+    au = v.u;
+  }
 
   // now 0 <= t <= 1
 
   const float *p;
   float y, c1, c2, c3, c5, tt = t * t;
-  if (t <= 0.25f) {
-    // for |x| < 0x1.d14p-6, atan(x) rounds to x to nearest
-    if (!reduce && t <= 0x1.d14p-6f) {
+  if (au < 0x3e800000u) { // t < 0.25
+    if (!reduce && au < 0x3a800000u) { // t < 0x1p-10
+      // use direct degree-1 polynomial for atanpi (cf atanpi.sollya)
 #ifdef CORE_MATH_SUPPORT_ERRNO
-      /* We get underflow for |x| < 2^-14, and for |x| = 2^-14 and
-         rounding towards zero. */
-      if (au != 0 && (au < 0x38800000 || __builtin_fmaf (t, -0x1p-25f, t) != t))
+      /* For |x| <= 0x1.92p-13, atanpi(x) rounds to nearest in the subnormal
+         range. */
+      if (au != 0 && (au < 0x39490000u || (au == 0x39490000u &&
+                                 v.f * 0x1.460cb9p-2f != s * 0x1.fffffap-15f)))
         errno = ERANGE;
 #endif
-      return (au == 0) ? x : __builtin_fmaf (s * t, -0x1p-23f, s * t);
+      // deal with exceptional cases
+      if (au == 0x3a052000u) return s * 0x1.52ffep-13f;  // |x| = 0x1.0a4p-11
+      if (au == 0x3a318000u) return s * 0x1.c3fffep-13f; // |x| = 0x1.63p-11
+      return s * t * __builtin_fmaf (-0x1.cb4bcep-14f, t, 0x1.45f30ap-2f);
     }
-    
-    // deal with exceptional cases
-    if (au == 0x3e56a000u) // |x| = 0x1.ad4p-3
-      return (au == u) ? 0x1.a72002p-3f : -0x1.a72002p-3f;
-    if (au == 0x4115c000u) // |x| = 0x1.2b8p+3
-      return (au == u) ? 0x1.76dffep+0f : -0x1.76dffep+0f;
-    if (au == 0x42c32000u) // |x| = 0x1.864p+6
-      return (au == u) ? 0x1.8f7ffep+0f : -0x1.8f7ffep+0f;
-
+    // deal with exceptional cases 
+    if (au == 0x3af4c000u) return s * 0x1.37a002p-11f; // |x| = 0x1.e98p-10
+    if (au == 0x3be78000u) return s * 0x1.26c004p-9f;  // |x| = 0x1.cfp-8
+    if (au == 0x3b92a000u) return s * 0x1.756002p-10f; // |x| = 0x1.254p-8
+    if (au == 0x3e1ea000u) return s * 0x1.90c002p-5f;  // |x| = 0x1.3d4p-3
+    if (au == 0x3e4b2000u) return s * 0x1.fea002p-5f;  // |x| = 0x1.964p-3
     p = p0;
     c5 = __builtin_fmaf (p[3], tt, p[2]);
     c1 = __builtin_fmaf (p[1], tt, p[0]);
@@ -124,7 +137,18 @@ _Float16 cr_atanf16 (_Float16 x)
     y = t * c1;
   }
   else {
-    p = (t <= 0.5f) ? p1 : (t <= 0.75f) ? p2 : p3;
+    // use p1 for t <= 0.5, p2 for 0.5 < t <= 0.75, p3 for 0.75 < t <= 1
+    if (au <= 0x3f000000u)
+      p = p1;
+    else if (au <= 0x3f400000u)
+      p = p2;
+    else
+    {
+      p = p3;
+      // deal with exceptional cases
+      if (au == 0x3f800000u) return s * 0x1p-2f;        // |x| = 1
+      if (au == 0x3f712000u) return s * 0x1.ec7feap-3f; // |x| = 0x1.e24p-1
+    }
     c3 = __builtin_fmaf (p[4], t, p[3]);
     c2 = __builtin_fmaf (c3, t, p[2]);
     y = __builtin_fmaf (p[1], t, p[0]);
@@ -135,10 +159,11 @@ _Float16 cr_atanf16 (_Float16 x)
 
   if (neg) y = -y;
 
-  return y;
+  // divide by pi
+  return y * INV_PI;
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 atanf16 (_Float16 x) {
-  return (_Float16) atanf ((float) x);
+_Float16 atanpif16 (_Float16 x) {
+  return (_Float16) atanf ((float) x) / (_Float16) M_PI;
 }

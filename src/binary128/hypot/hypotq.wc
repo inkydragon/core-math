@@ -873,3 +873,6 @@
 0x1.6530f0f29f865ee2b6d454614f78p+112 0x1.aba59c1b2c03dc1bc80190e8670dp+56
 0x1.d12de0f01186d1c9326773c322f8p+112 0x1.e80747c82a7c813ab72ad5bd5ab9p+56
 0x1.5f680ac9248b2c7ec8dda6f37d9cp+112 0x1.a82b7d095f0df748c4150435cc02p+56
+# non-regression case
+# the following was found by the GNU libc tests
+0x1.ffffffffffffffffffffffffffffp+50 0x1.00000000000000000000000004p+1

@@ -16,7 +16,7 @@ if [ -z "$LAST_COMMIT" ]; then
 fi
 
 # use the same order as on https://core-math.gitlabpages.inria.fr/
-FUNCTIONS_EXHAUSTIVE=(acosf acosf16 acoshf acoshf16 acospif acospif16 asinf asinf16 asinhf asinhf16 asinpif atanf atanf16 atanhf atanhf16 atanpif atanpif16 cbrtf cbrtf16 cosf cosf16 coshf coshf16 cospif erff erfcf expf expf16 exp10f exp10f16 exp10m1f exp2f exp2f16 exp2m1f expm1f hypotf16 lgammaf logf logf16 log10f log10f16 log10p1f log1pf log2f log2f16 log2p1f powf16 rsqrtf rsqrtf16 sincosf sinf sinf16 sinhf sinpif sqrtf16 tanf tanhf tanpif tgammaf)
+FUNCTIONS_EXHAUSTIVE=(acosf acosf16 acoshf acoshf16 acospif acospif16 asinf asinf16 asinhf asinhf16 asinpif atanf atanf16 atanhf atanhf16 atanpif atanpif16 cbrtf cbrtf16 cosf cosf16 coshf coshf16 cospif erff erfcf expf expf16 exp10f exp10f16 exp10m1f exp2f exp2f16 exp2m1f expm1f hypotf16 lgammaf logf logf16 log10f log10f16 log10p1f log1pf log2f log2f16 log2p1f powf16 rsqrtf rsqrtf16 sincosf sinf sinf16 sinhf sinhf16 sinpif sqrtf16 tanf tanhf tanpif tgammaf)
 FUNCTIONS_WORST=(acos acosh acospi asin asinh asinpi atan atan2 atan2f atan2pi atan2pif atanh atanpi cbrt cbrtl cbrtq compoundf cos cosh cospi erf erfc exp expl expq exp10 exp10m1 exp2 exp2l exp2m1 hypot hypotf hypotl hypotq lgamma log log10 log10p1 log1p log2 log2l log2p1 pow powf powl rsqrt rsqrtl rsqrtq sin sincos sinh sinpi sqrtq tan tanh tanpi tgamma)
 FUNCTIONS_SPECIAL=(acos acosf acosh acospi acospif asin asinh asinpi asinpif atan atanf atan2 atan2f atan2pi atan2pif atanh atanpi atanpif cbrt compoundf cos cosh cospi cospif erf erfc erfcf exp expf exp10 exp10m1 exp2 exp2m1 exp2m1f expm1 hypot hypotf hypotl lgamma lgammaf log log10 log10p1 log1p log2 log2p1 pow powf powl rsqrt rsqrtl rsqrtq sin sinh sinpi tan tanh tanpi tanpif)
 

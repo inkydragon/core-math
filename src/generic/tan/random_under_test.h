@@ -11,5 +11,5 @@
 static inline TYPE_UNDER_TEST random_under_test (void)
 {
   /* sample in [-pi,pi] */
-  return (XMAX - XMIN) * ((TYPE_UNDER_TEST) rand() / (TYPE_UNDER_TEST) RAND_MAX) + XMIN;
+  return (XMAX - XMIN) * ((double) rand() / (double) RAND_MAX) + XMIN;
 }

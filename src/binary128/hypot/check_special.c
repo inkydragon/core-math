@@ -121,23 +121,36 @@ static _Float128 above (_Float128 x)
   return v.f;
 }
 
+// for i=0, return x
+// for i=1, return above(x)
+// for i=-1, return below(x)
+// and so on
+static _Float128 neighbour (_Float128 x, int i)
+{
+  while (i-- > 0) x = above (x);
+  while (i++ < 0) x = below (x);
+  return x;
+}
+
 // check corner cases, where x and y are near powers of 2
 static void check_corner_cases ()
 {
-  _Float128 x = 0x1p-16494f128;
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
   for (int ex = -16494; ex <= 16383; ex ++) {
-    for (int i = -1; i <= 1; i++) {
-      _Float128 xx = (i == -1) ? below (x) : (i == 0) ? x : above (x);
-      _Float128 y = 0x1p-16494f128;
-      for (int ey = -16494; ey <= ex; ey ++) {
-        for (int j = -1; j <= 1; j++) {
-          _Float128 yy = (i == -1) ? below (y) : (i == 0) ? y : above (y);
+    _Float128 x;
+    for (int i = -2; i <= 2; i++) {
+      x = ldexpq (1.0f128, ex);
+      _Float128 xx = neighbour (x, i);
+      for (int ey = ex - 256; ey <= ex; ey ++) {
+        _Float128 y = ldexpq (1.0f128, ey);
+        for (int j = -2; j <= 2; j++) {
+          _Float128 yy = neighbour (y, j);
           check (xx, yy);
         }
-        y *= 2;
       }
     }
-    x *= 2;
   }
 }
 

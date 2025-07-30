@@ -1,4 +1,4 @@
-/* Check correctness of hypotq function on provided inputs
+/* Check correctness of bivariate quadruple-precision function on provided inputs
 
 Copyright (c) 2025 Alexei Sibidanov <sibid@uvic.ca>.
 

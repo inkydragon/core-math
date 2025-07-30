@@ -1,4 +1,4 @@
-/* Check correctness of cbrtq function on provided inputs
+/* Check correctness of univariate quadruple-precision function on provided inputs
 
 Copyright (c) 2025 Alexei Sibidanov <sibid@uvic.ca>.
 

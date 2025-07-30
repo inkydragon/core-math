@@ -2030,12 +2030,12 @@ _Float16 cr_tanf16(_Float16 x){
   }
 
   // deal with exceptional cases
-  // |x| = 0x1.7b4p+6
-  if (au == 0x55ed) return (au == u) ? 0x1.445ffep-1f : -0x1.445ffep-1f;
-  // |x| = 0x1.63p+10
-  if (au == 0x658c) return (au == u) ? 0x1.f9bd04p-14f : -0x1.f9bd04p-14f;
-  // |x| = 0x1.0a4p+10
-  if (au == 0x6429) return (au == u) ? 0x1.7b4dc2p-14f : -0x1.7b4dc2p-14f;
+  if (au == 0x55ed) // |x| = 0x1.7b4p+6
+    return (au == u) ? 0x1.445ffep-1f : -0x1.445ffep-1f;
+  if (au == 0x658c) // |x| = 0x1.63p+10
+    return (au == u) ? 0x1.f9bd04p-14f : -0x1.f9bd04p-14f;
+  if (au == 0x6429) // |x| = 0x1.0a4p+10
+    return (au == u) ? 0x1.7b4dc2p-14f : -0x1.7b4dc2p-14f;
   if (u == 0x681e) return -0x1.1c1fbep-7f; // x = 0x1.078p+11
   if (u == 0xe74e) return -0x1.df4002p-1f; // x = -0x1.d38p+10
   if (u == 0xe807) return -0x1.053ffep+1f; // x = -0x1.01cp+11

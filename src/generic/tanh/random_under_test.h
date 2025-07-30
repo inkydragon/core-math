@@ -1,5 +1,5 @@
 static inline TYPE_UNDER_TEST random_under_test (void)
 {
-  /* sample in [-10,10] */
-  return 20 * ((TYPE_UNDER_TEST) rand() / (TYPE_UNDER_TEST) RAND_MAX) - 10;
+  /* sample in [-4,4] (for binary16 tanh(x) rounds to 1 for x > 4.51) */
+  return 8 * ((double) rand() / (double) RAND_MAX) - 4;
 }

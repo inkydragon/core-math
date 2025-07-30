@@ -311,8 +311,8 @@ check_signaling_nan (void)
     // check that foo(NaN) = NaN
     if (!is_nan (y))
     {
-      fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
-               u, (float) y, asuint (y));
+      printf ("Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
+              u, (float) y, asuint (y));
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
@@ -320,8 +320,8 @@ check_signaling_nan (void)
     // check that the signaling bit disappeared
     if (issignaling (y))
     {
-      fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
-               u, asuint (y));
+      printf ("Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
+              u, asuint (y));
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
@@ -332,8 +332,8 @@ check_signaling_nan (void)
     // check that foo(NaN) = NaN
     if (!is_nan (y))
     {
-      fprintf (stderr, "Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
-               0x8000u + u, (float) y, asuint (y));
+      printf ("Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
+              0x8000u + u, (float) y, asuint (y));
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
@@ -341,8 +341,8 @@ check_signaling_nan (void)
     // check that the signaling bit disappeared
     if (issignaling (y))
     {
-      fprintf (stderr, "Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
-               0x8000u + u, asuint (y));
+      printf ("Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
+              0x8000u + u, asuint (y));
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
@@ -360,8 +360,8 @@ check_exceptions_aux (uint16_t n)
   // there should be no inexact exception if the result is NaN, +/-Inf or +/-0
   if (inex && (is_nan (y) || is_inf (y) || y == 0))
   {
-    fprintf (stderr, "Error, for x=%a=%x, inexact exception set (y=%a=%x)\n",
-             (float) x, asuint (x), (float) y, asuint (y));
+    printf ("Error, for x=%a=%x, inexact exception set (y=%a=%x)\n",
+            (float) x, asuint (x), (float) y, asuint (y));
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -371,7 +371,7 @@ check_exceptions_aux (uint16_t n)
   inex = fetestexcept (FE_OVERFLOW);
   if (inex)
   {
-    fprintf (stderr, "Error, for x=%a, overflow exception set (y=%a)\n", (float) x, (float) y);
+    printf ("Error, for x=%a, overflow exception set (y=%a)\n", (float) x, (float) y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -381,7 +381,7 @@ check_exceptions_aux (uint16_t n)
   inex = fetestexcept (FE_UNDERFLOW);
   if (inex)
   {
-    fprintf (stderr, "Error, for x=%a, underflow exception set (y=%a)\n", (float) x, (float) y);
+    printf ("Error, for x=%a, underflow exception set (y=%a)\n", (float) x, (float) y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

@@ -318,6 +318,66 @@ static void check (__float128 x)
 #endif
     }
 #endif
+
+  // check underflow flag is not reset
+  feraiseexcept (FE_UNDERFLOW);
+  zt.f = cr_function_under_test (x);
+  if (!fetestexcept (FE_UNDERFLOW)){
+    error ("Underflow exception was reset", x, zt.f);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  zt.f = cr_function_under_test (x);
+  if (!fetestexcept (FE_DIVBYZERO)){
+    error ("Underflow exception was reset", x, zt.f);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+
+  // check inexact flag is not reset
+  feraiseexcept (FE_INEXACT);
+  zt.f = cr_function_under_test (x);
+  if (!fetestexcept (FE_INEXACT)){
+    error ("Underflow exception was reset", x, zt.f);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+
+  // check invalid flag is not reset
+  feraiseexcept (FE_INVALID);
+  zt.f = cr_function_under_test (x);
+  if (!fetestexcept (FE_INVALID)){
+    error ("Underflow exception was reset", x, zt.f);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
+
+  // check overflow flag is not reset
+  feraiseexcept (FE_OVERFLOW);
+  zt.f = cr_function_under_test (x);
+  if (!fetestexcept (FE_OVERFLOW)){
+    error ("Underflow exception was reset", x, zt.f);
+#ifdef DO_NOT_ABORT
+    return;
+#else
+    exit(1);
+#endif
+  }
 }
 
 static void test(){

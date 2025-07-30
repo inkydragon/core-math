@@ -254,6 +254,43 @@ void check (__float128 x, __float128 y){
   if (!expected_erange && errno == ERANGE)
     error ("Spurious errno=ERANGE", x, y, zt);
 #endif
+
+  // Check flags are not reset
+  // check underflow flag is not reset
+  feraiseexcept ( FE_UNDERFLOW);
+  zt = cr_function_under_test (x, y);
+  if (!fetestexcept (FE_UNDERFLOW)) {
+    error ("Underflow exception was reset", x, y, zt);
+  }
+
+  // check divbyzero flag is not reset
+  feraiseexcept (FE_DIVBYZERO);
+  zt = cr_function_under_test (x, y);
+  if (!fetestexcept (FE_DIVBYZERO)) {
+    error ("Underflow exception was reset", x, y, zt);
+  }
+
+  // check inexact flag is not reset
+  feraiseexcept ( FE_INEXACT);
+  zt = cr_function_under_test (x, y);
+  if (!fetestexcept (FE_INEXACT)) {
+    error ("Inexact exception was reset", x, y, zt);
+  }
+
+  // check invalid flag is not reset
+  feraiseexcept ( FE_INVALID);
+  zt = cr_function_under_test (x, y);
+  if (!fetestexcept (FE_INVALID)) {
+    error ("Invalid exception was reset", x, y, zt);
+  }
+
+  // check overflow flag is not reset
+  feraiseexcept ( FE_OVERFLOW);
+  zt = cr_function_under_test (x, y);
+  if (!fetestexcept (FE_OVERFLOW)) {
+    error ("Overflow exception was reset", x, y, zt);
+  }
+
 }
 
 void test(){

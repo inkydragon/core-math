@@ -232,11 +232,6 @@ inline static i64 as_rcbrt(u64 m){
 inline static b128u128_u as_icbrt(b128u128_u x, unsigned i){
   static const u64 rcbrt_i[] = {0x8000000000000000, 0x6597fa94f5b8f20b, 0x50a28be635ca2b89}; // 2^63/cbrt(2^i)
   u64 r = as_rcbrt(x.b[1]);
-  if(__builtin_expect((i64)r>=0, 0)) r = ~0l; // now r cannot be above 1 it is strictly <1
-  r = mhuu(r, rcbrt_i[i]);
-  u128 r2 = (u128)r*r;
-  x.a >>= 3-i;
-  x.b[1] |= 1ul<<(61+i);
   if(__builtin_expect((i64)r>=0, 0)) r = ~0ll; // now r cannot be above 1 it is strictly <1
   r = mhuu(r, rcbrt_i[i]);
   u128 r2 = (u128)r*r;

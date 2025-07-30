@@ -70,14 +70,16 @@ static inline int is_equal(__float128 x, __float128 y){
 }
 
 static void
-error2 (__float128 x, __float128 y, __float128 z)
+error2 (__float128 x, __float128 y, __float128 ref, __float128 z)
 {
   char buf[256];
   int n;
   n = snprintf (buf, sizeof buf, "FAIL x=");
   n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", x);
-  n += snprintf (buf + n, sizeof buf - n, " ref=");
+  n += snprintf (buf + n, sizeof buf, " y=");
   n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", y);
+  n += snprintf (buf + n, sizeof buf - n, " ref=");
+  n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", ref);
   n += snprintf (buf + n, sizeof buf - n, " z=");
   n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", z);
   printf ("%s\n", buf);
@@ -86,8 +88,11 @@ error2 (__float128 x, __float128 y, __float128 z)
 static void check(__float128 x, __float128 y){
   __float128 y1 = ref_hypotq(x, y), y2 = cr_hypotq(x, y);
   if(!is_equal(y1, y2)) {
-    error2 (x, y1, y2);
+    error2 (x, y, y1, y2);
     fflush(stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
 }
 
@@ -100,6 +105,53 @@ static __float128 get_random(int tid){
   v.a |= (__int128)rand_r(Seed + tid) << 31*4;
   v.a &= ~((__int128)1<<127);
   return v.f;
+}
+
+static _Float128 below (_Float128 x)
+{
+  b128u128_u v = {.f = x};
+  v.a --;
+  return v.f;
+}
+
+static _Float128 above (_Float128 x)
+{
+  b128u128_u v = {.f = x};
+  v.a ++;
+  return v.f;
+}
+
+// for i=0, return x
+// for i=1, return above(x)
+// for i=-1, return below(x)
+// and so on
+static _Float128 neighbour (_Float128 x, int i)
+{
+  while (i-- > 0) x = above (x);
+  while (i++ < 0) x = below (x);
+  return x;
+}
+
+// check corner cases, where x and y are near powers of 2
+static void check_corner_cases ()
+{
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
+  for (int ex = -16494; ex <= 16383; ex ++) {
+    _Float128 x;
+    for (int i = -2; i <= 2; i++) {
+      x = ldexpq (1.0f128, ex);
+      _Float128 xx = neighbour (x, i);
+      for (int ey = ex - 256; ey <= ex; ey ++) {
+        _Float128 y = ldexpq (1.0f128, ey);
+        for (int j = -2; j <= 2; j++) {
+          _Float128 yy = neighbour (y, j);
+          check (xx, yy);
+        }
+      }
+    }
+  }
 }
 
 int main(int argc, char *argv[]){
@@ -133,6 +185,9 @@ int main(int argc, char *argv[]){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
+
+  printf("Checking corner cases\n");
+  check_corner_cases ();
   
   printf("Checking random values\n");
 #ifndef CORE_MATH_TESTS

@@ -148,6 +148,16 @@ static inline u128 sqrU(u128 _a, u128 *t){
   return a11.a;
 }
 
+// add two 128 bit numbers with overflow bit
+static inline u128 addUU(u64 *c, u128 _a, u128 _b){
+  b128u128_u a, b;
+  a.a = _a;
+  b.a = _b;
+  a.b[0] = __builtin_addcl(a.b[0], b.b[0],  0, c);
+  a.b[1] = __builtin_addcl(a.b[1], b.b[1], *c, c);
+  return a.a;
+}
+
 // get appoximate high part of unsigned 128x128 bit multiplication
 static inline u128 mhUU(u128 _a, u128 _b){
   b128u128_u a, b, a1b0, a0b1, a1b1;
@@ -343,8 +353,8 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
   } else {
     b.a <<= 15; b.b[1] |= 1ull<<63;
     b128u128_u a2128 = {.a = sqrhU(a.a)}, b2 = {.a = sqrhU(b.a>>dn)};
-    a2128.a += b2.a;
-    char overflow = b2.b[1]>a2128.b[1];
+    u64 overflow;
+    a2128.a = addUU(&overflow, a2128.a, b2.a);
     int nz = (~0u + overflow) & __builtin_clzll(a2128.b[1]);
     unsigned i = (!overflow + nz)&1;
     int s = 1 - overflow + nz;

@@ -101,9 +101,8 @@ _Float16 cr_asinpif16 (_Float16 x)
     /* For |x| <= 0x1.92p-13, we get underflow, except when x=0x1.92p-13
        with RNDU and x=-0x1.92p-13 with RNDD. */
     if (au <= 0x39490000u) {
-      if (au == 0) return x; // +/-0
 #ifdef CORE_MATH_SUPPORT_ERRNO
-      if (au < 0x39490000u || __builtin_fmaf (t, 0x1p-25f, t) == t)
+      if (au != 0 && (au < 0x39490000u || __builtin_fmaf (t, 0x1p-25f, t) == t))
         errno = ERANGE;
 #endif
       // INV_PI is smaller than 1/pi

@@ -154,9 +154,8 @@ static inline u128 addUU(u64 *c, u128 _a, u128 _b){
   unsigned long d;
   a.a = _a;
   b.a = _b;
-  a.b[0] = __builtin_addcl(a.b[0], b.b[0],  0, &d);
-  *c = d;
-  a.b[1] = __builtin_addcl(a.b[1], b.b[1], *c, &d);
+  a.b[0] = __builtin_addcl(a.b[0], b.b[0], 0, &d);
+  a.b[1] = __builtin_addcl(a.b[1], b.b[1], d, &d);
   *c = d;
   return a.a;
 }

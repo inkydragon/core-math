@@ -698,14 +698,29 @@ static void __attribute__((noinline)) as_expq_accurate(int *el, u2x64 m, u128 x0
   f1[2] = c[0][2];
   mhu3u3u3(f,ft,f1);
 
-  f2 = (u128)f[1]<<64|f[0];
-  u128 d = (f2+8)&(~(u128)0>>53);
-  if(__builtin_expect(d<=16,0))
-    as_expq_superaccurate(el, m, x0);
-  else {
-    m[0] = f[1]>>1|f[2]<<63;
-    m[1] = f[2]>>1;
+  m[0] = f[1]>>1|f[2]<<63;
+  m[1] = f[2]>>1;
+  int rndfail = 0;
+  if(__builtin_expect(*el>=-16382, 1)){
+    f2 = (u128)f[1]<<64|f[0];
+    u128 d = (f2+8)&(~(u128)0>>53);
+    rndfail = d<=16;
+  } else {
+    int s = -16371 - *el;
+    u64 k;
+    f[0] = __builtin_addcl(f[0],8,0,&k);
+    f[1] = __builtin_addcl(f[1],0,k,&k);
+    f[2] = __builtin_addcl(f[2],0,k,&k);
+    if(s<64){
+      f[1] &= (1ul<<s)-1;
+      f[2] = 0;
+    } else if(s<128){
+      f[2] &= (1ul<<(s-64))-1;
+    }
+    rndfail = (f[0]<=16) && ((f[1] | f[2]) == 0);
   }
+  if(rndfail)
+    return as_expq_superaccurate(el, m, x0);
 }
 
 __float128 cr_expq(__float128 x) {

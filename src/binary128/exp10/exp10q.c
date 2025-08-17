@@ -724,6 +724,22 @@ static void __attribute__((noinline)) as_exp10q_accurate(int *el, u2x64 m, u128 
     return as_exp10q_superaccurate(el, m, x0);
 }
 
+static __float128 __attribute__((noinline)) as_exp10q_exact(u64 k){
+  static const u64 pw[] = {1,5,25,625,390625,152587890625};
+  b128u128_u p = {.a = 1};
+  p.a *= pw[((k&1)!=0)*1];
+  p.a *= pw[((k&2)!=0)*2];
+  p.a *= pw[((k&4)!=0)*3];
+  p.a *= pw[((k&8)!=0)*4];
+  p.a *= pw[((k&16)!=0)*5];
+  u128 t = pw[((k&32)!=0)*5];
+  p.a *= t*t;
+  int nz = __builtin_clzl(p.b[1]) + __builtin_clzl(p.b[0])*!p.b[1];
+  p.a <<= nz-15;
+  p.b[1] += (16509 - nz + k)<<48;
+  return reinterpret_u128_as_f128(p.a);
+}
+
 __float128 cr_exp10q(__float128 x) {
   static const u64 r0[][2] = {
     {                 0, 0x8000000000000000}, {0x3e2a475b46520bff, 0x82cd8698ac2ba1d7},
@@ -850,20 +866,17 @@ __float128 cr_exp10q(__float128 x) {
       return kinf.f;
     }
   }
-  b128u128_u gf = {.f = x}, m = gf, res;
-  i64 sm = gf.bs[1]>>63;
+  b128u128_u m = u, res;
+  i64 sm = u.bs[1]>>63;
   m.b[1] = (m.b[1]&~0ull>>16)|1ull<<48;
   u3x64 fs; mhu3xu2(fs, iln102+4, m.a);
   fs[0] ^= sm; fs[1] ^= sm; fs[2] ^= sm;
-  int e = (gf.b[1] >> 48)&0x7fff;
+  i64 e = (u.b[1] >> 48)&0x7fff;
   arsu3(fs, 0x4019 - e);
   e -= 16383;
-  int xct = 0; // detect exact results
-  if(__builtin_expect((sm|gf.b[0]|gf.b[1]<<(e+16))==0, 0)){
-    if(e>=0 && e<=5){
-      m.b[1] >>= 48-e;
-      xct = m.b[1]<=48; // for x=1,2,..48 the result is exact
-    }
+  if(__builtin_expect((sm|u.b[0]|u.b[1]<<(e+16)|e>>63)==0, 0)){ // detect exact results
+    u64 k = m.b[1] >> (48-e);
+    if(k<=48) return as_exp10q_exact(k); // for x=1,2,..48 the result is exact
   }
   i64 fs2 = fs[2];
   int el = fs2>>20, i0 = (fs2>>15)&31, i1 = (fs2>>10)&31, i2 = (fs2>>5)&31, i3 = fs2&31;
@@ -880,7 +893,7 @@ __float128 cr_exp10q(__float128 x) {
   u64 rnd;
   if(__builtin_expect(el>=-16382, 1)){
     u64 s = (rm==_MM_ROUND_NEAREST)<<10;
-    if(__builtin_expect(((res.b[0]+s+6)&0x7ff) <= 6, 0)) as_exp10q_accurate(&el, res.b, gf.a);
+    if(__builtin_expect(((res.b[0]+s+6)&0x7ff) <= 6, 0)) as_exp10q_accurate(&el, res.b, u.a);
     rnd = (res.b[0]>>10)&1;
     res.a >>= 11;
     el += 16382;
@@ -891,7 +904,7 @@ __float128 cr_exp10q(__float128 x) {
     flagp |= FE_UNDERFLOW;
     if(el>-16499){
       u128 s = (u128)(rm==_MM_ROUND_NEAREST)<<(-16372-el);
-      if(__builtin_expect(((res.a+s+6)&(((u128)2<<(-16372-el))-1)) <= 6, 0)) as_exp10q_accurate(&el, res.b, gf.a);
+      if(__builtin_expect(((res.a+s+6)&(((u128)2<<(-16372-el))-1)) <= 6, 0)) as_exp10q_accurate(&el, res.b, u.a);
       rnd = (res.a>>(-16372-el))&1;
       res.a >>= -16371-el;
     } else {
@@ -900,15 +913,12 @@ __float128 cr_exp10q(__float128 x) {
     }
     el = 0;
   }
-  if(__builtin_expect(!xct, 1)){
-    if(__builtin_expect(rm != _MM_ROUND_NEAREST, 0)){
-      rnd = rm==_MM_ROUND_UP;
-    }
-    flagp |= FE_INEXACT;
-  }
+  rnd &= rm==_MM_ROUND_NEAREST;
+  rnd |= rm==_MM_ROUND_UP;
   b128u128_u dres = {.b = {rnd, (u64)el<<48}};
   res.a += dres.a;
 
+  flagp |= FE_INEXACT;
   if(__builtin_expect(oflagp != flagp, 0)) _mm_setcsr(flagp);
   return reinterpret_u128_as_f128(res.a); // put into xmm register
 }

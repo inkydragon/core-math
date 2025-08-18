@@ -1,11 +1,11 @@
-/* sample in [-10,10] by default */
+/* sample in [-1,1] by default */
 
 #ifndef XMIN
-#define XMIN -10.0
+#define XMIN -0.5
 #endif
 
 #ifndef XMAX
-#define XMAX 10.0
+#define XMAX 0.5
 #endif
 
 static inline TYPE_UNDER_TEST random_under_test (void)

@@ -24,9 +24,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _GNU_SOURCE /* to define ...f128 functions */
+
 #include <errno.h>
 #include <fenv.h>
 #include <stdint.h>
+#include <math.h>
 #ifdef __x86_64__
 #include <x86intrin.h>
 #endif
@@ -320,4 +323,9 @@ __float128 cr_cbrtq(__float128 x){
   if(__builtin_expect(oflagp != flagp, 0)) _mm_setcsr(flagp);
   x = reinterpret_u128_as_f128(v.a);
   return x;
+}
+
+// cbrtq is called cbrtf128 in GNU libc
+__float128 cbrtq(__float128 x) {
+  return cbrtf128 (x);
 }

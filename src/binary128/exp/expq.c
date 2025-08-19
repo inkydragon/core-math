@@ -24,11 +24,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _GNU_SOURCE /* to define ...f128 functions */
+
 #ifdef CORE_MATH_SUPPORT_ERRNO
 #include <errno.h>
 #endif
 #include <fenv.h>
 #include <stdint.h>
+#include <math.h>
 #ifdef __x86_64__
 #include <x86intrin.h>
 #endif
@@ -898,4 +901,9 @@ __float128 cr_expq(__float128 x) {
   flagp |= FE_INEXACT;
   if(__builtin_expect(oflagp != flagp, 0)) _mm_setcsr(flagp);
   return reinterpret_u128_as_f128(res.a); // put into xmm register
+}
+
+// expq is called expf128 in GNU libc
+__float128 expq(__float128 x) {
+  return expf128 (x);
 }

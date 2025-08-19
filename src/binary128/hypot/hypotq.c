@@ -24,10 +24,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _GNU_SOURCE /* to define ...f128 functions */
+
 #include <stdio.h>
 #include <errno.h>
 #include <fenv.h>
 #include <stdint.h>
+#include <math.h>
 #ifdef __x86_64__
 #include <x86intrin.h>
 #endif
@@ -467,4 +470,9 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
   }
   if(__builtin_expect(oflagp!=flagp, 0)) _mm_setcsr(flagp);
   return reinterpret_u128_as_f128(v.a); // put into xmm register
+}
+
+// hypotq is called hypotf128 in GNU libc
+__float128 hypotq(__float128 x, __float128 y) {
+  return hypotf128 (x, y);
 }

@@ -24,9 +24,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _GNU_SOURCE /* to define ...f128 functions */
+
 #include <errno.h>
 #include <fenv.h>
 #include <stdint.h>
+#include <math.h>
 #ifdef __x86_64__
 #include <x86intrin.h>
 #endif
@@ -336,4 +339,10 @@ __float128 cr_rsqrtq(__float128 x){
 
   v.b[1] += e2; // place exponent
   return reinterpret_u128_as_f128(v.a); // put into xmm register
+}
+
+/* rsqrtq is called rsqrtf128 in GNU libc, but was only added in GNU libc 2.42,
+   thus for now we use the CORE-MATH function */
+__float128 rsqrtq(__float128 x) {
+  return cr_rsqrtq (x);
 }

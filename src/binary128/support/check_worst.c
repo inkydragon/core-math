@@ -24,7 +24,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#ifndef __APPLE__
 #define _POSIX_C_SOURCE 200809L  /* for getline */
+#endif /* !__APPLE */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>

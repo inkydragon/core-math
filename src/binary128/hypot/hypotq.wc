@@ -876,3 +876,6 @@
 # non-regression case
 # the following was found by the GNU libc tests
 0x1.ffffffffffffffffffffffffffffp+50 0x1.00000000000000000000000004p+1
+# issue reported by Vedran Novakovic on macOS (Intel) with gcc 15.1.0
+# https://sympa.inria.fr/sympa/arc/core-math/2025-07/msg00014.html
+0x1.fffffffffffffffffffffffffffdp-55 0x1.fffffffffffffffffffffffffffdp-111

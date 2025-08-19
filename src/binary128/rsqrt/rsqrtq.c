@@ -341,8 +341,16 @@ __float128 cr_rsqrtq(__float128 x){
   return reinterpret_u128_as_f128(v.a); // put into xmm register
 }
 
-/* rsqrtq is called rsqrtf128 in GNU libc, but was only added in GNU libc 2.42,
-   thus for now we use the CORE-MATH function */
+// somewhat we need to include that for icx and the Intel math library
+extern __float128 __rsqrtq (__float128);
+
+// rsqrtq is called rsqrtf128 in GNU libc, and __rsqrtq in the Intel math library
 __float128 rsqrtq(__float128 x) {
+#ifdef __INTEL_CLANG_COMPILER
+  return __rsqrtq (x);
+#else
+/* rsqrtf128 was only added in GNU libc 2.42,
+   thus for now we use the CORE-MATH function */
   return cr_rsqrtq (x);
+#endif
 }

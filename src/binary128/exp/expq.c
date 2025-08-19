@@ -903,7 +903,14 @@ __float128 cr_expq(__float128 x) {
   return reinterpret_u128_as_f128(res.a); // put into xmm register
 }
 
-// expq is called expf128 in GNU libc
+// somewhat we need to include that for icx and the Intel math library
+extern __float128 __expq (__float128);
+
+// expq is called expf128 in GNU libc, and __expq in the Intel math library
 __float128 expq(__float128 x) {
+#ifdef __INTEL_CLANG_COMPILER
+  return __expq (x);
+#else
   return expf128 (x);
+#endif
 }

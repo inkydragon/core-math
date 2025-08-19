@@ -325,7 +325,14 @@ __float128 cr_cbrtq(__float128 x){
   return x;
 }
 
-// cbrtq is called cbrtf128 in GNU libc
+// somewhat we need to include that for icx and the Intel math library
+extern __float128 __cbrtq (__float128);
+
+// cbrtq is called cbrtf128 in GNU libc, and __cbrtq in the Intel math library
 __float128 cbrtq(__float128 x) {
+#ifdef __INTEL_CLANG_COMPILER
+  return __cbrtq (x);
+#else
   return cbrtf128 (x);
+#endif
 }

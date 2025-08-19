@@ -472,7 +472,14 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
   return reinterpret_u128_as_f128(v.a); // put into xmm register
 }
 
-// hypotq is called hypotf128 in GNU libc
+// somewhat we need to include that for icx and the Intel math library
+extern __float128 __hypotq (__float128, __float128);
+
+// hypotq is called hypotf128 in GNU libc, and __hypotq in the Intel math library
 __float128 hypotq(__float128 x, __float128 y) {
+#ifdef __INTEL_CLANG_COMPILER
+  return __hypotq (x, y);
+#else
   return hypotf128 (x, y);
+#endif
 }

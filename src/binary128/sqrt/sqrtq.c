@@ -326,7 +326,14 @@ __float128 cr_sqrtq(__float128 x) {
   return reinterpret_u128_as_f128(v.a); // put into xmm register
 }
 
-// sqrtq is called sqrtf128 in GNU libc
+// somewhat we need to include that for icx and the Intel math library
+extern __float128 __sqrtq (__float128);
+
+// sqrtq is called sqrtf128 in GNU libc, and __sqrtq in the Intel math library
 __float128 sqrtq(__float128 x) {
+#ifdef __INTEL_CLANG_COMPILER
+  return __sqrtq (x);
+#else
   return sqrtf128 (x);
+#endif
 }

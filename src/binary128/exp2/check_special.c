@@ -111,11 +111,11 @@ static __float128 get_random(int tid){
 static void
 check_subnormal (void)
 {
-  /* smallest subnormal is 2^-16445, whose log2 is
-     -0x1.00f4p+14 = -10423257060376616253806642106204160 / 2^99
+  /* smallest subnormal is 2^-16494, whose log2 is
+     -0x1.01b8p+14 = -10454314500082207874143311334735872 / 2^99
      smallest normal is 2^-16382, whose log2 is
      -0x1.fffp+13 = -10383326066469427027659495955234816 / 2^99 */
-  __int128 m0 = 0x201e800000000ull;
+  __int128 m0 = 0x2037000000000ull;
   m0 = m0<<64;
   m0 = -m0;
   __int128 m1 = 0x1fff000000000ull;

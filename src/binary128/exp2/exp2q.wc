@@ -531,6 +531,7 @@
 -0x1.fff000000001p+13
 -0x1.ffefffffffffp+13
 
+# values near log2(min subnormal) and log2(min normal)
 -0x1.01c4p+14
 -0x1.01c3ffffffffffffffffffffffffp+14
 -0x1.01c4000000000000000000000001p+14

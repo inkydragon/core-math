@@ -141,6 +141,7 @@ static void check_corner_cases ()
   for (int ex = -16494; ex <= 16383; ex ++) {
     ref_init();
     ref_fesetround(rnd);
+    fesetround(rnd1[rnd]);
     _Float128 x;
     for (int i = -2; i <= 2; i++) {
       x = ldexpq (1.0f128, ex);

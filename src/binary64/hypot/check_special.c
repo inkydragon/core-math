@@ -456,9 +456,6 @@ check_near_exact (void)
 #endif
   for (uint64_t x = x0; x < LIMIT; x += skip)
   {
-    ref_init ();
-    ref_fesetround (rnd);
-    fesetround(rnd1[rnd]);
     for (uint64_t y = y0; y <= x; y += skip)
     {
       uint64_t t = x * x + y * y;

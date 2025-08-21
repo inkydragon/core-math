@@ -149,7 +149,6 @@ int main(int argc, char *argv[]){
   for(uint64_t n = 0; n < CORE_MATH_TESTS; n++){
     ref_init();
     ref_fesetround(rnd);
-    fesetround(rnd1[rnd]);
     int tid;
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
     tid = omp_get_thread_num();

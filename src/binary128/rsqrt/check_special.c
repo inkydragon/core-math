@@ -129,26 +129,27 @@ int main(int argc, char *argv[]){
       exit(1);
     }
   }
-  
+
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
-  
+
   printf("Checking random values\n");
 #ifndef CORE_MATH_TESTS
 #define CORE_MATH_TESTS 1000UL*1000*1000 /* total number of tests */
 #endif
-  
+
   unsigned int seed = getpid();
   for(int i = 0; i < MAX_THREADS; i++)
     Seed[i] = seed + i;
-  
+
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif
   for(uint64_t n = 0; n < CORE_MATH_TESTS; n++){
     ref_init();
     ref_fesetround(rnd);
+    fesetround(rnd1[rnd]);
     int tid;
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
     tid = omp_get_thread_num();

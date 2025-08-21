@@ -333,6 +333,10 @@ check_triples_subnormal (void)
 #pragma omp parallel for
 #endif
   for (uint64_t r = r0; r <= 0x4000000; r += 2 * STEP)
+  {
+    ref_init ();
+    ref_fesetround (rnd);
+    fesetround(rnd1[rnd]);
     for (uint64_t s = s0; s < r; s += 2 * STEP)
     {
       if (gcd (r, s) == 1)
@@ -353,12 +357,17 @@ check_triples_subnormal (void)
         }
       }
     }
+  }
 
   // type II: r is even
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif
   for (uint64_t r = r0+1; r <= 0x4000000; r += 2 * STEP)
+  {
+    ref_init ();
+    ref_fesetround (rnd);
+    fesetround(rnd1[rnd]);
     for (uint64_t s = s0-1; s < r; s += 2 * STEP)
     {
       if (gcd (r, s) == 1)
@@ -379,6 +388,7 @@ check_triples_subnormal (void)
         }
       }
     }
+  }
 }
 
 // check k values below/above each power of 2
@@ -399,6 +409,8 @@ check_near_power_two (int k)
   {
     // since emin,emax are thread-local, we need to initialize them here
     ref_init ();
+    ref_fesetround (rnd);
+    fesetround(rnd1[rnd]);
     // since "check" also checks y,x, we only test for ey <= ex
     for (int ey = -1074; ey <= ex; ey++)
     {
@@ -456,6 +468,9 @@ check_near_exact (void)
 #endif
   for (uint64_t x = x0; x < LIMIT; x += skip)
   {
+    ref_init ();
+    ref_fesetround (rnd);
+    fesetround(rnd1[rnd]);
     for (uint64_t y = y0; y <= x; y += skip)
     {
       uint64_t t = x * x + y * y;
@@ -510,7 +525,7 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
-
+  
   ref_init ();
   ref_fesetround (rnd);
   fesetround(rnd1[rnd]);

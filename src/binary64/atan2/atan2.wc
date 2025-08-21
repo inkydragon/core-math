@@ -27947,3 +27947,6 @@
 # test inputs from the GNU libc
 0x1p+0,0x1.23456789p-1000
 0x1p+0,0xf.ffffffffffff8p-1004
+# inputs yielding an error > 0.5 ulp with LLVM 20.1.8 and rndn
+-0x1.9e973a2069033p-125,0x1.c78bd6e23ee71p-117
+-0x1.bdb2c358b0b81p-93,0x1.c717a5969be93p-86

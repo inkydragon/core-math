@@ -1,4 +1,4 @@
-/* Correctly-rounded natural exponent function biased by 1 for binary32 value.
+/* Correctly-rounded exponential function biased by 1 for binary32 value.
 
 Copyright (c) 2022-2025 Alexei Sibidanov.
 

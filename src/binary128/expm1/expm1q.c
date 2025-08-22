@@ -26,7 +26,6 @@ SOFTWARE.
 
 #define _GNU_SOURCE /* to define ...f128 functions */
 
-#include <stdio.h>
 #include <math.h>
 #ifdef CORE_MATH_SUPPORT_ERRNO
 #include <errno.h>

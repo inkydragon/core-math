@@ -31,7 +31,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <fenv.h>
 #include <errno.h>
-#include <stdio.h>
 
 #if (defined(__clang__) && __clang_major__ >= 14) || (defined(__GNUC__) && __GNUC__ >= 14 && __BITINT_MAXWIDTH__ && __BITINT_MAXWIDTH__ >= 128)
 typedef unsigned _BitInt(128) u128;

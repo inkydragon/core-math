@@ -41,7 +41,7 @@ SOFTWARE.
 #include <errno.h>
 
 #ifndef CORE_MATH_FAIL_QUIET
-#include <stdio.h>
+#include <stdio.h> // needed in case of unexpected worst case
 #include <stdlib.h>
 #endif
 

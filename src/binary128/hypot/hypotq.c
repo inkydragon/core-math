@@ -26,7 +26,6 @@ SOFTWARE.
 
 #define _GNU_SOURCE /* to define ...f128 functions */
 
-#include <stdio.h>
 #include <errno.h>
 #include <fenv.h>
 #include <stdint.h>

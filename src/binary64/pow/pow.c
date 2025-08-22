@@ -55,7 +55,7 @@ SOFTWARE.
 */
 
 #include "pow.h"
-#include <stdio.h>
+#include <stdio.h> // needed in case of rounding-test failure
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>

@@ -37,7 +37,6 @@ SOFTWARE.
        Serge Torres, 2018.
  */
 
-#include <assert.h>
 #include <stdint.h>
 #include <errno.h>
 
@@ -356,7 +355,6 @@ fast_path (double *h, double *l, uint64_t vm, int e)
 
   th.f = xh;
   int j = (th.u >> 41) - 0x1ff800; // -71 <= j <= 34
-  assert (-71 <= j && j <= 34);
 
   /* For -32 <= j < 0, we have 1 + j/2^12 <= x < 1 + (j+1)/2^12;
      for 0 <= j < 16, we have 1 + j/2^12 <= x < 1 + (j+1)/2^11.

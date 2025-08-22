@@ -27,7 +27,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // for sqrtf
-#include <stdio.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

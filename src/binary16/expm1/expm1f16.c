@@ -27,7 +27,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // only used during performance tests
-#include <stdio.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -1036,6 +1035,11 @@ _Float16 cr_expm1f16(_Float16 x){
 
   if (au < 0x26d0) // |x| < 0x1.b4p-6
   {
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    if (0 < au && au < 0x400) errno = ERANGE; // underflow
+    // special case for x=-0x1p-14 and rounding towards zero or upwar
+    if (u == 0x8400 && -1.0f + 0x1p-26f > -1.0f) errno = ERANGE; // underflow
+#endif
     if (au <= 0x11a8) {
       if (u == 0x11a8) return 0x1.6a2002p-11f; // x = 0x1.6ap-11
       // the following avoids a missing underflow exception for |x| = 0x1p-24
@@ -1052,6 +1056,9 @@ _Float16 cr_expm1f16(_Float16 x){
      where binary32 approximations of exp(x1) and exp(x2) are tabulated. */
   uint16_t i1 = u >> 5;
   uint16_t i2 = ((u >> 10) << 5) | (u & 0x1f);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+    if (0x498c <= au && au == u) errno = ERANGE; // overflow x > 0x1.63p+3
+#endif
   return __builtin_fmaf (T1[i1].f, T2[i2].f, -1.0f);
 }
 

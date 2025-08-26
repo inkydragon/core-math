@@ -158,7 +158,7 @@ static const float R[224][2] = {
 
 #define INV_LOG10 0x1.bcb7b2p-2f // 1/log(10)
 
-// approximates log(1+x) for x small
+// approximates log10(1+x) for x small
 static inline float log10p1_small (float x) {
   float c3 = __builtin_fmaf (x, -0x1p-2f, 0x1.555556p-2f);
   float c2 = __builtin_fmaf (x, c3, -0.5f);

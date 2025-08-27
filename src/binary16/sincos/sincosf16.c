@@ -2035,8 +2035,7 @@ void cr_sincosf16(_Float16 x, _Float16 *s, _Float16 *c){
      cos(x1+x2) = cos(x1)*cos(x2) - sin(x1)*sin(x2)
      where binary32 approximations of sin(x1), cos(x1), sin(x2) and cos(x2)
      are tabulated. */
-  uint16_t u = v.u;
-  uint16_t m = u & 0x7fff;
+  uint16_t u = v.u, m = u & 0x7fff, i1, i2;
   // deal with exceptional cases
   switch (m) {
   case 0x658c: // |x|=0x1.63p+10
@@ -2068,8 +2067,8 @@ void cr_sincosf16(_Float16 x, _Float16 *s, _Float16 *c){
     *c = 1.0f;
     break;
   default:
-  uint16_t i1 = u >> 5;
-  uint16_t i2 = ((u >> 10) << 5) | (u & 0x1f);
+  i1 = u >> 5;
+  i2 = ((u >> 10) << 5) | (u & 0x1f);
   // we use a FMA to fix the evaluation order
   *s = __builtin_fmaf (S1[i1].f, C2[i2].f, C1[i1].f * S2[i2].f);
   *c = __builtin_fmaf (C1[i1].f, C2[i2].f, -S1[i1].f * S2[i2].f);

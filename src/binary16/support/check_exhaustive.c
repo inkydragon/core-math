@@ -432,8 +432,13 @@ check_exceptions_aux (uint16_t n1, uint16_t n2)
   // there should be no inexact exception if the result is NaN, +/-Inf or +/-0
   if (inex && (is_nan (y) || is_inf (y) || y == 0))
   {
-    fprintf (stderr, "Error, for x,y=%a=%x,%a=%x, inexact exception set (z=%a=%x)\n",
-             (float) x1, asuint (x1), (float) x2, asuint (x2), (float) y, asuint (y));
+#ifndef EXCHANGE_X_Y
+    fprintf (stderr, "Error, for x,y=%a,%a, inexact exception set (z=%a)\n",
+             (float) x1, (float) x2, (float) y);
+#else
+    fprintf (stderr, "Error, for y,x=%a,%a, inexact exception set (z=%a)\n",
+             (float) x1, (float) x2, (float) y);
+#endif
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif

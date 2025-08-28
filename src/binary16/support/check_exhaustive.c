@@ -260,7 +260,11 @@ doit (uint16_t n1, uint16_t n2)
   {
     if (is_nan (y) && errno != EDOM)
     {
+#ifndef EXCHANGE_X_Y
       printf ("Missing errno=EDOM for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#else
+      printf ("Missing errno=EDOM for y,x=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#endif
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -279,7 +283,11 @@ doit (uint16_t n1, uint16_t n2)
       mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
     if (expected_erange && errno != ERANGE)
     {
+#ifndef EXCHANGE_X_Y
       printf ("Missing errno=ERANGE for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#else
+      printf ("Missing errno=ERANGE for y,x=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#endif
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);

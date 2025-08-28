@@ -68,9 +68,15 @@ typedef union { uint32_t n; float x; } union_t;
 static float
 asfloat (uint32_t n)
 {
-  union_t u;
-  u.n = n;
+  union_t u = {.n = n};
   return u.x;
+}
+
+static uint32_t
+asuint (float x)
+{
+  union_t u = {.x = x};
+  return u.n;
 }
 
 static void
@@ -200,6 +206,30 @@ check_spurious_underflow (void)
   }
 }
 
+// check when y/x is near underflow threshold 2^-126
+static void
+check_near_underflow (void)
+{
+  /* y/x near 2^-126 implies y near 2^-126*x
+     this requires x >= 2^-23 */
+  uint32_t umin = asuint (0x1p-23f);
+#define MAXF 0x1.fffffep+127f
+  uint32_t umax = asuint (MAXF);
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
+  for (uint32_t u = umin; u <= umax; u++) {
+    ref_init ();
+    ref_fesetround (rnd);
+    fesetround (rnd1[rnd]);
+    float x = asfloat (u);
+    float y = 0x1p-126f * x;
+    check (y, x);
+    check (nextafterf (y, -MAXF), x);
+    check (nextafterf (y, MAXF), x);
+  }
+}
+
 /* check y,x near power of 2 */
 static void
 check_near_pow2 (void)
@@ -301,6 +331,9 @@ main (int argc, char *argv[])
 #ifdef CORE_MATH_SUPPORT_ERRNO
   check_errno ();
 #endif
+
+  printf ("Checking near underflow\n");
+  check_near_underflow ();
 
   printf ("Checking spurious underflow\n");
   check_spurious_underflow ();

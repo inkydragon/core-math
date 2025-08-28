@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <stdio.h>
+#include <math.h> // only used for performance tests
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -209,4 +209,9 @@ _Float16 cr_atan2pif16(_Float16 yf16, _Float16 xf16){
     errno = ERANGE; // underflow
 #endif
   return rf;
+}
+
+// dummy function since GNU libc does not provide it
+_Float16 atan2pif16 (_Float16 y, _Float16 x) {
+  return (_Float16) (atan2f ((float) y, (float) x) / (float) M_PI);
 }

@@ -221,9 +221,9 @@ float cr_atan2f(float y, float x){
   }
   float rf = r;
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  // if rf underflows, and x != 0, set errno=ERANGE
-  if (__builtin_expect (__builtin_fabsf (rf) < 0x1p-126f && x != 0, 0))
-    errno = ERANGE;
+  // if rf underflows, set errno=ERANGE
+  if (__builtin_expect (__builtin_fabsf (rf) < 0x1p-126f, 0))
+    errno = ERANGE; // underflow
 #endif
   return rf;
 }

@@ -181,7 +181,7 @@ float cr_atan2pif(float y, float x){
   }
   float rf = r;
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  if (__builtin_expect (__builtin_fabsf (rf) < 0x1p-126f && y != 0.0f, 0))
+  if (__builtin_expect (__builtin_fabsf (rf) < 0x1p-126f, 0))
     errno = ERANGE;
 #endif
   return rf;

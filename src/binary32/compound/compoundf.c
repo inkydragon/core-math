@@ -505,9 +505,8 @@ static const double exp2_U[][2] = {
 
 /* return the correct rounding of (1+x)^y, otherwise -1.0
    where t is an approximation of y*log2(1+x) with absolute error < 2^-40.680,
-   assuming 0x1.7154759a0df53p-24 <= |t| <= 150
-   exact is non-zero iff (1+x)^y is exact or midpoint */
-static double exp2_1 (double t, int exact, FLAG_T flag)
+   assuming 0x1.7154759a0df53p-24 <= |t| <= 150 */
+static float exp2_1 (double t)
 {
   double k = roundeven_finite (t); // 0 <= |k| <= 150
   double r = t - k; // |r| <= 1/2, exact
@@ -538,10 +537,12 @@ static double exp2_1 (double t, int exact, FLAG_T flag)
   float lb = v.f - err.f, rb = v.f + err.f;
   if (lb != rb) return -1.0f; // rounding test failed
 
-  if (__builtin_expect (exact, 0))
-    set_flag (flag);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+  if (lb > 0x1.fffffep+127f)
+    errno = ERANGE; // overflow
+#endif
 
-  return v.f;
+  return lb;
 }
 
 // return non-zero if (1+x)^y is exact or midpoint in binary32
@@ -1119,15 +1120,11 @@ float cr_compoundf (float x, float y)
 
   int exact = is_exact_or_midpoint (x, y);
 
-  float res = exp2_1 (t.f, exact, flag);
+  float res = exp2_1 (t.f);
   if (__builtin_expect (res != -1.0f, 1))
   {
     if (exact)
       set_flag (flag); // restore flags
-#ifdef CORE_MATH_SUPPORT_ERRNO
-    if (res > 0x1.fffffep+127f)
-      errno = ERANGE; // overflow
-#endif
     return res;
   }
 

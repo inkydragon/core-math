@@ -35,7 +35,7 @@ SOFTWARE.
 #include <errno.h>
 #include <math.h> // for signgam
 #include <limits.h>
-#include <stdio.h>
+#include <stdlib.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -149,27 +149,26 @@ _Float16 cr_lgammaf16 (_Float16 xf16){
       }
       double lz = as_ln(z);
       f = (z - 0.5)*(lz - 1) + 0x1.acfe390c97d69p-2;
-      if(ax < 0x1.0p+20f){
-	double iz = 1.0/z, iz2 = iz*iz;
-	if(ax > 1198.0f){
-	  f +=  iz*(1./12.);
-	} else if(ax > 0x1.279a7p+6f){
-	  static const double c[] =
-	    {0x1.555555547fbadp-4, -0x1.6c0fd270c465p-9};
-	  f +=  iz*(c[0] + iz2*c[1]);
-	} else if(ax > 0x1.555556p+3f){
-	  static const double c[] =
-	    {0x1.555555554de0bp-4, -0x1.6c16bdc45944fp-9, 0x1.a0077f300ecb3p-11, -0x1.2e9cfff3b29c2p-11};
-	  double iz4 = iz2*iz2;
-	  f +=  iz*((c[0] + iz2*c[1]) + iz4*(c[2] + iz2*c[3]));
-	} else {
-	  static const double c[] =
-	    {0x1.5555555551286p-4, -0x1.6c16c0e7c4cf4p-9, 0x1.a0193267fe6f2p-11, -0x1.37e87ec19cb45p-11,
-	     0x1.b40011dfff081p-11, -0x1.c16c8946b19b6p-10, 0x1.e9f47ace150d8p-9, -0x1.4f5843a71a338p-8};
-	  double iz4 = iz2*iz2, iz8 = iz4*iz4;
-	  double p = ((c[0] + iz2*c[1]) + iz4*(c[2] + iz2*c[3])) + iz8*((c[4] + iz2*c[5]) + iz4*(c[6] + iz2*c[7]));
-	  f += iz*p;
-	}
+      // specific lgammaf16: remove the condition ax < 0x1.0p+20f (always true)
+      double iz = 1.0/z, iz2 = iz*iz;
+      if(ax > 1198.0f){
+        f +=  iz*(1./12.);
+      } else if(ax > 0x1.279a7p+6f){
+        static const double c[] =
+          {0x1.555555547fbadp-4, -0x1.6c0fd270c465p-9};
+        f +=  iz*(c[0] + iz2*c[1]);
+      } else if(ax > 0x1.555556p+3f){
+        static const double c[] =
+          {0x1.555555554de0bp-4, -0x1.6c16bdc45944fp-9, 0x1.a0077f300ecb3p-11, -0x1.2e9cfff3b29c2p-11};
+        double iz4 = iz2*iz2;
+        f +=  iz*((c[0] + iz2*c[1]) + iz4*(c[2] + iz2*c[3]));
+      } else {
+        static const double c[] =
+          {0x1.5555555551286p-4, -0x1.6c16c0e7c4cf4p-9, 0x1.a0193267fe6f2p-11, -0x1.37e87ec19cb45p-11,
+           0x1.b40011dfff081p-11, -0x1.c16c8946b19b6p-10, 0x1.e9f47ace150d8p-9, -0x1.4f5843a71a338p-8};
+        double iz4 = iz2*iz2, iz8 = iz4*iz4;
+        double p = ((c[0] + iz2*c[1]) + iz4*(c[2] + iz2*c[3])) + iz8*((c[4] + iz2*c[5]) + iz4*(c[6] + iz2*c[7]));
+        f += iz*p;
       }
       if(x < 0.0f){
 	f = 0x1.250d048e7a1bdp+0 - f - lz;
@@ -198,6 +197,10 @@ _Float16 cr_lgammaf16 (_Float16 xf16){
 	    {0x1.83fe966af535fp+0, 0x1.36eebb002f61ap+2, 0x1.694a60589a0b3p+0, 0x1.1718d7aedb0b5p+3,
 	     0x1.733a045eca0d3p+2, 0x1.8d4297421205bp+4, 0x1.7feea5fb29965p+4};
 	  f = h*((c[0] + h*c[1]) + h2*(c[2] + h*c[3]) + h4*((c[4] + h*c[5]) + h2*(c[6])));
+#ifdef CORE_MATH_SUPPORT_ERRNO // specific lgammaf16
+          if (x == -0x1.3a8p+1)
+            errno = ERANGE; // underflow
+#endif
 	} else if(__builtin_expect(t.u > 0x40492009u && t.u < 0x404940efu, 0)){
 	  double h = (x + 0x1.9260dbc9e59afp+1) + 0x1.f717cd335a7b3p-53, h2 = h*h, h4 = h2*h2;
 	  static const double c[] =

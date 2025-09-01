@@ -1,6 +1,6 @@
-/* Correctly-rounded logathim of the absolute value of the gamma function for binary32 value.
+/* Correctly-rounded natural exponential function for binary16 value.
 
-Copyright (c) 2023 Alexei Sibidanov.
+Copyright (c) 2025 Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -28,13 +28,17 @@ SOFTWARE.
 #include "fenv_mpfr.h"
 #include <math.h> // for signgam
 
-float ref_lgamma(float x){
+/* code from MPFR */
+
+_Float16
+ref_lgamma (_Float16 x)
+{
   mpfr_t y;
-  mpfr_init2 (y, 24);
-  mpfr_set_flt (y, x, MPFR_RNDN);
+  mpfr_init2 (y, 11);
+  mpfr_set_flt (y, (float) x, MPFR_RNDN);
   int inex = mpfr_lgamma (y, &signgam, y, rnd2[rnd]);
   mpfr_subnormalize (y, inex, rnd2[rnd]);
-  float ret = mpfr_get_flt (y, MPFR_RNDN);
+  _Float16 ret = (_Float16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);
   return ret;
 }

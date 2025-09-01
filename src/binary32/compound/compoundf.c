@@ -1110,8 +1110,8 @@ float cr_compoundf (float x, float y)
   /* since |t| < 150, the absolute error on t is bounded by
      150*2^-47.909 < 2^-40.680 */
 
-  // 2^t rounds to 1 to nearest when |t| <= 0x1.715476ba97f14p-25
-  if (__builtin_expect ((t.u << 1) <= 0x3e6715476ba97f14ull, 0))
+  // 2^t rounds to 1 to nearest when |t| <= 0x1.715476af0d4d9p-25
+  if (__builtin_expect ((t.u << 1) <= 0x7cce2a8ed5e1a9b2ull, 0))
     return (t.u >> 63) ? 1.0f - 0x1p-25f : 1.0f + 0x1p-25f;
 
   int exact = is_exact_or_midpoint (x, y);

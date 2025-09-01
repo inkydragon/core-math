@@ -945,6 +945,8 @@ accurate_path (float x, float y, int exact, FLAG_T flag)
   return exp2_2 (h, l, x, y, exact, flag);
 }
 
+/* this routine is called with x <= -1
+   or with x = 0, Inf, NaN or with y = 0, Inf, NaN */
 __attribute__((noinline)) float as_compoundf_special(float x, float y){
   b32u32_u nx = {.f = x}, ny = {.f = y};
   uint32_t ax = nx.u<<1, ay = ny.u<<1;
@@ -996,7 +998,8 @@ __attribute__((noinline)) float as_compoundf_special(float x, float y){
     return x + y; // case y=NaN
   }
 
-  if (__builtin_expect (nx.u >= mone.u || nx.u >= 0xffu<<23, 0)){
+  // since we can't have -1 < x < 0, the following test is enough
+  if (__builtin_expect (nx.u >= 0xffu<<23, 0)){
     // x is Inf, NaN or <= -1
     if (ax == 0xffu<<24){ // x is +Inf or -Inf
       if (nx.u>>31) return 0.0f / 0.0f; // x = -Inf, rule (g)

@@ -241,7 +241,7 @@ _Float16 cr_atan2f16(_Float16 yf16, _Float16 xf16){
   int underflow = __builtin_fabsf (rf) < 0x1p-14f;
   // we also have underflow when |r| < 0x1.ffcp-15
   underflow |= __builtin_fabs (r) < 0x1.ffcp-15;
-  if (__builtin_expect (x != 0 && underflow, 0))
+  if (__builtin_expect (underflow, 0))
     errno = ERANGE; // underflow
 #endif
   return rf;

@@ -1,4 +1,4 @@
-/* Correctly-rounded log gamma function for binary16 value.
+/* Correctly-rounded gamma function for binary16 value.
 
 Copyright (c) 2025 Paul Zimmermann
 
@@ -26,17 +26,16 @@ SOFTWARE.
 
 #include <mpfr.h>
 #include "fenv_mpfr.h"
-#include <math.h> // for signgam
 
 /* code from MPFR */
 
 _Float16
-ref_lgamma (_Float16 x)
+ref_tgamma (_Float16 x)
 {
   mpfr_t y;
   mpfr_init2 (y, 11);
   mpfr_set_flt (y, (float) x, MPFR_RNDN);
-  int inex = mpfr_lgamma (y, &signgam, y, rnd2[rnd]);
+  int inex = mpfr_gamma (y, y, rnd2[rnd]);
   mpfr_subnormalize (y, inex, rnd2[rnd]);
   _Float16 ret = (_Float16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);

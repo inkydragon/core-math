@@ -556,7 +556,7 @@ is_exact_or_midpoint (float x, float y)
      (d) y>0: y=n*2^f with -4 <= f <= -1 and 1 <= n <= 15
      In cases (b)-(d), the low 16 bits of the encoding of y are zero,
      thus we use that for an early exit test.
-     (For case (c), x=0x1p+1 and y=-0x1.2ap+7, only 16 low bits of the
+     (For case (c), x=1 and y=-149, only 16 low bits of the
      encoding of y are zero.) */
 
   b32u32_u v = {.f = x}, w = {.f = y};
@@ -569,26 +569,23 @@ is_exact_or_midpoint (float x, float y)
 
   int32_t e = ((v.u << 1) >> 24) - 0x96; // ulp(x) = 2^e
 
-  /* Since ufp(x) = 2^(e+23), and ulp(1) = 2^-23, if e+23 < -24, thus e < -47,
-     1+x cannot be exact (for x=-2^-24, we have e=-47 and 1+x is exact).
-     Similarly, for |x| >= 2^25, thus e >= 2, 1+x cannot be exact.
-     We assume that (1+x)^y cannot be exact when 1+x is not exact. */
+  /* We assume (1+x)^y cannot be exact in binary32 if 1+x is not exact in
+     binary64:
+     * 1+x cannot be exact in double when |x| < 2^-53, thus since
+       ufp(x)=2^(e+23), when e+23 < -53, i.e., when e < -76.
+     * similarly, 1+x cannot be exact when |x| > 2^53, which occurs when
+       e+23 > 53, i.e., e > 30. */
 
-  if (e < -47 || 2 <= e)
+  if (e < -76 || 30 < e)
     return 0;
 
-  double xd = 1.0 + (double) x;
-  x = 1.0f + x;
-
-  if (xd != (double) x)
-    return 0; // 1+x is not exact
+  b64u64_u vd = {.f = 1.0 + (double) x};
 
   // recompute e for 1+x
-  v.f = x;
-  e = ((v.u << 1) >> 24) - 0x96;
+  e = ((vd.u << 1) >> 53) - 0x433; // ulp53(1+x) = 2^e
 
   // xmax[y] for 1<=y<=15 is the largest odd m such that m^y fits in 25 bits
-  static const uint32_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
+  static const uint64_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
                                    7, 5, 5, 3, 3, 3, 3, 3};
   if (y >= 0 && isint (y)) {
     /* let x = m*2^e with m an odd integer, x^y is exact when
@@ -597,12 +594,12 @@ is_exact_or_midpoint (float x, float y)
        - if |x| is not a power of 2, 2 <= y <= 15 and
          m^y should fit in 25 bits
     */
-    uint32_t m = v.u & 0x7fffff; // low 23 bits of significand
-    if (e >= -149)
-      m |= 0x800000;
+    uint64_t m = vd.u & 0xfffffffffffffull; // low 52 bits of significand
+    if (e >= -1074)
+      m |= 0x10000000000000ull;
     else // subnormal numbers
       e++;
-    int t = __builtin_ctz (m);
+    int t = __builtin_ctzl (m);
     m = m >> t;
     e += t;
     /* For normal numbers, we have x = m*2^e. */
@@ -622,7 +619,7 @@ is_exact_or_midpoint (float x, float y)
     for (int i = 2; i < y_int; i++)
       my = my * m;
     // my = m^y
-    t = 32 - __builtin_clz (m);
+    t = 64 - __builtin_clzl (m);
     // 2^(t-1) <= m^y < 2^t thus 2^(e*y + t - 1) <= |x^y| < 2^(e*y + t)
     int32_t ez = e * y_int + t;
     if (ez <= -149 || 128 < ez)
@@ -642,15 +639,15 @@ is_exact_or_midpoint (float x, float y)
   f += t;
   // |y| = n*2^f with n odd
 
-  uint32_t m = v.u & 0x7fffff;
-  if (e >= -149)
-    m |= 0x800000;
+  uint64_t m = vd.u & 0xfffffffffffffull;
+  if (e >= -1074)
+    m |= 0x10000000000000ull;
   else // subnormal numbers
     e++;
-  t = __builtin_ctz (m);
+  t = __builtin_ctzl (m);
   m = m >> t;
   e += t;
-  // |x| = m*2^e with m odd
+  // |1+x| = m*2^e with m odd
 
   /* if y < 0 and y is not an integer, the only case where x^y might be
      exact is when y = -n/2^k and x = 2^e with 2^k dividing e */
@@ -674,13 +671,13 @@ is_exact_or_midpoint (float x, float y)
     // try to extract a square from m*2^e
     if (e&1) return 0;
     e = e / 2;
-    float dm = (float) m;
-    float s = __builtin_roundf (__builtin_sqrtf (dm));
+    double dm = (double) m;
+    double s = __builtin_round (__builtin_sqrt (dm));
     if (s * s != dm)
       return 0;
     /* The above call of sqrtf() might set the inexact flag, but in case
        it happens, m is not a square, thus x^y cannot be exact. */
-    m = (uint32_t) s;
+    m = (uint64_t) s;
   }
 
   // Now |x^y| = (m*2^e)^n with m, n odd integers

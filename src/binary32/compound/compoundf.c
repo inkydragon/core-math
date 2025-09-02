@@ -1042,15 +1042,18 @@ float cr_compoundf (float x, float y)
   // evaluate (1+x)^y explicitly for integer y in [-16,16] range and |x|<2^64
   if(__builtin_expect(__builtin_floorf(y) == y && ay <= 0x83000000u && ax<=0xbefffffeu, 1)){
     if(ax <= 0x62000000u) return 1.0f + y*x; // does it work for |x|<2^-29 and |y|<=16?
-    int ky = ((ay&~(0xffull<<24))|1<<24)>>(151-(ay>>24));
+    int ky = ((ay&~(0xffull<<24))|1<<24)>>(151-(ay>>24)); // ky = |y|
     double s = 1.0 + x, p = 1;
-    double s2 = s*s, s4 = s2*s2, s8 = s4*s4, s16 = s8*s8;
-    double sn[] = {1,s,s2,s4,s8,s16};
-    p *= sn[ky&1];
-    p *= sn[ky&2];
-    p *= sn[((ky>>2)&1)*3];
-    p *= sn[(ky>>1)&4];
-    p *= sn[((ky>>4)&1)*5];
+    // the following code avoids spurious inexact exceptions for y=1 or 2
+    while (1) {
+      // invariant: s = (1+x)^(2^j) where j=0 initially, and j increases by 1
+      if (ky & 1)
+        p *= s;
+      ky >>= 1;
+      if (ky == 0)
+        break;
+      s *= s;
+    }
     return (ny.u>>31)?1/p:p;
   }
 
@@ -1063,7 +1066,7 @@ float cr_compoundf (float x, float y)
     /* |log2(1+x) - 1/log(2) * (x - x^2/2)| < 2^-59.584 * |log2(1+x)|
        (cf compoundf.sollya) */
     double t = xd - (xd * xd) * 0.5;
-    /* since x is epresentable in binary32, x*x is exact, and so is (x * x) * 0.5.
+    /* since x is representable in binary32, x*x is exact, and so is (x * x) * 0.5.
        Thus the only error in the computation of t is the final rounding, which
        is bounded by ulp(t): t = (x - x^2/2) * (1 + eps2) with |eps2| < 2^-52
     */

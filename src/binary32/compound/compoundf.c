@@ -592,10 +592,10 @@ is_exact_or_midpoint (float x, float y)
   static const uint32_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
                                    7, 5, 5, 3, 3, 3, 3, 3};
   if (y >= 0 && isint (y)) {
-    /* let x = m*2^e with m an odd integer, x^y is exact when
+    /* let 1+x = m*2^e with m an odd integer, (1+x)^y is exact when
        - y = 0 or y = 1
        - m = 1 or -1 and -149 <= e*y < 128
-       - if |x| is not a power of 2, 2 <= y <= 15 and
+       - if |1+x| is not a power of 2, 2 <= y <= 15 and
          m^y should fit in 25 bits
     */
     uint32_t m = v.u & 0x7fffff; // low 23 bits of significand
@@ -606,7 +606,7 @@ is_exact_or_midpoint (float x, float y)
     int t = __builtin_ctz (m);
     m = m >> t;
     e += t;
-    /* For normal numbers, we have x = m*2^e. */
+    /* For normal numbers, we have 1+x = m*2^e. */
     if (y == 0 || y == 1)
       return 1;
     if (m == 1)
@@ -624,7 +624,7 @@ is_exact_or_midpoint (float x, float y)
       my = my * m;
     // my = m^y
     t = 32 - __builtin_clz (m);
-    // 2^(t-1) <= m^y < 2^t thus 2^(e*y + t - 1) <= |x^y| < 2^(e*y + t)
+    // 2^(t-1) <= m^y < 2^t thus 2^(e*y + t - 1) <= |(1+x)^y| < 2^(e*y + t)
     int32_t ez = e * y_int + t;
     if (ez <= -149 || 128 < ez)
       return 0;
@@ -651,18 +651,19 @@ is_exact_or_midpoint (float x, float y)
   t = __builtin_ctz (m);
   m = m >> t;
   e += t;
-  // |x| = m*2^e with m odd
+  // |1+x| = m*2^e with m odd
 
-  /* if y < 0 and y is not an integer, the only case where x^y might be
-     exact is when y = -n/2^k and x = 2^e with 2^k dividing e */
+  /* if y < 0, the only cases where (1+x)^y might be exact are:
+     (a) y integer and 1+x = 2^e
+     (b) y = -n/2^k with k >= 1 and 1+x = 2^e with 2^k dividing e */
   if (y < 0)
   {
     if (m != 1) return 0;
-    // y = -2^f thus k = -f
-    // now e <> 0
+    // now |1+x| = 2^e with e <> 0
+    // in case (a), f >= 0; in case (b), f < 0 and k = -f
     t = __builtin_ctz (e);
-    if (-f > t) return 0; // 2^k does not divide e
-    int32_t ez = (-e >> (-f)) * n;
+    if (-f > t) return 0; // only possible with (b), when 2^k does not divide e
+    int32_t ez = ((f >= 0) ? (-e << f) : (-e >> (-f))) * n;
     return -149 <= ez && ez < 128;
   }
 
@@ -1127,6 +1128,10 @@ float cr_compoundf (float x, float y)
       set_flag (flag); // restore flags
     return res;
   }
+
+  /* we restore the flags, since exp2_1() might yield a spurious overflow,
+     for example for x,y=0x1.59ff68p+71,0x1.cab692p+0 */
+    set_flag (flag); // restore flags
 
   // fast path failed
   return accurate_path (x, y, exact, flag);

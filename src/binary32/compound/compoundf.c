@@ -763,11 +763,11 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
    All this yields an absolute error on qh+ql bounded by:
      2^-83.891 + 2^-85.210*1.415 + 2^-102.199 + 2^-105 < 2^-83.242.
 
-   We distinguish the "small" case when at input |h+l| <= 2^-9.
+   We distinguish the "small" case when at input |h+l| <= 2^-18.
    In this case k=0, i=16, thus exp2_T[i]=0, exp2_U[i]=1,
-   and absolute error in q2() is bounded by 2^-102.646,
+   and absolute error in q2() is bounded by 2^-94.055,
    and remains unchanged since the d_mul() call does not change qh, ql.
-   */
+  */
 
   /* Rounding test: since |ql| < ulp(qh), and the error is less than ulp(qh),
      the rounding test can fail only when the last 53-25 = 28 bits of qh
@@ -776,9 +776,9 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
   b64u64_u w = {.f = qh};
   if (((w.u + 1) & 0xfffffffull) <= 2) {
     static const double Err[2] = {0x1.b1p-84, // 2^-83.242 < 0x1.b1p-84
-                                  0x1.d8p-93, // error bound in the small case
+                                  0x1.edp-95, // error bound in the small case
     };
-    int small = k == 0 && i == 16 && __builtin_fabs (h) <= 0x1p-9;
+    int small = k == 0 && i == 16 && __builtin_fabs (h) <= 0x1p-18;
     double err = Err[small];
 
     v.f = qh + (ql - err);

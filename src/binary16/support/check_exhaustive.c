@@ -123,7 +123,7 @@ check_underflow_before (void)
 static void
 fix_underflow (_Float16 x1, _Float16 x2, _Float16 y)
 {
-  if (__builtin_fabsf (y) != 0x1p-14)
+  if (__builtin_fabsf (y) != 0x1p-14f)
     return;
   if (underflow_before) {
     if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
@@ -560,6 +560,9 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  doit (asuint (0x1.a4p+0), asuint (0x1.8p+0));
+  doit (asuint (0x1.38p+9), asuint (0x1.4p+0));
 
   check_underflow_before ();
 

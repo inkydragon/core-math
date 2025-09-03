@@ -388,18 +388,16 @@ def analyze_q1():
 # 0.989 < qh < 1.011, |ql| < 2^-51.959
 # and the absolute error is bounded by 2.23366555026200e-26 < 2^-85.210
 # analyze_q2(small=true)
-# ([0.99864528010789177 .. 1.0013547198921083],
-# [-2.2493192300267409e-16 .. 2.2493192300267409e-16],
-# 1.25952565293889e-31)
-# thus for |h+l| <= 2^-9, the absolute error is bounded by 1.25952565293889e-31
-# < 2^-102.646
+# ([0.99999735584984983 .. 1.0000026441501502],
+# [-2.2445038415509148e-16 .. 2.2445038415509148e-16],
+# 4.85724568278807e-29)
+# In this case the absolute error is bounded by 4.85724568278807e-29 <2^-94.055
 def analyze_q2(small=false):
    R = RealField(200)
    if small:
-      hmax = 2^-9
-      err0 = R(2^-104.277) # Sollya error on q2 for |z| <= 2^-9
+      hmax = 2^-18
+      err0 = R(2^-94.058) # Sollya error on q2 for |z| <= 2^-18
    else:
-      assert hmax<=2^-6, "hmax<=2^-6"
       hmax = 2^-6
       err0 = R(2^-85.218) # Sollya error on q2
    h = RIF(-hmax,hmax)

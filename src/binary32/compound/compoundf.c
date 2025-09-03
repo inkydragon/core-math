@@ -557,7 +557,7 @@ is_exact_or_midpoint (float x, float y)
      (d) y>0: y=n*2^f with -4 <= f <= -1 and 1 <= n <= 15
      In cases (b)-(d), the low 16 bits of the encoding of y are zero,
      thus we use that for an early exit test.
-     (For case (c), x=0x1p+1 and y=-0x1.2ap+7, only 16 low bits of the
+     (For case (c), x=1 and y=-149, only 16 low bits of the
      encoding of y are zero.) */
 
   b32u32_u v = {.f = x}, w = {.f = y};
@@ -570,26 +570,23 @@ is_exact_or_midpoint (float x, float y)
 
   int32_t e = ((v.u << 1) >> 24) - 0x96; // ulp(x) = 2^e
 
-  /* Since ufp(x) = 2^(e+23), and ulp(1) = 2^-23, if e+23 < -24, thus e < -47,
-     1+x cannot be exact (for x=-2^-24, we have e=-47 and 1+x is exact).
-     Similarly, for |x| >= 2^25, thus e >= 2, 1+x cannot be exact.
-     We assume that (1+x)^y cannot be exact when 1+x is not exact. */
+  /* We assume (1+x)^y cannot be exact in binary32 if 1+x is not exact in
+     binary64:
+     * 1+x cannot be exact in double when |x| < 2^-53, thus since
+       ufp(x)=2^(e+23), when e+23 < -53, i.e., when e < -76.
+     * similarly, 1+x cannot be exact when |x| > 2^53, which occurs when
+       e+23 > 53, i.e., e > 30. */
 
-  if (e < -47 || 2 <= e)
+  if (e < -76 || 30 < e)
     return 0;
 
-  double xd = 1.0 + (double) x;
-  x = 1.0f + x;
-
-  if (xd != (double) x)
-    return 0; // 1+x is not exact
+  b64u64_u vd = {.f = 1.0 + (double) x};
 
   // recompute e for 1+x
-  v.f = x;
-  e = ((v.u << 1) >> 24) - 0x96;
+  e = ((vd.u << 1) >> 53) - 0x433; // ulp53(1+x) = 2^e
 
   // xmax[y] for 1<=y<=15 is the largest odd m such that m^y fits in 25 bits
-  static const uint32_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
+  static const uint64_t xmax[] = { 0, 0xffffff, 5791, 321, 75, 31, 17, 11,
                                    7, 5, 5, 3, 3, 3, 3, 3};
   if (y >= 0 && isint (y)) {
     /* let 1+x = m*2^e with m an odd integer, (1+x)^y is exact when
@@ -598,12 +595,12 @@ is_exact_or_midpoint (float x, float y)
        - if |1+x| is not a power of 2, 2 <= y <= 15 and
          m^y should fit in 25 bits
     */
-    uint32_t m = v.u & 0x7fffff; // low 23 bits of significand
-    if (e >= -149)
-      m |= 0x800000;
+    uint64_t m = vd.u & 0xfffffffffffffull; // low 52 bits of significand
+    if (e >= -1074)
+      m |= 0x10000000000000ull;
     else // subnormal numbers
       e++;
-    int t = __builtin_ctz (m);
+    int t = __builtin_ctzl (m);
     m = m >> t;
     e += t;
     /* For normal numbers, we have 1+x = m*2^e. */
@@ -623,7 +620,7 @@ is_exact_or_midpoint (float x, float y)
     for (int i = 2; i < y_int; i++)
       my = my * m;
     // my = m^y
-    t = 32 - __builtin_clz (m);
+    t = 64 - __builtin_clzl (m);
     // 2^(t-1) <= m^y < 2^t thus 2^(e*y + t - 1) <= |(1+x)^y| < 2^(e*y + t)
     int32_t ez = e * y_int + t;
     if (ez <= -149 || 128 < ez)
@@ -643,12 +640,12 @@ is_exact_or_midpoint (float x, float y)
   f += t;
   // |y| = n*2^f with n odd
 
-  uint32_t m = v.u & 0x7fffff;
-  if (e >= -149)
-    m |= 0x800000;
+  uint64_t m = vd.u & 0xfffffffffffffull;
+  if (e >= -1074)
+    m |= 0x10000000000000ull;
   else // subnormal numbers
     e++;
-  t = __builtin_ctz (m);
+  t = __builtin_ctzl (m);
   m = m >> t;
   e += t;
   // |1+x| = m*2^e with m odd
@@ -676,13 +673,13 @@ is_exact_or_midpoint (float x, float y)
     // try to extract a square from m*2^e
     if (e&1) return 0;
     e = e / 2;
-    float dm = (float) m;
-    float s = __builtin_roundf (__builtin_sqrtf (dm));
+    double dm = (double) m;
+    double s = __builtin_round (__builtin_sqrt (dm));
     if (s * s != dm)
       return 0;
     /* The above call of sqrtf() might set the inexact flag, but in case
        it happens, m is not a square, thus x^y cannot be exact. */
-    m = (uint32_t) s;
+    m = (uint64_t) s;
   }
 
   // Now |x^y| = (m*2^e)^n with m, n odd integers
@@ -768,11 +765,11 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
    All this yields an absolute error on qh+ql bounded by:
      2^-83.891 + 2^-85.210*1.415 + 2^-102.199 + 2^-105 < 2^-83.242.
 
-   We distinguish the "small" case when at input |h+l| <= 2^-9.
+   We distinguish the "small" case when at input |h+l| <= 2^-18.
    In this case k=0, i=16, thus exp2_T[i]=0, exp2_U[i]=1,
-   and absolute error in q2() is bounded by 2^-102.646,
+   and absolute error in q2() is bounded by 2^-94.055,
    and remains unchanged since the d_mul() call does not change qh, ql.
-   */
+  */
 
   /* Rounding test: since |ql| < ulp(qh), and the error is less than ulp(qh),
      the rounding test can fail only when the last 53-25 = 28 bits of qh
@@ -781,9 +778,9 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
   b64u64_u w = {.f = qh};
   if (((w.u + 1) & 0xfffffffull) <= 2) {
     static const double Err[2] = {0x1.b1p-84, // 2^-83.242 < 0x1.b1p-84
-                                  0x1.d8p-93, // error bound in the small case
+                                  0x1.edp-95, // error bound in the small case
     };
-    int small = k == 0 && i == 16 && __builtin_fabs (h) <= 0x1p-9;
+    int small = k == 0 && i == 16 && __builtin_fabs (h) <= 0x1p-18;
     double err = Err[small];
 
     v.f = qh + (ql - err);
@@ -1050,15 +1047,18 @@ float cr_compoundf (float x, float y)
   // evaluate (1+x)^y explicitly for integer y in [-16,16] range and |x|<2^64
   if(__builtin_expect(__builtin_floorf(y) == y && ay <= 0x83000000u && ax<=0xbefffffeu, 1)){
     if(ax <= 0x62000000u) return 1.0f + y*x; // does it work for |x|<2^-29 and |y|<=16?
-    int ky = ((ay&~(0xffull<<24))|1<<24)>>(151-(ay>>24));
+    int ky = ((ay&~(0xffull<<24))|1<<24)>>(151-(ay>>24)); // ky = |y|
     double s = 1.0 + x, p = 1;
-    double s2 = s*s, s4 = s2*s2, s8 = s4*s4, s16 = s8*s8;
-    double sn[] = {1,s,s2,s4,s8,s16};
-    p *= sn[ky&1];
-    p *= sn[ky&2];
-    p *= sn[((ky>>2)&1)*3];
-    p *= sn[(ky>>1)&4];
-    p *= sn[((ky>>4)&1)*5];
+    // the following code avoids spurious inexact exceptions for y=1 or 2
+    while (1) {
+      // invariant: s = (1+x)^(2^j) where j=0 initially, and j increases by 1
+      if (ky & 1)
+        p *= s;
+      ky >>= 1;
+      if (ky == 0)
+        break;
+      s *= s;
+    }
     return (ny.u>>31)?1/p:p;
   }
 
@@ -1071,7 +1071,7 @@ float cr_compoundf (float x, float y)
     /* |log2(1+x) - 1/log(2) * (x - x^2/2)| < 2^-59.584 * |log2(1+x)|
        (cf compoundf.sollya) */
     double t = xd - (xd * xd) * 0.5;
-    /* since x is epresentable in binary32, x*x is exact, and so is (x * x) * 0.5.
+    /* since x is representable in binary32, x*x is exact, and so is (x * x) * 0.5.
        Thus the only error in the computation of t is the final rounding, which
        is bounded by ulp(t): t = (x - x^2/2) * (1 + eps2) with |eps2| < 2^-52
     */
@@ -1115,8 +1115,8 @@ float cr_compoundf (float x, float y)
   /* since |t| < 150, the absolute error on t is bounded by
      150*2^-47.909 < 2^-40.680 */
 
-  // 2^t rounds to 1 to nearest when |t| <= 0x1.715476ba97f14p-25
-  if (__builtin_expect ((t.u << 1) <= 0x3e6715476ba97f14ull, 0))
+  // 2^t rounds to 1 to nearest when |t| <= 0x1.715476af0d4d9p-25
+  if (__builtin_expect ((t.u << 1) <= 0x7cce2a8ed5e1a9b2ull, 0))
     return (t.u >> 63) ? 1.0f - 0x1p-25f : 1.0f + 0x1p-25f;
 
   int exact = is_exact_or_midpoint (x, y);

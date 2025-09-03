@@ -14,3 +14,6 @@ print (pf);
 display = decimal;
 print (pretty(err_p));
 
+d_small=[-1/2^18,1/2^18];
+err_p_small = -log2(dirtyinfnorm(pf*w-f, d_small));
+print (pretty(err_p_small));

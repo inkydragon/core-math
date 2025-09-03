@@ -80,6 +80,7 @@ is_nan (_Float16 x)
   return (e == 0x1f || e == 0x3f) && (u & 0x03ff) != 0;
 }
 
+#if defined(CORE_MATH_SUPPORT_ERRNO) || defined(CORE_MATH_CHECK_INEXACT)
 /* define our own is_inf function to avoid depending from math.h */
 static inline int
 is_inf (_Float16 x)
@@ -88,6 +89,7 @@ is_inf (_Float16 x)
   int e =  u >> 10;
   return (e == 0x1f || e == 0x3f) && (u & 0x03ff) == 0;
 }
+#endif
 
 static int
 is_equal (_Float16 y1, _Float16 y2)

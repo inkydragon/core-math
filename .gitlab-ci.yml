@@ -9,7 +9,7 @@ check:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     # x86-64-v2 is needed for rsqrtq
-    - EXTRA_CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_errno:
   stage: test
@@ -19,7 +19,7 @@ check_errno:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     # x86-64-v2 is needed for rsqrtq
-    - EXTRA_CFLAGS="-DCORE_MATH_SUPPORT_ERRNO -march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-DCORE_MATH_SUPPORT_ERRNO -march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_inexact:
   stage: test
@@ -29,21 +29,21 @@ check_inexact:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     # x86-64-v2 is needed for rsqrtq
-    - EXTRA_CFLAGS="-DCORE_MATH_CHECK_INEXACT -march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-DCORE_MATH_CHECK_INEXACT -march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_sanitize:
   stage: test
   image: debian:latest
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - CFLAGS="-fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CFLAGS="-fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./ci.sh
 
 check_sanitize_clang:
   stage: test
   image: silkeh/clang:latest
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh
 
 check_without_fma:
   stage: test
@@ -52,7 +52,7 @@ check_without_fma:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
-    - EXTRA_CFLAGS="-march=x86-64 -Werror -fsanitize=undefined -fno-sanitize-recover -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-march=x86-64 -Werror -fsanitize=undefined -fno-sanitize-recover -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_core2:
   stage: test

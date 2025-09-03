@@ -353,10 +353,13 @@ check_signaling_nan (void)
 static void
 check_exceptions_aux (uint16_t n)
 {
-  _Float16 x = asfloat (n);
+  _Float16 x = asfloat (n), y;
+  int inex;
+
+#ifdef CORE_MATH_CHECK_INEXACT
   feclearexcept (FE_INEXACT);
-  _Float16 y = cr_function_under_test (x);
-  int inex = fetestexcept (FE_INEXACT);
+  y = cr_function_under_test (x);
+  inex = fetestexcept (FE_INEXACT);
   // there should be no inexact exception if the result is NaN, +/-Inf or +/-0
   if (inex && (is_nan (y) || is_inf (y) || y == 0))
   {
@@ -366,6 +369,8 @@ check_exceptions_aux (uint16_t n)
     exit (1);
 #endif
   }
+#endif
+
   feclearexcept (FE_OVERFLOW);
   y = cr_function_under_test (x);
   inex = fetestexcept (FE_OVERFLOW);
@@ -376,6 +381,7 @@ check_exceptions_aux (uint16_t n)
     exit (1);
 #endif
   }
+
   feclearexcept (FE_UNDERFLOW);
   y = cr_function_under_test (x);
   inex = fetestexcept (FE_UNDERFLOW);

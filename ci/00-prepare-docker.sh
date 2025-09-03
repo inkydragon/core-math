@@ -13,4 +13,3 @@ autoreconf -i
 ./configure
 make -j
 make install
-LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

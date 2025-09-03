@@ -5,11 +5,11 @@ check:
   stage: test
   image: debian:latest
   before_script:
-    - ci/00-prepare-docker.sh
+    - source ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     # x86-64-v2 is needed for rsqrtq
-    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - EXTRA_CFLAGS="-march=x86-64-v2 -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_errno:
   stage: test

@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 
 # intel repos are frequently out of sync, to a point that makes them        
 # barely usable. And anyway we don't care: there's no software that         
@@ -13,3 +14,4 @@ autoreconf -i
 ./configure
 make -j
 make install
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

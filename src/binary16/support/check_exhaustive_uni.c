@@ -192,6 +192,7 @@ doit (uint16_t n)
 
   fix_underflow (x, y);
 
+#ifndef CORE_MATH_NOCHECK_UNDERFLOW
   // check spurious/missing underflow
   if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
@@ -209,7 +210,9 @@ doit (uint16_t n)
    	exit (1);
 #endif
   }
+#endif // CORE_MATH_NOCHECK_UNDERFLOW
 
+#ifndef CORE_MATH_NOCHECK_OVERFLOW
   // check spurious/missing overflow
   if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
@@ -227,6 +230,7 @@ doit (uint16_t n)
    	exit (1);
 #endif
   }
+#endif // CORE_MATH_NOCHECK_OVERFLOW
 
   // check inexact exception
 #ifdef CORE_MATH_CHECK_INEXACT

@@ -43,7 +43,7 @@ check_sanitize_clang:
   image: silkeh/clang:latest
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - SKIP16=true LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh
+    - SKIPB16=true LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh
 
 check_without_fma:
   stage: test
@@ -116,7 +116,7 @@ check_dry_clang:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
     # clang has -Wshift-sign-overflow
-    - SKIP16=true CORE_MATH_NO_OPENMP=1 FORCE=true DRY=--dry CC=clang LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include -Wshift-sign-overflow" ./ci.sh
+    - SKIPB16=true CORE_MATH_NO_OPENMP=1 FORCE=true DRY=--dry CC=clang LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include -Wshift-sign-overflow" ./ci.sh
 
 check_dry_icx:
   stage: test

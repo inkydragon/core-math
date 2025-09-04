@@ -43,8 +43,8 @@ check () {
         echo "With SKIP16, skipping " $FUNCTION
         doit=0
     fi
-    if [ "$doit" == "1" ] && [ "$SKIP16" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binaryb16; then
-        echo "With SKIP16, skipping " $FUNCTION
+    if [ "$doit" == "1" ] && [ "$SKIPB16" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binaryb16; then
+        echo "With SKIPB16, skipping " $FUNCTION
         doit=0
     fi
     if [ "$doit" == "1" ] && [ "$SKIPQ" == "1" ] && [ "`basename $FUNCTION q`" != "$FUNCTION" ]; then

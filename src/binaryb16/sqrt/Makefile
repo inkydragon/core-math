@@ -1,3 +1,3 @@
-FUNCTION_UNDER_TEST := hlog
+FUNCTION_UNDER_TEST := hsqrt
 
 include ../support/Makefile.univariate

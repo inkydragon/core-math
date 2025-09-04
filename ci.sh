@@ -43,6 +43,10 @@ check () {
         echo "With SKIP16, skipping " $FUNCTION
         doit=0
     fi
+    if [ "$doit" == "1" ] && [ "$SKIP16" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binaryb16; then
+        echo "With SKIP16, skipping " $FUNCTION
+        doit=0
+    fi
     if [ "$doit" == "1" ] && [ "$SKIPQ" == "1" ] && [ "`basename $FUNCTION q`" != "$FUNCTION" ]; then
         echo "libquadmath is needed for" $FUNCTION "but is not available"
         doit=0

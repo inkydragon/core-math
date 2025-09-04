@@ -1,4 +1,4 @@
-/* Correctly-rounded logarithm function for bfloat16 value.
+/* Correctly-rounded base-2 logarithm function for bfloat16 value.
 
 Copyright (c) 2025 Paul Zimmermann
 
@@ -30,12 +30,12 @@ SOFTWARE.
 /* code from MPFR */
 
 __bf16
-ref_log (__bf16 x)
+ref_log2 (__bf16 x)
 {
   mpfr_t y;
   mpfr_init2 (y, 8);
   mpfr_set_flt (y, (float) x, MPFR_RNDN);
-  mpfr_log (y, y, rnd2[rnd]);
+  mpfr_log2 (y, y, rnd2[rnd]);
   // no need to call mpfr_subnormalize
   __bf16 ret = (__bf16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);

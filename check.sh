@@ -63,11 +63,16 @@ if [ -n "${ARGS[0]}" ]; then
     KIND="${ARGS[0]}"
     unset 'ARGS[0]'
 else
-    SIZE=${FILE#src/binary}
+    SIZE=${FILE#src/}
+    if [ ${SIZE:0:7} == "binaryb" ]; then
+       SIZE=${SIZE#binaryb}
+    else
+       SIZE=${SIZE#binary}
+    fi
     SIZE=${SIZE%%/*}
-		case "$SIZE" in
-				16)
-						KIND=--exhaustive;;
+	case "$SIZE" in
+	16)
+		KIND=--exhaustive;;
         32)
 	    case "$FUN" in
 		atan2f)

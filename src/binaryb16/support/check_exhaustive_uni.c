@@ -1,4 +1,4 @@
-/* Check correctness of univariate binary16 function by exhaustive search.
+/* Check correctness of univariate bfloat16 function by exhaustive search.
 
 Copyright (c) 2022-2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -37,8 +37,8 @@ SOFTWARE.
 
 #include "function_under_test.h"
 
-_Float16 cr_function_under_test (_Float16);
-_Float16 ref_function_under_test (_Float16);
+__bf16 cr_function_under_test (__bf16);
+__bf16 ref_function_under_test (__bf16);
 int mpfr_function_under_test (mpfr_ptr, mpfr_srcptr, mpfr_rnd_t);
 int ref_fesetround (int);
 void ref_init (void);
@@ -50,49 +50,47 @@ int rnd2[] = { MPFR_RNDN,    MPFR_RNDZ,     MPFR_RNDU, MPFR_RNDD   };
 
 int rnd = 0;
 
-typedef union { uint16_t n; _Float16 x; } union_t;
+typedef union { uint16_t n; __bf16 x; } union_t;
 
 float
 asfloat (uint16_t n)
 {
-  union_t u;
-  u.n = n;
+  union_t u = {.n = n};
   return u.x;
 }
 
 static inline uint16_t
-asuint (_Float16 f)
+asuint (__bf16 x)
 {
-  union
-  {
-    _Float16 f;
-    uint16_t i;
-  } u = {f};
-  return u.i;
+  union_t u = {.x = x};
+  return u.n;
 }
 
 /* define our own is_nan function to avoid depending from math.h */
 static inline int
-is_nan (_Float16 x)
+is_nan (__bf16 x)
 {
+  // +snan is encoded as 0x7f81 to 0x7fbf
+  // +qnan is encoded as 0x7fc0 to 0x7fff
   uint16_t u = asuint (x);
-  int e = u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) != 0;
+  int e = u >> 7;
+  return (e == 0xff || e == 0x1ff) && (u & 0x7f) != 0;
 }
 
 #if defined(CORE_MATH_SUPPORT_ERRNO) || defined(CORE_MATH_CHECK_INEXACT)
 /* define our own is_inf function to avoid depending from math.h */
 static inline int
-is_inf (_Float16 x)
+is_inf (__bf16 x)
 {
+  // +Inf is encoded as 0x7f80, and -Inf as 0xff80
   uint16_t u = asuint (x);
-  int e =  u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) == 0;
+  int e =  u >> 7;
+  return (e == 0xff || e == 0x1ff) && (u & 0x7f) == 0;
 }
 #endif
 
 static int
-is_equal (_Float16 y1, _Float16 y2)
+is_equal (__bf16 y1, __bf16 y2)
 {
   if (is_nan (y1))
     return is_nan (y2);
@@ -119,16 +117,16 @@ check_underflow_before (void)
   fesetexceptflag (&flag, FE_ALL_EXCEPT); //restore flags
 }
 
-/* For |y| = 2^-14 and underflow after rounding, clear the MPFR
+/* For |y| = 2^-126 and underflow after rounding, clear the MPFR
    underflow exception when the rounded result (with unbounded exponent)
-   equals +/-2^-14 (might be set due to a bug in MPFR <= 4.2.1).
-   For |y| = 2^-14 and underflow before rounding, clear the fenv.h
-   underflow exception when |f(x)| < 2^-14 but there is no underflow
+   equals +/-2^-126 (might be set due to a bug in MPFR <= 4.2.1).
+   For |y| = 2^-126 and underflow before rounding, clear the fenv.h
+   underflow exception when |f(x)| < 2^-126 but there is no underflow
    after rounding (thus we mimic underflow after rounding). */
 static void
-fix_underflow (_Float16 x, _Float16 y)
+fix_underflow (__bf16 x, __bf16 y)
 {
-  if (__builtin_fabsf (y) != 0x1p-14)
+  if (__builtin_fabsf (y) != 0x1p-126f)
     return;
   if (underflow_before) {
     if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
@@ -136,7 +134,7 @@ fix_underflow (_Float16 x, _Float16 y)
     return;
   }
   mpfr_t t;
-  mpfr_init2 (t, 11);
+  mpfr_init2 (t, 8);
   fexcept_t flag;
   fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
   mpfr_set_flt (t, (float) x, MPFR_RNDN); // exact
@@ -148,7 +146,7 @@ fix_underflow (_Float16 x, _Float16 y)
      exponent */
   mpfr_abs (t, t, MPFR_RNDN); // exact
 #if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
-  if (mpfr_cmp_ui_2exp (t, 1, -14) == 0) // |o(f(x,y))| = 2^-14
+  if (mpfr_cmp_ui_2exp (t, 1, -126) == 0) // |o(f(x,y))| = 2^-126
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
 #endif
   mpfr_clear (t);
@@ -157,7 +155,7 @@ fix_underflow (_Float16 x, _Float16 y)
 void
 doit (uint16_t n)
 {
-  _Float16 x, y, z;
+  __bf16 x, y, z;
   x = asfloat (n);
   ref_init ();
   ref_fesetround (rnd);
@@ -299,21 +297,21 @@ doit (uint16_t n)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(_Float16 x) {
+static inline int issignaling(__bf16 x) {
   union_t _x = {.x = x};
 
-  return !(_x.n & (1u << 9));
+  return !(_x.n & (1u << 6));
 }
 
 /* check for signaling NaN input */
 static void
 check_signaling_nan (void)
 {
-  /* signaling NaNs have encoding 0x7c01 to 0x7dff */
-  _Float16 snan;
-  for (uint16_t u = 0x7c01u; u < 0x7e00u; u++) {
+  /* signaling NaNs have encoding 0x7f81 to 0x7fbf */
+  __bf16 snan;
+  for (uint16_t u = 0x7f81u; u < 0x7fc0u; u++) {
     snan = asfloat (u);
-    _Float16 y = cr_function_under_test (snan);
+    __bf16 y = cr_function_under_test (snan);
     // check that foo(NaN) = NaN
     if (!is_nan (y))
     {
@@ -359,7 +357,7 @@ check_signaling_nan (void)
 static void
 check_exceptions_aux (uint16_t n)
 {
-  _Float16 x = asfloat (n), y;
+  __bf16 x = asfloat (n), y;
   int inex;
 
 #ifdef CORE_MATH_CHECK_INEXACT
@@ -406,16 +404,16 @@ static void
 check_exceptions (void)
 {
   // checking all Inf, sNaN, qNaN, 0 
-	for (uint16_t u = 0x7c01; u < 0x8000; u++) {
+	for (uint16_t u = 0x7f80; u < 0x8000; u++) {
   	check_exceptions_aux (u);
-  	check_exceptions_aux (u ^ 0x8000); // ^ instead of | to get +0 from -0
+  	check_exceptions_aux (u | 0x8000);
 	}
 }
 
 static int doloop (void)
 {
   // checking all Inf, sNaN, qNaN
-	for (uint16_t u = 0x7c00; u < 0x8000; u++) {
+	for (uint16_t u = 0x7f80; u < 0x8000; u++) {
   	doit (u);
   	doit (u | 0x8000);
 	}
@@ -425,7 +423,7 @@ static int doloop (void)
   check_exceptions ();
 
   // check regular numbers
-  uint16_t nmin = asuint (0x0p0f), nmax = asuint (0x1.ffcp+15f);
+  uint16_t nmin = asuint (0x0p0f), nmax = asuint (0x1.fep+127);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif

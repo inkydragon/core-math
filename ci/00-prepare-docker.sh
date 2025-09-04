@@ -1,4 +1,3 @@
-#!/bin/sh
 set -x
 
 # intel repos are frequently out of sync, to a point that makes them        

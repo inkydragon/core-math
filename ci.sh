@@ -5,6 +5,7 @@
 # FORCE_FUNCTIONS="xxx yyy" ./ci.sh to force checking xxx and yyy
 # CC=clang CFLAGS=-Werror ./ci.sh
 # SKIP16=1 ./ci.sh to avoid _Float16 tests
+# SKIPB16=1 ./ci.sh to avoid __bf16 tests
 
 set -e # We want the above command to potentially fail, only set -e now.
 

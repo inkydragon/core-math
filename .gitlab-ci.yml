@@ -34,6 +34,8 @@ check_inexact:
 check_sanitize:
   stage: test
   image: debian:latest
+  before_script:
+    - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CFLAGS="-fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./ci.sh
@@ -41,6 +43,8 @@ check_sanitize:
 check_sanitize_clang:
   stage: test
   image: silkeh/clang:latest
+  before_script:
+    - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     - SKIPB16=1 LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh

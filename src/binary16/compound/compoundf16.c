@@ -1012,33 +1012,6 @@ _Float16 cr_compoundf16 (_Float16 xf16, _Float16 yf16)
   uint32_t ax = nx.u<<1, ay = ny.u<<1;
   if (__builtin_expect(ax == 0 || ax >= 0xffu<<24 || ay == 0 || ay >= 0xffu<<24, 0) ) return as_compoundf_special(xf16,yf16); // x=+-0 || x=+-inf/nan || y=+-0 || y=+-inf/nan
 
-  // evaluate (1+x)^y explicitly for integer y in [-16,16] range and |x|<2^64
-  if(__builtin_expect(__builtin_floorf(y) == y && ay <= 0x83000000u && ax<=0xbefffffeu, 1)){
-    if (ax <= 0x62000000u) return 1.0f + y*x; // case |x|<=2^-29
-    int ky = ((ay&~(0xffull<<24))|1<<24)>>(151-(ay>>24));
-    double s = 1.0 + x, p = 1;
-    // the following code avoids spurious inexact exceptions for y=1 or 2
-    while (1) {
-      // invariant: s = (1+x)^(2^j) where j=0 initially, and j increases by 1
-      if (ky & 1)
-        p *= s;
-      ky >>= 1;
-      if (ky == 0)
-        break;
-      s *= s;
-    }
-    double res = (ny.u>>31)?1/p:p;
-    _Float16 resf16 = res;
-#ifdef CORE_MATH_SUPPORT_ERRNO
-    // for 2^-24 <= (1+x)^y < 2^-14 and (1+x)^y exact, no underflow
-    int midpoint = 0;
-    int exact = is_exact_or_midpoint (x, y, &midpoint);
-    if (!(0x1p-24f16 <= res && res < 0x1p-14f16 && exact && !midpoint))
-      check_errno (resf16, res);
-#endif
-    return resf16;
-  }
-
   double xd = x, yd = y;
   b64u64_u tx = {.f = xd}, ty = {.f = yd};
 

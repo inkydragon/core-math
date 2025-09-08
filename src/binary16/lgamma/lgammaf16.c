@@ -142,7 +142,8 @@ _Float16 cr_lgammaf16 (_Float16 xf16){
 	_Float16 r = (x > 0x1.ff4p+12f) ? 0x1p15f16 * 0x1p15f16
           : 0x1.ffcp+15f16 + 1.0f16;
         /* clang 19 raises a spurious overflow for x=0x1.ff4p+12 and RNDN
-           with -frounding-math: apparently it evaluates the ? part above */
+           with -frounding-math: apparently it evaluates the ? part above:
+           https://github.com/llvm/llvm-project/issues/157395 */
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	if (x > 0x1.ff4p+12f || (x == 0x1.ff4p+12f && x + 0x1p-12f > x))
           errno = ERANGE; // overflow

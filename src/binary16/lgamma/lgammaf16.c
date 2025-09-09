@@ -139,11 +139,21 @@ _Float16 cr_lgammaf16 (_Float16 xf16){
       if(__builtin_expect(x >= 0x1.ff4p+12f, 0)){ // specific lgammaf16
         /* for x=0x1.ff4p+12, lgamma(x) ~ 0x1.ffd3p+15, thus there is no
            overflow for rounding towards zero, downwards or to nearest */
+#ifndef __clang__
 	_Float16 r = (x > 0x1.ff4p+12f) ? 0x1p15f16 * 0x1p15f16
           : 0x1.ffcp+15f16 + 1.0f16;
-        /* clang 19 raises a spurious overflow for x=0x1.ff4p+12 and RNDN
-           with -frounding-math: apparently it evaluates the ? part above:
-           https://github.com/llvm/llvm-project/issues/157395 */
+#else
+        /* clang 19 raises a spurious overflow with the above code
+           for x=0x1.ff4p+12 and RNDN with -frounding-math: apparently it
+           evaluates the ? part even if the conditional is false:
+           https://github.com/llvm/llvm-project/issues/157395.
+           We thus use a workaround. */
+        _Float16 r;
+        if (x > 0x1.ff4p+12f)
+          r = 0x1p15f16 * 0x1p15f16;
+        else
+          r = 0x1.ffcp+15f16 + 1.0f16;
+#endif
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	if (x > 0x1.ff4p+12f || (x == 0x1.ff4p+12f && x + 0x1p-12f > x))
           errno = ERANGE; // overflow

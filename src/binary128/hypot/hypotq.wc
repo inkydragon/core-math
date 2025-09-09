@@ -879,3 +879,5 @@
 # issue reported by Vedran Novakovic on macOS (Intel) with gcc 15.1.0
 # https://sympa.inria.fr/sympa/arc/core-math/2025-07/msg00014.html
 0x1.fffffffffffffffffffffffffffdp-55 0x1.fffffffffffffffffffffffffffdp-111
+# worst-case for RNDN with 224 identical bits after the round bit
+0x1.e3fffffffffffffffffffffffffdp+168 0x1.5fffffffffffffffffffffffffffp+112

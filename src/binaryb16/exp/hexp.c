@@ -155,7 +155,6 @@ static const float T1[] = {
  0x1.d60684p-174, 0x1.137b6cp-179,
 };
 
-
 /* For 0 <= i2 < 2^7, T2[i2] stores the binary32 approximation of y2=exp(x2)
    to nearest, where x2 = 2^(h-16)*l, and T2[2^7+i2] stores the binary32
    approximation of y2=exp(-x2) to nearest. One entry was manually
@@ -212,7 +211,6 @@ static const float T2[] = {
  0x1p+0, 0x1.368b3p-1, 0x1.78b564p-2, 0x1.c8f878p-3, 0x1.152aaap-3,
  0x1.50385cp-4, 0x1.97db0cp-5, 0x1.eec102p-6,
 };
-
 
 __bf16 cr_hexp (__bf16 x){
   b16u16_u v = {.f = x};

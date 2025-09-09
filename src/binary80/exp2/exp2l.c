@@ -209,11 +209,30 @@ fast_path(long double x, int* needmoreaccuracy) {
 	   a Taylor polynomial.
 	*/
 
-	// split x into xh + xl, this is exact
-	// Since |x| < 2^15, we have |xh| <= 2^15 and |xl| <= ulp(2^14) = 2^-38
-	// Note that if |xh| < 2^-20, then |xl| <= ulp(2^-21) = 2^-73.
-	double xh = x;
-	double xl = x - (long double) xh; // |xl| <= ulp(xh) <= 2^-38
+	b96u96_u cvt_x; cvt_x.f = x;
+	b64u64_u cvt_w, cvt_aux;
+
+	/* Split x into xh + xl, where |xl| < ulp(xh). We exploit the fact that x
+	   is a normal number.
+	   Since |x| < 2^15, we have |xh| <= 2^15 and |xl| <= ulp(2^14) = 2^-38
+	   Note that if |xh| < 2^-20, then |xl| <= ulp(2^-21) = 2^-73.
+	*/
+
+	cvt_w.u = ((cvt_x.e&0x8000ul) << (63 - 15)) |
+		(((cvt_x.e&0x7ffful) + (1023ul - 16383ul)) << (64 - 12)) |
+		((cvt_x.m >> 11) & ~(1ul << 52)); // Explicitely remove leading 1 bit
+	double xh = cvt_w.f;
+
+	/* The bottom bit of x's mantissa has weight e - 63, were e is y's exponent.
+	   Therefore, the exponent of xl should (at first) be e - 63 + 52 = e - 11
+	*/
+	cvt_w.u = ((cvt_x.e&0x8000ul) << (63 - 15)) |
+		(((cvt_x.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12)) |
+		(cvt_x.m & ((1ul << 11) - 1ul));
+
+	// Replicate parasitic implicit leading bit
+	cvt_aux.u = ((cvt_x.e&0x8000ul) << (63 - 15)) | (((cvt_x.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12));
+	double xl = cvt_w.f - cvt_aux.f; // Remove implicit one introduced before
 
 	static const double C = 0x1.8p+32;
 	b64u64_u y = {.f = xh+C};

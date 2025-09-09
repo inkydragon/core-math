@@ -49,7 +49,7 @@ SOFTWARE.
 #include <x86intrin.h>
 #endif 
 
-#if 0 // defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
 #define FLAG_T uint32_t
 #else
 #define FLAG_T fexcept_t
@@ -93,16 +93,15 @@ inline static unsigned int _mm_getcsr()
 }
 #endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 
-/* FIXME: For now, only the naïve versions are enabled, because
-   the intrinsics do not work. They only handle the SSE status word side of
-   things, but ignore the x87 status word (which we touch, using long doubles).
-   Using inline assembly may create register allocation and forward
-   compatibility issues
+/* Note that on x86, the x87 FPU has its own set of flags, which would need
+to be backed up and restored separately if we touched them. However, the
+code below preserves them, except when we know we won't need to restore them
+in such that a way that only saving the SSE status register is enough.
 */
 static FLAG_T
 get_flag (void)
 {
-#if 0 // (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
+#if(defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   return _mm_getcsr ();
 #else
   fexcept_t flag;
@@ -114,7 +113,7 @@ get_flag (void)
 static void
 set_flag (FLAG_T flag)
 {
-#if 0 // __x86_64__ 
+#if(defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   _mm_setcsr (flag);
 #else
   fesetexceptflag (&flag, FE_ALL_EXCEPT);
@@ -148,32 +147,25 @@ static inline int get_rounding_mode (void)
 #endif
 }
 
-/* Split a number of exponent 0 (1 <= |x| < 2)
+/* Split a number of exponent 0 (1 <= |x| < 2), discarding its sign.
    into a high part fitting in 33 bits and a low part fitting in 31 bits:
-   1 <= |rh| <= 2 and |rl| < 2^-32 */
+   we get 1 <= rh <= 2 and rl < 2^-32 such that |x| = rh + rl exactly.
+*/
+
 static inline
 void split(double* rh, double* rl, long double x) {
-	static long double C = 0x1.8p+31L; // ulp(C)=2^-32
-	long double y = (x + C) - C;
-	/* Given the relative sizes of C and x, x + C has the same binade as C.
-	   Therefore, the difference is exact. Furthermore,
-	   ulp(x + C) = ulp(C) = 2^-32.
-	   The rounding error in x + C is therefore less than 2^-32.
-	   Thus, |x - y| < 2^-32. Note that since 2^31 <= x + C < 2^32 and the
-	   difference is exact, y is a multiple of ulp(x + C) = 2^-32.
-	   Since |x| < 2, and the roundings are monotonous, x + C is bounded
-	   by the values obtained with |x| = 2, namely 0x1.7ffffffcp+31 and
-	   0x1.80000004p+31, and likely for y, namely -2 and 2.
-	   Since y is a multiple of 2^-32, this ensures y = k*2^-32
-	   with |k| <= 2^-33, thus y fits in 33 bits.
-	   (If |y| = 2, it trivially fits.) */
-	*rh = y; // This conversion is exact by the argument above.
-	*rl = x - y;
-	/* 
-	   |x - y| < 2^-32. Note that x and y are both multiples of
-	   ulp_64(1) = 2^-63; therefore x - y too. This implies that
-	   x - y = l*2^-63 with |l| < 2^31, thus rl fits in 31 bits,
-	   and the difference is exact. */
+	b80u80_t cvt_x; cvt_x.f = x;
+	b64u64_t cvt_w;
+
+	// Keep low 31 bits of x's mantissa. Since the lowest bit should have
+	// weight 2^-63, the exponent should be set to -11 (that is, 0x3f4)
+	cvt_w.u = (0x3f4ul << (64 - 12)) | (cvt_x.m & ((1ul << 31) - 1ul));
+	*rl = cvt_w.f - 0x1p-11;
+
+	// Lowest bit here has weight 2^(-63 + 31) = 2^-32, so exponent should be
+	// -32 + 52, i.e. 20, or 0x413. Note how the explicit 1 bit of x helps here.
+	cvt_w.u =  (0x413ul << (64 - 12)) | (cvt_x.m >> 31);
+	*rh = cvt_w.f - 0x1p20;
 }
 
 // assumes a = 0 or |a| >= |b| (or ulp(a) >= ulp(b))
@@ -743,8 +735,28 @@ void compute_log2pow(double* rh, double* rl, long double x, long double y) {
 	   2^-97.710. Also, |rl'| <= 2^-48.497|rh'|.
 	*/
 
-	double yh = y; double yl = y - (long double) yh;
-	// y = yh + yl exactly, with |yl| < 2^-52 |yh|
+
+	b80u80_t cvt_y; cvt_y.f = y;
+	b64u64_t cvt_w, cvt_aux;
+
+	/* Split y into yh + yl, where |yl| < ulp(yh). We exploit the fact that y
+	   is a normal number.
+	*/
+
+	cvt_w.u = ((cvt_y.e&0x8000ul) << (63 - 15)) | (((cvt_y.e&0x7ffful) + (1023ul - 16383ul)) << (64 - 12)) |
+		((cvt_y.m >> 11) & ~(1ul << 52)); // Explicitely remove leading 1 bit
+	double yh = cvt_w.f;
+
+	/* The bottom bit of y's mantissa has weight e - 63, were e is y's exponent.
+	   Therefore, the exponent of yl should (at first) be e - 63 + 52 = e - 11
+	*/
+	cvt_w.u = ((cvt_y.e&0x8000ul) << (63 - 15)) | (((cvt_y.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12)) |
+		(cvt_y.m & ((1ul << 11) - 1ul));
+
+	// Replicate parasitic implicit leading bit
+	cvt_aux.u = ((cvt_y.e&0x8000ul) << (63 - 15)) | (((cvt_y.e&0x7ffful) + (1023ul - 16383ul - 11)) << (64 - 12));
+	double yl = cvt_w.f - cvt_aux.f; // Remove implicit one introduced before
+
 
 	d_mul(rh, rl, yh, yl, *rh, *rl);
 	/* Let us call again rh', rl' the output values for rh and rl,
@@ -1106,8 +1118,8 @@ long double fastpath_roundtest(double rh, double rl, int extra_exp,
 	// Denormals *inside* the computation don't seem to be a problem
 	// given the error analysis (we used absolute bounds mostly)
 
-	// Infinity output case
-	if(__builtin_expect(wanted_exponent >= 32767, 0)) {
+	// Infinity output case, when we know we won't take the accurate path
+	if(__builtin_expect(wanted_exponent >= 32767 && !*fail, 0)) {
 		return (invert ? -0x1p16383L - 0x1p16383L : 0x1p16383L + 0x1p16383L);
 	}
 
@@ -1546,13 +1558,6 @@ int _issnan(long double x) {
 __attribute__((cold))
 static
 long double accurate_path(long double x, long double y, FLAG_T inex, bool invert) {
-	/* accurate_path might be called without any prior computations. If the
-	   result ends up inexact we need to make sure the inexact flag is set.
-	   Given the save/restore schema around the inexact flag, the easiest way to
-	   do this is the following.
-	*/
-	feraiseexcept(FE_INEXACT);
-
 	qint64_t q_r[1]; q_log2pow(q_r, x, y);
 	// q_r = y*log2|x| * (1 + eps_log) with |eps_log| < 2^-249.334
 
@@ -1641,16 +1646,29 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 
 		qint_subnormalize(subqr,extralow, q_r);
 
+		bool restore_flags = ((cvt_r.e&0x7fff) != 0x7fff) && !subqr->hl && !subqr->lh;
 		// restore the inexact flag
-		if(((cvt_r.e&0x7fff) != 0x7fff) && !subqr->hl && !subqr->lh)
-		  set_flag (inex);
+		if( restore_flags ) {
+			set_flag (inex);
+		} else {
+			feraiseexcept(FE_INEXACT);
+		}
 
 		/* If the result overflows, even if it would be exact with an unbounded
 		   exponent range, the inexact flag must not be cleared. The mantissa checks
 		   are there to check if the result is exact even accounting for
 		   subnormalization.
 		*/
-		return qint_told(subqr,*extralow, rm, invert, &hard);
+		b80u80_t cvt = {.f = qint_told(subqr,*extralow, rm, invert, &hard)};
+		// We return a non-exact subnormal
+		if((cvt.e&0x7fff) == 0 && !restore_flags) {
+			feraiseexcept(FE_UNDERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+			errno = ERANGE;
+#endif
+		}
+
+		return cvt.f;
 	}
 
 //FIXME Do we have a standard macro switch ?
@@ -1662,7 +1680,17 @@ long double accurate_path(long double x, long double y, FLAG_T inex, bool invert
 		exit(1);
 	}
 #endif
-	else {return r;}
+	else {
+		b80u80_t cvt = {.f = r};
+		feraiseexcept(FE_INEXACT);
+		if((cvt.e&0x7fff) == 0) { // We return a non-exact subnormal
+			feraiseexcept(FE_UNDERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+			errno = ERANGE;
+#endif
+		}
+		return r;
+	}
 
 }
 
@@ -1815,6 +1843,5 @@ long double cr_powl(long double x, long double y) {
 		}
 	} // Fastpath failed or x was subnormal
 #endif
-
 	return accurate_path(x, y, inex, invert);
 }

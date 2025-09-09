@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Usage: ./prof.sh acos
 
 RANDOMS_FILE="$(mktemp /tmp/core-math.XXXXXX)"

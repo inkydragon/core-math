@@ -40,6 +40,85 @@ SOFTWARE.
 #include <stdint.h>
 #include <fenv.h>
 
+#ifdef DEBUG
+#include <stdio.h>
+#endif
+
+#ifdef __x86_64__
+#include <x86intrin.h>
+#endif
+
+#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#define FLAG_T uint32_t
+#else
+#define FLAG_T fexcept_t
+#endif
+
+// This code emulates the _mm_getcsr SSE intrinsic by reading the FPCR register.
+// fegetexceptflag accesses the FPSR register, which seems to be much slower
+// than accessing FPCR, so it should be avoided if possible.
+// Adapted from sse2neon: https://github.com/DLTcollab/sse2neon
+#if (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
+#if defined(_MSC_VER)
+#include <arm64intr.h>
+#endif
+
+typedef struct
+{
+  uint16_t res0;
+  uint8_t  res1  : 6;
+  uint8_t  bit22 : 1;
+  uint8_t  bit23 : 1;
+  uint8_t  bit24 : 1;
+  uint8_t  res2  : 7;
+  uint32_t res3;
+} fpcr_bitfield;
+
+inline static unsigned int _mm_getcsr()
+{
+  union
+  {
+    fpcr_bitfield field;
+    uint64_t value;
+  } r;
+
+#if defined(_MSC_VER) && !defined(__clang__)
+  r.value = _ReadStatusReg(ARM64_FPCR);
+#else
+  __asm__ __volatile__("mrs %0, FPCR" : "=r"(r.value));
+#endif
+  static const unsigned int lut[2][2] = {{0x0000, 0x2000}, {0x4000, 0x6000}};
+  return lut[r.field.bit22][r.field.bit23];
+}
+#endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
+
+/* Note that on x86, the x87 FPU has its own set of flags, which would need
+to be backed up and restored separately if we touched them. However, the
+code below preserves them, except when we know we won't need to restore them
+in such that a way that only saving the SSE status register is enough.
+*/
+static FLAG_T
+get_flag_quick (void)
+{
+#if(defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
+  return _mm_getcsr ();
+#else
+  fexcept_t flag;
+  fegetexceptflag (&flag, FE_ALL_EXCEPT);
+  return flag;
+#endif
+}
+
+static void
+set_flag_quick (FLAG_T flag)
+{
+#if(defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
+  _mm_setcsr (flag);
+#else
+  fesetexceptflag (&flag, FE_ALL_EXCEPT);
+#endif
+}
+
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
@@ -55,6 +134,7 @@ typedef union {
 } b96u96_u;
 
 typedef union {double f; uint64_t u;} b64u64_u;
+typedef union {float f; uint32_t u;} b32u32_u;
 
 /* s + t <- a + b, assuming |a| >= |b| */
 static inline void
@@ -124,13 +204,19 @@ static inline void d_mul_double (double *hi, double *lo, double ah, double al,
   *lo = __builtin_fma (ah, bl, t);
 }
 
+static inline void fast_two_sum_double(double* h, double* l,
+double a, double b) {
+	*h = a + b;
+	double e = *h - a;
+	*l = b - e;
+}
+
 /* Return err, and update h,l,e such that (h+l)*2^exp is an an approximation
-   of x^(1/3) with absolute error less than err*2^exp. */
-static double
-fast_path (long double *h, long double *l, int *exp, long double x)
+   of |x|^(1/3) with absolute error less than err*2^exp. */
+static void 
+fast_path (double *h, double *l, int *exp, long double x)
 {
   b96u96_u v = {.f = x};
-  int s = v.e >> 15; // sign bit
   int e = v.e & 0x7fff; // 0 <= e < 32767
   uint64_t m = v.m;
   if (e == 0) // subnormal
@@ -250,12 +336,12 @@ fast_path (long double *h, long double *l, int *exp, long double x)
   static const double sl[] = {0.0, -0x1.ddc22548ea41ep-56, -0x1.f53e999952f09p-54};
   d_mul_double (&x1, &corr, x1, corr, sh[i], sl[i]);
 
-  const double sgn[] = {1.0, -1.0};
-  *h = x1 * sgn[s];
-  *l = corr * sgn[s];
+	fast_two_sum_double(h, l, x1, corr);
+
+/*
   // err[i] is a bound for 2^-74.749*2^(i/3)
   static const double err[] = {0x1.31p-75, 0x1.80p-75, 0x1.e4p-75};
-  return err[i];
+  return err[i];*/
 }
 
 // round h to nearest to precision 22 bits
@@ -275,6 +361,7 @@ round22 (long double h)
 }
 
 // (h+l)*2^e is the approximation from the fast path
+__attribute__((cold))
 static long double
 accurate_path (long double h, long double l, int e, long double x, fexcept_t flagp)
 {
@@ -353,32 +440,113 @@ cr_cbrtl (long double x)
   if (__builtin_expect (e == 32767 || (e == 0 && v.m == 0), 0))
     return x+x;
 
-  // save inexact flag
-  fexcept_t flagp;
-  fegetexceptflag (&flagp, FE_INEXACT);
+  // save inexact flag. We do not save the x87 status flag here, we won't
+	// touch it now.
+  FLAG_T flagp = get_flag_quick();
 
-  long double h, l;
-  long double err = fast_path (&h, &l, &e, x);
-  long double left = h + (l - err);
-  long double right = h + (l + err);
-  if (__builtin_expect (left == right, 1))
+  double h, l;
+  fast_path (&h, &l, &e, x);
+
+	int olde = e;
+
+	// Check whether h + (l - err) and h + (l + err) round to the same value,
+	// as long double. Here 0 < err < 2^{-74}|h| is the error of the fast path.
+	// Note that there is no risk of underflow/overflow here.
+
+	// We construct a 128-bit mantissa
+
+	b64u64_u th = {.f = h};
+	b64u64_u tl = {.f = l};
+	int de = (th.u >> 52) - ((tl.u >> 52) & 0x3ff);
+
+	// Note that only the low part has eventually a sign bit
+
+	// represent the mantissa of the low part in two's complement format,
+	// where 1l<<52 represents the implicit leading bit
+	int64_t ml = (tl.u & ~(0xfffull<<52)) | (1l<<52), sgnl = -(tl.u >> 63);
+	ml = (ml ^ sgnl) - sgnl;
+	int64_t mlt;
+	// we have to shift ml by 11 bits to the left to align with mh below,
+	// and by de bits to the right, thus by de-11 bits to the right
+	long sh = de - 11;
+	if(__builtin_expect(sh>63,0)){ // ml shifted does not overlap with mh
+		mlt = sgnl;
+		if(__builtin_expect(sh-64>63,0)) // ml shifted vanishes
+			ml = sgnl;
+		else
+			ml >>= sh - 64;
+	} else {
+		mlt = ml>>sh; // high part of ml, overlapping with mh
+		ml = (uint64_t)ml<<(64-sh); // low part of ml
+	}
+
+	// construct the mantissa of the long double number
+	uint64_t mh = (th.u<<11) | (1ull<<63);
+	int64_t eps = (mh >> (74 - 64));
+
+	mh += mlt; // add contribution from low part
+
+	if(__builtin_expect(!(mh>>63),0)){
+		// the low part is negative and
+		// can unset the msb so shift the number back
+		mh = (mh << 1) | ((uint64_t)ml >> 63);
+		ml = (uint64_t)ml<<1;
+		e--;
+		eps <<= 1;
+	}
+
+	uint64_t oldmh = mh;
+
+	b32u32_u sgn = {.f = 1.0f};
+	sgn.u |= (v.e & 0x8000) << (32 - 16);
+	float sign = sgn.f;
+	float op = sign + sign*0x1p-25f, om = sign - sign*0x1p-25f;
+	if(op==om){ // round to nearest
+		mh += (uint64_t)ml>>63;
+		ml ^= (1ul << 63);
+	} else if(sign*op>1.0f) { // round away from zero for numbers with sign sign. 
+		mh += 1;
+	}
+
+	/* Notice that having modified the high bit of ml suitably (which is the 
+	   rounding bit) we have that ml, as a signed integer, has as (scaled)
+	   absolute value the distance between m and the rounding boundary.
+	   This will be used for the rounding test.
+	*/
+
+	if(__builtin_expect(mh < oldmh, 0)) {
+		ml = ml/2; // Signed semantics matter
+		eps >>= 1;
+		mh = 1ull << 63;
+	  e++;
+	}
+
+	// Given the signedness, this test expresses that ml < -eps or that
+	// ml > eps.	This holds true because eps fits in 128-74 < 63 bits.
+  if (__builtin_expect ((uint64_t)ml + eps > (uint64_t)(2*eps) , 1))
   {
-    // multiply left by 2^e
-    b96u96_u r = {.f = left};
-    r.e += e;
+		e += (th.u >> 52);
+    // build final result 
+    b96u96_u r;
+		unsigned wanted_exp = (unsigned)(e + 0x3c00);
+    r.e = wanted_exp | (v.e & 0x8000);
+		r.m = mh; 
     if(__builtin_expect((r.m<<22)==0,0)){
       int k = __builtin_ctzll(r.m);
       uint64_t p = r.m>>k, p3 = p*p*p;
       k = __builtin_clzll(p3);
       if ( (v.m>>63) == 0) v.m <<= __builtin_clzll(v.m);
       if ( (p3<<k) == v.m) {
-	// restore inexact flag
-	fesetexceptflag (&flagp, FE_INEXACT);
+				// restore inexact flag
+				set_flag_quick(flagp);
       }
     }
     return r.f;
-  }
+  } 
 
-  // we reuse the initial approximation (h+l)*2^e in the accurate path
-  return accurate_path (h, l, e, x, flagp);
+	set_flag_quick(flagp);
+	fexcept_t full_flag;
+	fegetexceptflag	(&full_flag, FE_INEXACT);
+ 	// we reuse the initial approximation (h+l)*2^e in the accurate path
+ 	return accurate_path (h * sign, l * sign, olde, x, full_flag);
 }

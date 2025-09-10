@@ -4356,3 +4356,5 @@
 0x2p-16384, 0x8p-16448
 # worst-case for RNDN with 127 identical bits after the round bit
 0x1.87fffffffffffffcp+95,0x1.bffffffffffffffep+63
+# worst-case for RNDZ with 125 identical bits after the round bit
+0x1.fffffffffffffffap+94,0x1.fffffffffffffffep+63

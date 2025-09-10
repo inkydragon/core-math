@@ -881,3 +881,5 @@
 0x1.fffffffffffffffffffffffffffdp-55 0x1.fffffffffffffffffffffffffffdp-111
 # worst-case for RNDN with 224 identical bits after the round bit
 0x1.e3fffffffffffffffffffffffffdp+168 0x1.5fffffffffffffffffffffffffffp+112
+# worst-case for RNDZ with 224 identical bits after the round bit
+0x1.2000000000000000000000000001p+168,0x1.8000000000000000000000000001p+112

@@ -27078,3 +27078,5 @@
 0x1.ee6268cf86ep-1029,0x1.fff114c8921fp-1023
 # worst-case for RNDN with 104 identical bits after the round bit
 0x1.e3ffffffffffdp+78,0x1.5ffffffffffffp+52
+# worst-case for RNDZ with 104 identical bits after the round bit
+0x1.2000000000001p+78,0x1.8000000000001p+52

@@ -1,5 +1,4 @@
-/* Correctly-rounded inverse hyperbolic sine function for the
-   binary64 floating point format.
+/* Correctly-rounded inverse hyperbolic sine function for binary64.
 
 Copyright (c) 2023-2025 Alexei Sibidanov.
 
@@ -178,10 +177,10 @@ double cr_asinh(double x){
   double ax = __builtin_fabs(x);
   b64u64_u ix = {.f = ax};
   u64 u = ix.u;
-  if(__builtin_expect(u<0x3fbb000000000000, 0)){ // |x| < 0x1.bp-4
+  if(__builtin_expect(u<0x3fbb000000000000ull, 0)){ // |x| < 0x1.bp-4
     // for |x| < 0x1.7137449123ef7p-26, asinh(x) rounds to x to nearest
     // for |x| < 0x1p-1022 we have underflow but not for 0x1p-1022 (to nearest)
-    if(__builtin_expect(u<0x3e57137449123ef7, 0)){ // |x| < 0x1.7137449123ef7p-26
+    if(__builtin_expect(u<0x3e57137449123ef7ull, 0)){ // |x| < 0x1.7137449123ef7p-26
       if(__builtin_expect(!u, 0)) return x;
       double res = __builtin_fma(-0x1p-60,x,x);
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -192,9 +191,9 @@ double cr_asinh(double x){
     }
     double x2h = x*x, x2l = __builtin_fma(x, x, -x2h);
     double x3h = x2h*x, sl;
-    if(__builtin_expect(u<0x3f93000000000000, 0)){ // |x| < 0x1.3p-6
-      if(__builtin_expect(u<0x3f30000000000000, 0)){ // |x| < 0x1p-12
-	if(__builtin_expect(u<0x3e5a000000000000, 0)){ // |x| < 0x1.ap-26
+    if(__builtin_expect(u<0x3f93000000000000ull, 0)){ // |x| < 0x1.3p-6
+      if(__builtin_expect(u<0x3f30000000000000ull, 0)){ // |x| < 0x1p-12
+	if(__builtin_expect(u<0x3e5a000000000000ull, 0)){ // |x| < 0x1.ap-26
 	  static const double cl[] = {-0x1.5555555555555p-3};
 	  sl = x3h*cl[0];
 	} else {
@@ -223,11 +222,11 @@ double cr_asinh(double x){
   double x2h = 0, x2l = 0;
   double ah, al;
   int off = 0x3ff;
-  if(__builtin_expect(u<0x4190000000000000, 1)){ // x < 0x1p+26
+  if(__builtin_expect(u<0x4190000000000000ull, 1)){ // x < 0x1p+26
     double th, tl;
     x2h = x * x;
     x2l = __builtin_fma(x, x, -x2h);
-    if(__builtin_expect(u<0x3ff0000000000000, 0)){
+    if(__builtin_expect(u<0x3ff0000000000000ull, 0)){
       th = fasttwosum(1, x2h, &tl);
     } else {
       th = fasttwosum(x2h, 1, &tl);
@@ -237,7 +236,7 @@ double cr_asinh(double x){
     al = (tl - __builtin_fma(ah,ah,-th))*(rs*ah);
     ah = fasttwosum(ah, ax, &tl);
     al += tl;
-  } else if(u<0x4330000000000000){
+  } else if(u<0x4330000000000000ull){
     ah = 2*ax;
     al = 0.5/ax;
   } else {
@@ -271,7 +270,8 @@ double cr_asinh(double x){
   return as_asinh_refine(x, ah, al, 0x1.71547652b82fep+0*__builtin_fabs(lb));
 }
 
-static __attribute__((noinline)) double as_asinh_database(double x, double f){
+static __attribute__((noinline)) double
+as_asinh_database(double x, double f){
   static const double db[][3] = {
     {0x1.00f9476450863p-2, 0x1.fcb35067f343cp-3, 0x1p-57},
     {0x1.1f0a79315b287p-2, 0x1.1b68aae88febap-2, 0x1p-56},

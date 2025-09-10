@@ -1,4 +1,4 @@
-/* Correctly-rounded cubuc root of binary16 value.
+/* Correctly-rounded cubic root of binary16 value.
 
 Copyright (c) 2025 Maxence Ponsardin.
 

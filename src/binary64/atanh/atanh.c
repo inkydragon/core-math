@@ -1,5 +1,4 @@
-/* Correctly-rounded inverse hyperbolic tangent function for the
-   binary64 floating point format.
+/* Correctly-rounded inverse hyperbolic tangent function for binary64.
 
 Copyright (c) 2023 Alexei Sibidanov.
 

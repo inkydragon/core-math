@@ -106,7 +106,7 @@ static double __attribute__((noinline)) as_acosh_one(double x, double sh, double
 
   static const double cl[] = {
     -0x1.df3b9d1296ea9p-19, 0x1.a681d7d2298ebp-20, -0x1.77ead7b1ca449p-21, 0x1.4edd2ddb3721fp-22,
-    -0x1.1bf173531ee23p-23,0x1.613229230e255p-25};
+    -0x1.1bf173531ee23p-23, 0x1.613229230e255p-25};
 
   double y2 = x * (cl[0] + x * (cl[1] + x * (cl[2] + x * (cl[3] + x * (cl[4] + x * (cl[5]))))));
   double y1 = polydd(x, 0, 10, ch, &y2);
@@ -215,22 +215,22 @@ double cr_acosh(double x){
     double lb = sh + (ds - eps), ub = sh + (ds + eps);
     if(lb == ub) return lb;
     return as_acosh_one(z, sh, sl);
-  } else if(__builtin_expect(ix.u<0x405bf00000000000, 1)){
+  } else if(__builtin_expect(ix.u<0x405bf00000000000ull, 1)){
     off = 0x3ff;
     double x2h = x*x, wh = x2h - 1, wl = __builtin_fma(x,x,-x2h);
     double sh = __builtin_sqrt(wh), ish = 0.5/wh, sl = (wl - __builtin_fma(sh,sh,-wh))*(sh*ish);
     double tl, th = fasttwosum(x, sh, &tl); tl += sl;
     t.f = th;
     g = tl/th;
-  } else if(ix.u<0x4087100000000000){
+  } else if(ix.u<0x4087100000000000ull){
     static const double cl[] = {0x1.5c4b6148816e2p-66, -0x1.000000000005cp-2, -0x1.7fffffebf3e6cp-4, -0x1.aab6691f2bae7p-5};
     double z = 1/(x*x);
     g = cl[0] + z*(cl[1] + z*(cl[2] + z*cl[3]));
-  } else if(ix.u<0x40e0100000000000){
+  } else if(ix.u<0x40e0100000000000ull){
     static const double cl[] = {-0x1.7f77c8429c6c6p-67, -0x1.ffffffffff214p-3, -0x1.8000268641bfep-4};
     double z = 1/(x*x);
     g = cl[0] + z*(cl[1] + z*cl[2]);
-  } else if(ix.u<0x41ea000000000000){
+  } else if(ix.u<0x41ea000000000000ull){
     static const double cl[] = {0x1.7a0ed2effdd1p-67, -0x1.000000017d048p-2};
     double z = 1/(x*x);
     g = cl[0] + z*cl[1];
@@ -258,7 +258,8 @@ double cr_acosh(double x){
   return as_acosh_refine(x, 0x1.71547652b82fep+0*lb);
 }
 
-static __attribute__((noinline)) double as_acosh_database(double x, double f){
+static __attribute__((noinline)) double
+as_acosh_database(double x, double f){
   static const double db[][3] = {
     {0x1.5bff041b260fep+0, 0x1.a6031cd5f93bap-1, 0x1p-55},
     {0x1.9efdca62b700ap+0, 0x1.104b648f113a1p+0, 0x1p-54},
@@ -382,14 +383,14 @@ static double as_acosh_refine(double x, double a){
   static const double cl[3] = {-0x1p-3, 0x1.9999999a0754fp-4,-0x1.55555555c3157p-4};
   b64u64_u ix = {.f = x};
   double zh,zl;
-  if(ix.u<0x4190000000000000){
+  if(ix.u<0x4190000000000000ull){
     double x2h = x*x, x2l = __builtin_fma(x,x,-x2h);
     double wl, wh = x2h - 1;
     wh = fasttwosum(wh,x2l,&wl);
     double sh = __builtin_sqrt(wh), ish = 0.5/wh, sl = (ish*sh)*(wl - __builtin_fma(sh,sh,-wh));
     zh = fasttwosum(x, sh, &zl); zl += sl;
     zh = fasttwosum(zh, zl, &zl);
-  } else if(ix.u<0x4330000000000000){
+  } else if(ix.u<0x4330000000000000ull){
     zh = 2*x;
     zl = -0.5/x;
   } else {

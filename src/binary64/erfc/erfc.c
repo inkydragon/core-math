@@ -996,35 +996,36 @@ static const double Tacc[10][30] = {
 static double
 erfc_asympt_accurate (double x)
 {
+  // the following table is sorted by ascending values of the 1st entry
   static const double exceptions[22][3] = {
+    {0x1.b8940788b825dp+0, 0x1.e97eaf1080bffp-7, 0x1.38836346525eap-107},
+    {0x1.bb1ef58eda44p+0, 0x1.d6d259cb81801p-7, 0x1.387cbdb500a5ep-114},
+    {0x1.d1e19af184c6ep+0, 0x1.49bf1937979edp-7, 0x1.c1b55587c1381p-112},
+    {0x1.0ca37ce17afa6p+1, 0x1.88cc1284157f5p-9, 0x1.6fd53d489a2c1p-120},
+    {0x1.1cb6b0f91a4ccp+1, 0x1.b2639c7a46899p-10, 0x1.f8111f4b0ab0fp-114},
+    {0x1.37994c710a4d2p+1, 0x1.2df150139d8eap-11, 0x1.d46afcc14563p-114},
+    {0x1.76957728f1f31p+1, 0x1.251dea1afe1adp-15, -0x1.155995aa5bae6p-119},
+    {0x1.7fa5439251a75p+1, 0x1.7923ec231992dp-16, -0x1.74f633ea13fecp-121},
+    {0x1.8966f65d9a1a1p+1, 0x1.d01a8497b522dp-17, 0x1.c935c97d5bfe4p-121},
+    {0x1.16ffd71e2d8c6p+2, 0x1.834e2899c5506p-31, -0x1.b7516e4549528p-135},
+    {0x1.651c78cec84f6p+2, 0x1.af9d1df8b5e8p-49, -0x1.fe39e86292256p-153},
+    {0x1.9f4a466c51bb5p+2, 0x1.a3d059f3770b9p-65, 0x1.3f16dde099b74p-167},
+    {0x1.a8fb2b7ef1f8p+2, 0x1.c1b9f4cda246bp-68, 0x1.6fce2e1cae1a5p-171},
+    {0x1.ef72633933d36p+2, 0x1.aee3861d8657ep-91, -0x1.00ca47f3ced2ap-194},
+    {0x1.164f857d1749cp+3, 0x1.e35102e39e989p-114, 0x1.32b4c82bbb9e3p-219},
     {0x1.4a42b163f7a7dp+3, 0x1.183d60a1f7e3cp-158, -0x1.fffffffffffffp-212},
+    {0x1.77d0f07e113dcp+3, 0x1.8b93f18b3cdc6p-204, 0x1.6ffd370fba52ap-307},
     {0x1.a631d4bc7f56bp+3, 0x1.3f07281bb43aep-256, -0x1p-309},
     {0x1.1b2588f5d972ep+4, 0x1.2923609150ffp-457, -0x1.ffffffffffffdp-511},
     {0x1.1d41cb671cad3p+4, 0x1.5c4d8d179be8cp-464, -0x1.fffffffffffffp-518},
-    {0x1.48de452fb1a15p+4, 0x1.3c2a1264045adp-615, 0x1.fffffffffffffp-669},
-    {0x1.bb1ef58eda44p+0, 0x1.d6d259cb81801p-7, 0x1.387cbdb500a5ep-114},
-    {0x1.0ca37ce17afa6p+1, 0x1.88cc1284157f5p-9, 0x1.6fd53d489a2c1p-120},
-    {0x1.1cb6b0f91a4ccp+1, 0x1.b2639c7a46899p-10, 0x1.f8111f4b0ab0fp-114},
-    {0x1.d1e19af184c6ep+0, 0x1.49bf1937979edp-7, 0x1.c1b55587c1381p-112},
-    {0x1.37994c710a4d2p+1, 0x1.2df150139d8eap-11, 0x1.d46afcc14563p-114},
-    {0x1.8966f65d9a1a1p+1, 0x1.d01a8497b522dp-17, 0x1.c935c97d5bfe4p-121},
-    {0x1.9f4a466c51bb5p+2, 0x1.a3d059f3770b9p-65, 0x1.3f16dde099b74p-167},
-    {0x1.164f857d1749cp+3, 0x1.e35102e39e989p-114, 0x1.32b4c82bbb9e3p-219},
-    {0x1.76957728f1f31p+1, 0x1.251dea1afe1adp-15, -0x1.155995aa5bae6p-119},
-    {0x1.651c78cec84f6p+2, 0x1.af9d1df8b5e8p-49, -0x1.fe39e86292256p-153},
-    {0x1.77d0f07e113dcp+3, 0x1.8b93f18b3cdc6p-204, 0x1.6ffd370fba52ap-307},
-    {0x1.ef72633933d36p+2, 0x1.aee3861d8657ep-91, -0x1.00ca47f3ced2ap-194},
     {0x1.391f434b53d18p+4, 0x1.44e8c50fa25e9p-558, -0x1.15aa7b49bc597p-662},
-    {0x1.b8940788b825dp+0, 0x1.e97eaf1080bffp-7, 0x1.38836346525eap-107},
-    {0x1.16ffd71e2d8c6p+2, 0x1.834e2899c5506p-31, -0x1.b7516e4549528p-135},
-    {0x1.7fa5439251a75p+1, 0x1.7923ec231992dp-16, -0x1.74f633ea13fecp-121},
-    {0x1.a8fb2b7ef1f8p+2, 0x1.c1b9f4cda246bp-68, 0x1.6fce2e1cae1a5p-171},
+    {0x1.48de452fb1a15p+4, 0x1.3c2a1264045adp-615, 0x1.fffffffffffffp-669},
   };
   for (int i = 0; i < 22; i++)
     if (x == exceptions[i][0])
       return exceptions[i][1] + exceptions[i][2];
 
-  /* subnormal exceptions */
+  /* exception which subnormal output which cannot be put in the above table */
   if (x == 0x1.a8f7bfbd15495p+4)
   {
 #ifdef CORE_MATH_SUPPORT_ERRNO

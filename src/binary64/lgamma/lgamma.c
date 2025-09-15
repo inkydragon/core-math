@@ -357,8 +357,10 @@ static __attribute__((noinline)) double as_lgamma_accurate(double x){
     }
   }
 
+#define SX_BND -0x1.4e147ae147ae1p+1 // approximates -2.61 to nearest
+
   if(__builtin_fabs(fh)<0x1.8p-2){
-    if(__builtin_fabs(fh)<0x1.74p-4 && sx>-2.61 && sx<-2 ){
+    if(__builtin_fabs(fh)<0x1.74p-4 && sx>SX_BND && sx<-2 ){
       static const double x0[] = {0x1.3a7fc9600f86cp+1, 0x1.55f64f98af8dp-55, 0x1.c4b0cd201366ap-110};
       static const double c[][2] = {
 	{0x1.83fe966af535fp+0, -0x1.775909a36a68cp-55}, {0x1.36eebb002f55dp-1, -0x1.8d4b2124a39f8p-55},
@@ -381,7 +383,7 @@ static __attribute__((noinline)) double as_lgamma_accurate(double x){
       fl = sh*polyd(sh, k,c+n-k);
       fh = polydd(sh,sl, n-k,c, &fl);
       fh = muldd(zh,zl,fh,fl, &fl);
-    } else if(__builtin_fabs(fh)<0x1.168p-4 && sx>-3 && sx<-2.61){
+    } else if(__builtin_fabs(fh)<0x1.168p-4 && sx>-3 && sx<SX_BND){
       static const double x0[] = {0x1.5fb410a1bd901p+1, -0x1.a19a96d2e6f85p-54, -0x1.140b4ff4b7d6p-108};
       static const double c[][2] = {
 	{-0x1.ea12da904b18cp+0, -0x1.220130f99b2cbp-54}, {0x1.3267f3c265a52p-1, -0x1.1c630ff19db83p-55},

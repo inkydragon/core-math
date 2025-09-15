@@ -161,6 +161,8 @@ static double __attribute__((noinline)) as_expd(double, double*, int*);
 static double __attribute__((noinline)) as_sinpid(double, double*);
 static double __attribute__((noinline)) as_lgamma_asym(double, double*);
 
+// split x into xh+xl, where ulp(xh) = 2^-25
+// if |x| <= 2^26, the splitting is exact
 static inline double splt(double x, double *xl){
   static const double off = 0x1.8p27;
   double xh = (x + off) - off;

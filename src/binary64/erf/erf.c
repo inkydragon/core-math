@@ -647,10 +647,10 @@ cr_erf (double x)
   b64u64_u t = {.f = z};
   uint64_t ux = t.u;
   /* erf(x) rounds to +/-1 for RNDN for |x| > 0x1.7afb48dc96626p+2 */
-  if (__builtin_expect (ux > 0x4017afb48dc96626, 0)) // |x| > 0x1.7afb48dc96626p+2
+  if (__builtin_expect (ux > 0x4017afb48dc96626ull, 0)) // |x| > 0x1.7afb48dc96626p+2
   {
     double os = __builtin_copysign (1.0, x);
-#define MASK (uint64_t) 0x7ff0000000000000 // encoding of +Inf
+#define MASK (uint64_t) 0x7ff0000000000000ull // encoding of +Inf
     if (ux > MASK)
       return x + x; /* NaN */
     if (ux == MASK)
@@ -693,7 +693,7 @@ cr_erf (double x)
   err = cr_erf_fast (&h, &l, z);
   b64u64_u u = {.f = h}, v = {.f = l};
   t.f = x;
-#define SIGN_MASK (uint64_t) 0x8000000000000000
+#define SIGN_MASK (uint64_t) 0x8000000000000000ull
   u.u ^= t.u & SIGN_MASK;
   v.u ^= t.u & SIGN_MASK;
   double left = u.f + __builtin_fma (err, -u.f, v.f);

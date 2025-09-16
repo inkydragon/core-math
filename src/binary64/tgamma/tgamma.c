@@ -170,6 +170,8 @@ static inline double splt(double x, double *xl){
   return xh;
 }
 
+// multiplies x by x0+x1+x2 where x1 <~ ulp(x0) and x2 <~ ulp(x1)
+// and return the result as l0+l1+l2 where l0 is the return value
 static inline double sprod(double x, double x0, double x1, double x2, double *l1, double *l2){
   double z0 = x*x0, z0l = __builtin_fma(x,x0,-z0), z1 = x*x1, z2 = x*x2 + __builtin_fma(x,x1,-z1), e;
   z0 = splt(z0, &e);

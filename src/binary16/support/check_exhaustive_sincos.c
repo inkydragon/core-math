@@ -330,7 +330,7 @@ doit (uint16_t n)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(_Float16 x) {
+static inline int is_signaling(_Float16 x) {
   union_t _x = {.x = x};
 
   return !(_x.n & (1ull << 9));
@@ -351,7 +351,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, 1st return value should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -365,7 +365,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (z))
+  if (is_signaling (z))
   {
     fprintf (stderr, "Error, 2nd return value should be qNaN, got sNaN=%x\n",
              asuint (z));
@@ -382,7 +382,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, 1st return value should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -396,7 +396,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (z))
+  if (is_signaling (z))
   {
     fprintf (stderr, "Error, 2nd return value should be qNaN, got sNaN=%x\n",
              asuint (z));

@@ -115,7 +115,7 @@ set_flag (FLAG_T flag)
 #endif
 }
 
-static inline int issignalingf(float x) {
+static inline int is_signalingf(float x) {
   b32u32_u u = {.f = x};
   /* To keep the following comparison simple, toggle the quiet/signaling bit,
    so that it is set for sNaNs.  This is inverse to IEEE 754-2008 (as well as
@@ -952,10 +952,10 @@ __attribute__((noinline)) float as_compoundf_special(float x, float y){
 
   if (__builtin_expect(ax == 0 || ay == 0, 0)) { // x or y is 0
     if (ax == 0)   // compound(0,y) = 1 except for y = sNaN
-      return issignalingf (y) ? x + y : 1.0f;
+      return is_signalingf (y) ? x + y : 1.0f;
 
     if (ay == 0) { // compound (x, 0)
-      if (issignalingf (x)) return x + y; // x = sNaN
+      if (is_signalingf (x)) return x + y; // x = sNaN
       if (x < -1.0f) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
         errno = EDOM;

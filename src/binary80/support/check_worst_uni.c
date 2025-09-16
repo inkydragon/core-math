@@ -376,7 +376,7 @@ check_long_double (void)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(long double x) {
+static inline int is_signaling(long double x) {
   b80u80_t u = {.f = x};
 
   return !(u.m >> 63);
@@ -398,7 +398,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got %La\n", y);
     exit (1);
@@ -415,7 +415,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got %La\n", y);
     exit (1);

@@ -463,7 +463,7 @@ doloop(void)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(float x) {
+static inline int is_signaling(float x) {
   b32u32_u u = {.f = x};
 
   return !(u.u & (1ull << 22));
@@ -486,7 +486,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN,qNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -510,7 +510,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN,1.0) should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -534,7 +534,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(qNaN,sNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -559,7 +559,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(x,sNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -585,7 +585,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN,x) should be qNaN, got sNaN=%x\n",
              asuint (y));
@@ -610,7 +610,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(x,sNaN) should be qNaN, got sNaN=%x\n",
              asuint (y));

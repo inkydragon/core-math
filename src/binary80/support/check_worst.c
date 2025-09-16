@@ -392,7 +392,7 @@ doloop(void)
    According to https://en.wikipedia.org/wiki/Extended_precision,
    sNaN's have bits 63-62 equal to 10 (and bits 61-0 non-zero),
    while qNaN's have bits 63-62 equal to 11. */
-static inline int issignaling(long double x) {
+static inline int is_signaling(long double x) {
   b80u80_t u = {.f = x};
 
   return ((u.m >> 62) & 1) == 0;
@@ -414,7 +414,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN,x) should be qNaN, got %La\n", y);
     exit (1);
@@ -427,7 +427,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(x,sNaN) should be qNaN, got %La\n", y);
     exit (1);
@@ -444,7 +444,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN,x) should be qNaN, got %La\n", y);
     exit (1);
@@ -457,7 +457,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(x,sNaN) should be qNaN, got %La\n", y);
     exit (1);

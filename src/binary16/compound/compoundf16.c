@@ -74,7 +74,7 @@ set_flag (FLAG_T flag)
   fesetexceptflag (&flag, FE_INEXACT | FE_UNDERFLOW);
 }
 
-static inline int issignalingf(_Float16 x) {
+static inline int is_signalingf(_Float16 x) {
   b16u16_u u = {.f = x};
   /* To keep the following comparison simple, toggle the quiet/signaling bit,
    so that it is set for sNaNs.  This is inverse to IEEE 754-2008 (as well as
@@ -917,10 +917,10 @@ __attribute__((noinline)) _Float16 as_compoundf_special(_Float16 x, _Float16 y){
 
   if (__builtin_expect(ax == 0 || ay == 0, 0)) { // x or y is 0
     if (ax == 0)   // compound(0,y) = 1 except for y = sNaN
-      return issignalingf (y) ? x + y : 1.0f16;
+      return is_signalingf (y) ? x + y : 1.0f16;
 
     if (ay == 0) { // compound (x, 0)
-      if (issignalingf (x)) return x + y; // x = sNaN
+      if (is_signalingf (x)) return x + y; // x = sNaN
       if (x < -1.0f16) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
         errno = EDOM;

@@ -114,7 +114,7 @@ asfloat64 (uint64_t i)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(double x) {
+static inline int is_signaling(double x) {
   b64u64_u _x = {.f = x};
 
   return !(_x.u & (1ull << 51));
@@ -151,7 +151,7 @@ check_invalid (void)
 #endif
   }
   // check that the signaling bit is not set
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
@@ -181,7 +181,7 @@ check_invalid (void)
 #endif
   }
   // check that the signaling bit is not set
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(-qNaN) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
@@ -211,7 +211,7 @@ check_invalid (void)
 #endif
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));
@@ -241,7 +241,7 @@ check_invalid (void)
 #endif
   }
   // check that the signaling bit disappeared
-  if (issignaling (y))
+  if (is_signaling (y))
   {
     fprintf (stderr, "Error, foo(-sNaN) should be qNaN, got sNaN=%"PRIx64"\n",
              asuint64 (y));

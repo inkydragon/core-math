@@ -113,7 +113,7 @@ is_nan (double x)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(double x) {
+static inline int is_signaling(double x) {
   b64u64_u _x = {.f = x};
 
   return !(_x.u & (1ull << 51));
@@ -200,7 +200,7 @@ check_invalid (void)
   feclearexcept (FE_INVALID);
   y = cr_sinh(qnan);
   // Check that sinh(qNaN) = qNaN
-  if (!is_nan (y) || issignaling(y))
+  if (!is_nan (y) || is_signaling(y))
   {
   fprintf (stderr, "Error, foo(qNaN) should be qNaN, got %la=%"PRIx64"\n",
                y, asuint64 (y));

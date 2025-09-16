@@ -469,7 +469,7 @@ doloop(void)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(double x) {
+static inline int is_signaling(double x) {
   d64u64 _x = {.f = x};
 
   return !(_x.i & (1ull << 51));
@@ -494,12 +494,12 @@ check_signaling_nan (void)
     exit (1);
   }
   // check that the signaling bit disappeared
-  if (issignaling (s))
+  if (is_signaling (s))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got s=sNaN=%"PRIx64"\n", asuint64 (s));
     exit (1);
   }
-  if (issignaling (c))
+  if (is_signaling (c))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got c=sNaN=%"PRIx64"\n", asuint64 (c));
     exit (1);
@@ -520,12 +520,12 @@ check_signaling_nan (void)
   }
 
   // check that the signaling bit disappeared
-  if (issignaling (s))
+  if (is_signaling (s))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got s=sNaN=%"PRIx64"\n", asuint64 (s));
     exit (1);
   }
-  if (issignaling (c))
+  if (is_signaling (c))
   {
     fprintf (stderr, "Error, foo(sNaN) should be qNaN, got c=sNaN=%"PRIx64"\n", asuint64 (c));
     exit (1);

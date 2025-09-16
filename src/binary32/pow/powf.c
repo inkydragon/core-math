@@ -117,7 +117,7 @@ inline static unsigned int _mm_getcsr(void)
 }
 #endif  // defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
 
-static inline int issignalingf(float x) {
+static inline int is_signalingf(float x) {
   b32u32_u u = {.f = x};
   /* To keep the following comparison simple, toggle the quiet/signaling bit,
    so that it is set for sNaNs.  This is inverse to IEEE 754-2008 (as well as
@@ -403,10 +403,10 @@ float cr_powf(float x0, float y0){
 #endif
       return (x - x) / (x - x);  // NaN /  (-1)^y for non-integer y, should raise 'Invalid operation' exception.
     }
-    return issignalingf (y0) ? x0 + y0 : x; // 1^y = 1 except for y = sNaN
+    return is_signalingf (y0) ? x0 + y0 : x; // 1^y = 1 except for y = sNaN
   }
   if(__builtin_expect (ty.u<<1 == 0, 0))
-    return issignalingf (x0) ? x0 + y0 : 1.0f; // x^0 = 1 except for x = sNaN
+    return is_signalingf (x0) ? x0 + y0 : 1.0f; // x^0 = 1 except for x = sNaN
   if(__builtin_expect ((ty.u<<1) >= (uint64_t)0x7ff<<53, 0)){ // y=Inf/NaN
     // the case |x|=1 was already checked above
     if((tx.u<<1) > (uint64_t)0x7ff<<53) return x0 + y0; // x=NaN

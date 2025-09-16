@@ -1536,7 +1536,7 @@ double cr_pow (double x, double y) {
 
     if (__builtin_isnan(x)) {
       // IEEE 754-2019: pow(x,+/-0) = 1 if x is not a signaling NaN
-      if (y == 0.0 && !issignaling(x))
+      if (y == 0.0 && !is_signaling(x))
         return 1.0;
 
       /* pow(sNaN, y) = qNaN. This is implicit in IEEE 754-2019,
@@ -1561,7 +1561,7 @@ double cr_pow (double x, double y) {
 
     if (__builtin_isnan(y)) {
       // IEEE 754-2019: pow(1,y) = 1 for any y (even a quiet NaN)
-      if (x == 1.0 && !issignaling(y))
+      if (x == 1.0 && !is_signaling(y))
         return 1.0;
 
       // pow(x, sNaN) = qNaN (see above)

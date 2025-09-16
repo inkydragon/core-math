@@ -99,7 +99,7 @@ roundeven_finite (double x)
 */
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int issignaling(double x) {
+static inline int is_signaling(double x) {
   f64_u _x = {.f = x};
 
   return !(_x.u & (1ull << 51));

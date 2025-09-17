@@ -38,7 +38,7 @@ check_sanitize:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CFLAGS="-fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CFLAGS="-fsanitize=undefined -fsanitize=address -I/usr/local/include" LDFLAGS="-fsanitize=undefined -fsanitize=address -L/usr/local/lib" ./ci.sh
 
 check_sanitize_clang:
   stage: test
@@ -47,7 +47,7 @@ check_sanitize_clang:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - SKIPB16=1 LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS=-fsanitize=undefined LDFLAGS=-fsanitize=undefined ./ci.sh
+    - SKIPB16=1 LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH CC=clang CORE_MATH_NO_OPENMP=1 CFLAGS="-fsanitize=undefined -I/usr/local/include" LDFLAGS="-fsanitize=undefined -L/usr/local/lib" ./ci.sh
 
 check_without_fma:
   stage: test

@@ -32419,3 +32419,12 @@
 0x1.0aba1b439495p+0
 0x1.0ae52a5da1ebp+0
 0x1.11126088fb7ep+0
+# failures found by Adhemerval Zanella during GNU libc integration
+0x1.0a975d1dfc047p+0
+0x1.1af72a6747ecp+0
+0x1.0a8f37c0fe249p+0
+0x1.1ae784d2357bep+0
+0x1.0a938baf229a4p+0
+0x1.1af5307bfeff7p+0
+0x1.0a90a71e19068p+0
+0x1.1adeabd663124p+0

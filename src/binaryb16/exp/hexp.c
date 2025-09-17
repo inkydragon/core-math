@@ -218,7 +218,7 @@ __bf16 cr_hexp (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u, au = u & 0x7fff;
 
-  // for -0x1p-9 <= x <= 0x1.fep-9, exp(x) rounds to x to nearest
+  // for -0x1p-9 <= x <= 0x1.fep-9, exp(x) rounds to 1 to nearest
   if (au <= 0x3b00) { // |x| <= 0x1p-9
     if (au == 0) return 1.0f16; // x = +0 or -0
     return 1.0f + ((au == u) ? 0x1p-24f : -0x1p-25f);

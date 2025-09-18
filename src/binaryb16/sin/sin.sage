@@ -198,7 +198,6 @@ def optimize(S3orig,C3orig):
    while changed==true:
       changed = false
       for i in li:
-         print ("try i=", i)
          # try to decrease S3[i]
          saved = S3[i]
          S3[i] = S3[i].nextbelow()
@@ -206,6 +205,9 @@ def optimize(S3orig,C3orig):
          changed_si = false
          if len(t)<len(s):
             print ("decrease to", len(t))
+            s = t
+            changed = changed_si = true
+         elif len(t)==len(s) and ZZ.random_element(2)==0:
             s = t
             changed = changed_si = true
          else: # restore
@@ -219,6 +221,9 @@ def optimize(S3orig,C3orig):
                print ("decrease to", len(t))
                s = t
                changed = true
+            elif len(t)==len(s) and ZZ.random_element(2)==0:
+               s = t
+               changed = true
             else: # restore
                S3[i] = saved
          # try to decrease C3[i]
@@ -229,6 +234,9 @@ def optimize(S3orig,C3orig):
             print ("decrease to", len(t))
             s = t
             changed = changed_ci = true
+         elif len(t)==len(s) and ZZ.random_element(2)==0:
+            s = t
+            changed = changed_ci = true
          else: # restore
             C3[i] = C3[i].nextabove()
          if changed_ci == false:
@@ -237,6 +245,9 @@ def optimize(S3orig,C3orig):
             t = failures(S3,C3,s,verbose=false)
             if len(t)<len(s):
                print ("decrease to", len(t))
+               s = t
+               changed = true
+            elif len(t)==len(s) and ZZ.random_element(2)==0:
                s = t
                changed = true
             else: # restore

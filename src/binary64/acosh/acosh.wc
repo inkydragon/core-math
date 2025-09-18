@@ -32428,3 +32428,5 @@
 0x1.1af5307bfeff7p+0
 0x1.0a90a71e19068p+0
 0x1.1adeabd663124p+0
+# new failure after commit dbd2a63
+0x1.08aa2c959b935p+0

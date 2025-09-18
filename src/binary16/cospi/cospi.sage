@@ -50,11 +50,6 @@ def table1sin(out):
          x1 = R24(asfloat16(u1))
          y1 = Sinpi(x1)
          # there is no underflow/overflow
-         # fix manually some values
-         if i1 in []:
-            y1=y1.nextabove()
-         if i1 in []:
-            y1=y1.nextbelow()
          v = "{" + get_hex(y1) + "}"
       t = " " + v + ","
       S1.append(y1)
@@ -90,11 +85,6 @@ def table1cos(out):
          x1 = R24(asfloat16(u1))
          y1 = Cospi(x1)
          # there is no underflow/overflow
-         # fix manually some values
-         if i1 in []:
-            y1=y1.nextbelow()
-         if i1 in []:
-            y1=y1.nextabove()
          v = "{" + get_hex(y1) + "}"
       t = " " + v + ","
       C1.append(y1)
@@ -132,11 +122,6 @@ def table2sin(out):
             x2 = -x2
          y2 = Sinpi(x2)
          # there is no underflow/overflow
-         # fix manually some values
-         if i2 in []:
-            y2=y2.nextbelow()
-         if i2 in []:
-            y2=y2.nextabove()
          # we store -sin(x2) to avoid a negation in the code
          # cos(x1+x2) = cos(x1)*cos(x2)-sin(x1)*sin(x2)
          y2 = -y2

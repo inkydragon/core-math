@@ -1766,14 +1766,15 @@ _Float16 cr_cospif16(_Float16 x){
   if (u >= 0x6000) { // |x| >= 2^9 thus x is either integer of half-integer
     if (u >= 0x7c00) // NaN or Inf
       return (0x7c00 < u && u < 0x7e00) ? x + x : 0.0f / 0.0f;
-    return (u < 0x6400)
+    return (u < 0x6400) // |x| < 2^10 thus maybe half-integer
       ? ((u & 1) ? 0.0f : (((u & 3) == 2) ? -1.0f : 1.0f))
-      : (u < 0x6800 && (u & 1)) ? -1.0f : 1.0f;
+      : (u < 0x6800 && (u & 1)) ? -1.0f // |x| < 2^11 thus x integer and x odd
+      : 1.0f; // |x| even integer
   }
 
   // around x=0, cospi(x) is 1 - pi^2/2*x^2 + O(x^4)
   if (u <= 0x1f34) // |x| <= 0x1.cdp-8
-    return __builtin_fmaf (-0x1.3bd3ccp+2f * v.f, v.f, 1.0f);
+    return __builtin_fmaf (-0x1.3bd3ccp+2f * x, x, 1.0f);
     
   uint16_t i1 = u >> 5;
   uint16_t i2 = ((u >> 10) << 5) | (u & 0x1f);

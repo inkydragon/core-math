@@ -147,9 +147,13 @@ static void scan_consecutive(int64_t n, double x){
     n = -n;
   }
   int64_t fail = 0;
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel
+#endif
   for(int64_t j=0;j<n;j++){
-    if((fail += check(x)<0)>10) break;
-    x = nextafter(x, dir);
+    b64u64_u v = {.f = x};
+    v.u += j;
+    if((fail += check(v.f)<0)>10) break;
   }
 }
 

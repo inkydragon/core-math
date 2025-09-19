@@ -1773,8 +1773,6 @@ _Float16 cr_tanpif16(_Float16 x){
       return (0x7c00 < au && au < 0x7e00) ? x + x : 0.0f / 0.0f;
     static const uint16_t M[17] = {
       0xfff, 0x3ff, 0x1ff, 0xff, 0x7f, 0x3f, 0x1f, 0xf, 0x7, 0x3, 0x1, 0x0, };
-    static const uint16_t N[17] = {
-      0x3ff, 0x1ff, 0xff, 0x7f, 0x3f, 0x1f, 0xf, 0x7, 0x3, 0x1, 0x0, };
     int e = au >> 10; // 14 <= e <= 30
     if ((au & M[e-14]) == 0) { // x is integer
       /* for 2^10 <= |x| < 2^11, where ulp(x)=1, we have e = 25,
@@ -1783,7 +1781,7 @@ _Float16 cr_tanpif16(_Float16 x){
       int c = au == u;                            // c=1 iff x > 0
       return (b == c) ? +0.0f : -0.0f;
     }
-    else if ((au & N[e-14]) == 0) { // x is half-integer
+    else if ((au & M[e-13]) == 0) { // x is half-integer
       /* The case |x|=1/2 is special since the bit 1/2 is hidden in the
          implicit bit. */
       int b = e >= 26 || e == 14 || (au & (1<<(25-e))) == 0;

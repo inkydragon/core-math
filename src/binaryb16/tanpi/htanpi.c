@@ -205,7 +205,7 @@ __bf16 cr_htanpi (__bf16 x){
   if (au >= 0x3f00) { // |x| >= 1/2 thus x might integer or half-integer
     if (au >= 0x7f80) // NaN or Inf
       return (0x7f81 < au && au < 0x7fc0) ? x + x : 0.0f / 0.0f;
-    static const uint16_t M[] = { 0xffff, 0x7f, 0x3f, 0x1f, 0xf, 0x7, 0x3, 0x1 };
+    static const uint16_t M[] = { 0xffff, 0x7f, 0x3f, 0x1f, 0xf, 0x7, 0x3, 0x1, 0x0 };
     int e = au >> 7; // 126 <= e <= 254
     if (e >= 134 || (au & M[e-126]) == 0) { // x is integer
       // tanpi(2n+1) = -0,  tanpi(2n+2) = +0

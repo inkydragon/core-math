@@ -1784,7 +1784,7 @@ _Float16 cr_tanpif16(_Float16 x){
     else if ((au & M[e-13]) == 0) { // x is half-integer
       /* The case |x|=1/2 is special since the bit 1/2 is hidden in the
          implicit bit. */
-      int b = e >= 26 || e == 14 || (au & (1<<(25-e))) == 0;
+      int b = e == 14 || (au & (1<<(25-e))) == 0;
       // b=1 iff |x|=2n+1/2
       int c = au == u;                            // c=1 iff x > 0
 #ifdef CORE_MATH_SUPPORT_ERRNO

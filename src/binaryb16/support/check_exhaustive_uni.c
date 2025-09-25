@@ -37,7 +37,14 @@ SOFTWARE.
 
 #include "function_under_test.h"
 
+/* when TYPE_PRUNING is defined, assume the library function has input/output
+   uint16_t instead of __bf16 */
+
+#ifndef TYPE_PRUNING
 __bf16 cr_function_under_test (__bf16);
+#else
+uint16_t cr_function_under_test (uint16_t);
+#endif
 __bf16 ref_function_under_test (__bf16);
 int mpfr_function_under_test (mpfr_ptr, mpfr_srcptr, mpfr_rnd_t);
 int ref_fesetround (int);
@@ -169,7 +176,13 @@ doit (uint16_t n)
 #ifdef CORE_MATH_SUPPORT_ERRNO
   errno = 0;
 #endif
+#ifndef TYPE_PRUNING
   z = cr_function_under_test (x);
+#else
+  union_t w = {.x = x};
+  w.n = cr_function_under_test (w.n);
+  z = w.x;
+#endif
 #ifdef CORE_MATH_CHECK_INEXACT
   int inex_z = fetestexcept (FE_INEXACT);
 #endif

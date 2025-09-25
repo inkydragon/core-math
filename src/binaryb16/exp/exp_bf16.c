@@ -214,7 +214,7 @@ static const float T2[] = {
  0x1.50385cp-4, 0x1.97db0cp-5, 0x1.eec102p-6,
 };
 
-__bf16 cr_hexp (__bf16 x){
+__bf16 cr_exp_bf16 (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u, au = u & 0x7fff;
 
@@ -249,6 +249,6 @@ __bf16 cr_hexp (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hexp (__bf16 x) {
+__bf16 exp_bf16 (__bf16 x) {
   return (__bf16) expf ((float) x);
 }

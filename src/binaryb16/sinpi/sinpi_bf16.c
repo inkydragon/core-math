@@ -204,7 +204,7 @@ static const float C2[] = {
  0x0p+0, -0x1p+0, 0x0p+0, 0x1p+0, 0x0p+0, -0x1p+0, 0x0p+0,
 };
 
-__bf16 cr_hsinpi (__bf16 x){
+__bf16 cr_sinpi_bf16 (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u, au = u & 0x7fff;
 
@@ -242,6 +242,6 @@ __bf16 cr_hsinpi (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hsinpi (__bf16 x) {
+__bf16 sinpi_bf16 (__bf16 x) {
   return (__bf16) sinf ((float) M_PI * (float) x);
 }

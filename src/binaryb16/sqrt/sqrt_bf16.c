@@ -34,7 +34,7 @@ SOFTWARE.
 
 #pragma STDC FENV_ACCESS ON
 
-__bf16 cr_hsqrt (__bf16 x){
+__bf16 cr_sqrt_bf16 (__bf16 x){
         /* Musl does not set errno, thus we might get a
            missing errno=EDOM:
 	   https://www.openwall.com/lists/musl/2025/07/03/3
@@ -44,6 +44,6 @@ __bf16 cr_hsqrt (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hsqrt (__bf16 x) {
+__bf16 sqrt_bf16 (__bf16 x) {
   return (__bf16) sqrtf ((float) x);
 }

@@ -231,7 +231,7 @@ static const float T3[] = {
  0x1.fedd0cp-1, 0x1.fedbe6p-1, 0x1.fedacp-1,
 };
 
-__bf16 cr_hexp10 (__bf16 x){
+__bf16 cr_exp10_bf16 (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u, au = u & 0x7fff;
 
@@ -270,6 +270,6 @@ __bf16 cr_hexp10 (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hexp10 (__bf16 x) {
+__bf16 exp10_bf16 (__bf16 x) {
   return (__bf16) exp10f ((float) x);
 }

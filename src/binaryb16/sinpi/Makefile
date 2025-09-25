@@ -1,3 +1,3 @@
-FUNCTION_UNDER_TEST := hsinpi
+FUNCTION_UNDER_TEST := sinpi_bf16
 
 include ../support/Makefile.univariate

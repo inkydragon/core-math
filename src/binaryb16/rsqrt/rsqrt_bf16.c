@@ -160,7 +160,7 @@ static const b32u32_u T3[] = {
  {0x1.0418a4p+63}, {0x1.030dc6p+63}, {0x1.020614p+63}, {0x1.010184p+63},
 };
 
-__bf16 cr_hrsqrt (__bf16 x) {
+__bf16 cr_rsqrt_bf16 (__bf16 x) {
   b16u16_u v = {.f = x};
   uint16_t u = v.u;
   uint16_t i1 = u >> 7;
@@ -186,6 +186,6 @@ __bf16 cr_hrsqrt (__bf16 x) {
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hrsqrt (__bf16 x) {
+__bf16 rsqrt_bf16 (__bf16 x) {
 	return (__bf16) (1.0f / sqrtf ((float) x));
 }

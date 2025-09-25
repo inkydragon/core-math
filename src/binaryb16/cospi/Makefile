@@ -1,3 +1,3 @@
-FUNCTION_UNDER_TEST := hcospi
+FUNCTION_UNDER_TEST := cospi_bf16
 
 include ../support/Makefile.univariate

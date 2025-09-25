@@ -1,3 +1,3 @@
-#define cr_function_under_test cr_hexp
+#define cr_function_under_test cr_exp_bf16
 #define ref_function_under_test ref_exp
 #define mpfr_function_under_test mpfr_exp

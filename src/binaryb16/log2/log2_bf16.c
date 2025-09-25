@@ -153,7 +153,7 @@ static const b32u32_u T3[] = {
  {-0x1.f8230ap+6}, {-0x1.f81744p+6}, {-0x1.f80b96p+6},
 };
 
-__bf16 cr_hlog2 (__bf16 x){
+__bf16 cr_log2_bf16 (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u;
   uint16_t i1 = u >> 7;
@@ -180,6 +180,6 @@ __bf16 cr_hlog2 (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hlog2 (__bf16 x) {
+__bf16 log2_bf16 (__bf16 x) {
   return (__bf16) log2f ((float) x);
 }

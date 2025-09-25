@@ -1,3 +1,3 @@
-FUNCTION_UNDER_TEST := hexp
+FUNCTION_UNDER_TEST := exp_bf16
 
 include ../support/Makefile.univariate

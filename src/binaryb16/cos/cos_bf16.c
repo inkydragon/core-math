@@ -283,7 +283,7 @@ static const float C3[] = {
  0x1.e3479p-1, 0x1.90571ep-1,
 };
 
-__bf16 cr_hcos (__bf16 x){
+__bf16 cr_cos_bf16 (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u, au = u & 0x7fff;
 
@@ -328,6 +328,6 @@ __bf16 cr_hcos (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hcos (__bf16 x) {
+__bf16 cos_bf16 (__bf16 x) {
   return (__bf16) cosf ((float) x);
 }

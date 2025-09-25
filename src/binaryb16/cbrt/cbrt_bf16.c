@@ -160,7 +160,7 @@ static const float T3[] = {
 
 typedef union {__bf16 f; uint16_t u;} b16u16_u;
 
-__bf16 cr_hcbrt (__bf16 x){
+__bf16 cr_cbrt_bf16 (__bf16 x){
   b16u16_u v = {.f = x};
   uint16_t u = v.u, au = u & 0x7fff;
   uint16_t i1 = au >> 7;
@@ -193,6 +193,6 @@ __bf16 cr_hcbrt (__bf16 x){
 }
 
 // dummy function since GNU libc does not provide it
-__bf16 hcbrt (__bf16 x) {
+__bf16 cbrt_bf16 (__bf16 x) {
   return (__bf16) cbrtf ((float) x);
 }

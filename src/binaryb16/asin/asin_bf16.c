@@ -1,4 +1,4 @@
-/* Correctly-rounded arc-sine for binary16 value.
+/* Correctly-rounded arc-sine for bfloat16 value.
 
 Copyright (c) 2025 Paul Zimmermann
 
@@ -51,7 +51,7 @@ static const float p0[] = {1.0f, 0x1.552e8ep-3f, 0x1.43696ep-4f};
 */
 static const float p1[] = {1.0f, 0x1.55a7ep-3f, 0x1.258e54p-4f, 0x1.08e44p-4f};
 
-_Float16 cr_asinf16 (_Float16 x)
+__bf16 cr_asin_bf16 (__bf16 x)
 {
   b32u32_u v = {.f = x};
   uint32_t u = v.u;
@@ -86,44 +86,31 @@ _Float16 cr_asinf16 (_Float16 x)
   }
 
   // now 0 <= t <= 0.5
-  tt = t * t;
 
   if (au < 0x3e800000u) { // 0 <= t < 0.25
-    /* For |x| <= 0x1.71p-5, asin(x) rounds to x to nearest,
+    /* For |x| <= 0x1.dp-4, asin(x) rounds to x to nearest,
        we deal with that case separately, so that for x subnormal
        and a power of two, we get an underflow. */
-    if (au <= 0x3d388000u && !reduce) {
+    if (au <= 0x3de80000u && !reduce) { // |x| <= 0x1.dp-4
       if (au == 0) return x;
 #ifdef CORE_MATH_SUPPORT_ERRNO
-      if (au <= 0x387fc000u) // |x| <= nextbelow(2^-14)
+      if (au <= 0x7f8000u) // |x| <= nextbelow(2^-14)
         errno = ERANGE; // underflow
 #endif
-      return (au == u) ? v.f + 0x1p-26f : v.f - 0x1p-26f;
+      return v.f * 0x1.000002p+0f;
     }
-    if (au == 0x3dd30000u) // |x| = 0x1.a6p-4
-      return (au == u) ? 0x1.a6c00ap-4f : -0x1.a6c00ap-4f;
-    if (au == 0x3d688000u) // |x| = 0x1.d1p-5
-      return (au == u) ? 0x1.d14004p-5f : -0x1.d14004p-5f;
-    if (au == 0x3dfa0000u) // |x| = 0x1.f4p-4
-      return (au == u) ? 0x1.f5400ap-4f : -0x1.f5400ap-4f;
-    /* Warning for rounding toward -Inf: let p0(t) = t*q(t). If we first
-       compute q(t) and then multiply by t, for tiny t and rounding we will
-       get q(t)=1, and then t, whereas the correct result is nextbelow(t). */
+    tt = t * t;
     c1 = __builtin_fmaf (p0[2], tt, p0[1]);
-    y = __builtin_fmaf (c1, tt * t, t);
+    y = __builtin_fmaf (c1, tt, p0[0]);
   }
   else { // 0.25 <= t <= 0.5
-    if (au == 0x3eb24000u) // |x| = 0x1.648p-2
-      return (au == u) ? 0x1.6c2012p-2f : -0x1.6c2012p-2f;
-    if (au == 0x3ed96000u) // |x| = 0x1.b2cp-2
-      return (au == u) ? 0x1.c0fffap-2f : -0x1.c0fffap-2f;
-    if (au == 0x3ef0a000u) // |x| = 0x1.e14p-2
-      return (au == u) ? 0x1.f4fffp-2f : -0x1.f4fffp-2f;
+    tt = t * t;
     c5 = __builtin_fmaf (p1[3], tt, p1[2]);
     c1 = __builtin_fmaf (p1[1], tt, p1[0]);
     y = __builtin_fmaf (c5, tt * tt, c1);
-    y = t * y;
   }
+
+  y = t * y;
 
   if (reduce) // argument reconstruction
   {
@@ -136,6 +123,6 @@ _Float16 cr_asinf16 (_Float16 x)
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 asinf16 (_Float16 x) {
-  return (_Float16) asinf ((float) x);
+__bf16 asin_bf16 (__bf16 x) {
+  return (__bf16) asinf ((float) x);
 }

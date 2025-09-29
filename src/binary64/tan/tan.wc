@@ -32099,6 +32099,8 @@
 0x1.f8ffeb63ffd3ep+2
 0x1.dad246227089fp+3
 0x1.38ddfa180509fp+2
+# the following value was missed by BaCSeL
+0x1.f671de534c343p+4
 # non-regression tests
 0x1.12f3cd60b4bcdp+307
 0x1.320e91df0cac4p+819

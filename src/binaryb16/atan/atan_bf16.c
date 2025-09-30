@@ -106,7 +106,7 @@ __bf16 cr_atan_bf16 (__bf16 x)
 #ifdef CORE_MATH_SUPPORT_ERRNO
       /* We get underflow for |x| < 2^-126, and for |x| = 2^-126 and
          rounding towards zero. */
-      if (au != 0 && (au < 0x800000u || (au == 0x800000u && res != x)))
+      if (au < 0x800000u || (au == 0x800000u && res != x))
         errno = ERANGE; // underflow
 #endif
       return res;

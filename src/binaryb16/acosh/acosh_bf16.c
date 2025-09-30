@@ -95,7 +95,7 @@ __bf16 cr_acosh_bf16 (__bf16 x)
   // for x large, log(x + sqrt(x^2-1)) ~ log(x) + log(2)
   float t = v.f;
   uint32_t j = 0;
-  if (u < 0x42a40000u) // x < 0x1.48p+6
+  if (u <= 0x42a30000u) // x <= 0x1.46p+6
     v.f = t + sqrtf (t * t - 1);
   else
     j = 1; // will add j*log(2)

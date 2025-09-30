@@ -286,12 +286,11 @@ _Float16 cr_atanhf16 (_Float16 x)
   // now 0 <= t < 1/2
 
   /* for |x| <= 0x1.d1p-6, atanh(x) rounds to x to nearest */
-  /* we get underflow for |x| <= 0x1.ffcp-15, except for |x| = 0x1.ffcp-15
-     when rounding away from zero */
   if (au <= 0x3ce88000u) { // |x| <= 0x1.d1p-6
     if (au == 0) return x; // +/-0
 #ifdef CORE_MATH_SUPPORT_ERRNO
-    if (au < 0x387fe000u || (au == 0x387fe000 && __builtin_fmaf (t, 0x1p-24f, t) == t))
+    // we get underflow for |x| <= 0x1.ff8p-15
+    if (au <= 0x387fc000u)
       errno = ERANGE;
 #endif
     return __builtin_fmaf (t, 0x1p-12f, t);

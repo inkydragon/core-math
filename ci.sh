@@ -5,7 +5,7 @@
 # FORCE_FUNCTIONS="xxx yyy" ./ci.sh to force checking xxx and yyy
 # CC=clang CFLAGS=-Werror ./ci.sh
 # SKIP16=1 ./ci.sh to avoid _Float16 tests
-# SKIPB16=1 ./ci.sh to avoid __bf16 tests
+# SKIPBF16=1 ./ci.sh to avoid __bf16 tests (clang 19 does not properly support them)
 
 set -e # We want the above command to potentially fail, only set -e now.
 
@@ -44,8 +44,8 @@ check () {
         echo "With SKIP16, skipping " $FUNCTION
         doit=0
     fi
-    if [ "$doit" == "1" ] && [ "$SKIPB16" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binaryb16; then
-        echo "With SKIPB16, skipping " $FUNCTION
+    if [ "$doit" == "1" ] && [ "$SKIPBF16" == "1" ] && echo src/*/*/$FUNCTION.c | grep -q binaryb16; then
+        echo "With SKIPBF16, skipping " $FUNCTION
         doit=0
     fi
     if [ "$doit" == "1" ] && [ "$SKIPQ" == "1" ] && [ "`basename $FUNCTION q`" != "$FUNCTION" ]; then

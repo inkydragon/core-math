@@ -38,24 +38,6 @@ SOFTWARE.
 typedef union {float f; uint32_t u;} b32u32_u;
 typedef union {__bf16 f; uint16_t u;} b16u16_u;
 
-// the following polynomials were generated using Sollya (cf acos.sollya)
-
-/* degree-3 minimax polynomial for acos(x) over [0,0.25], with relative error
-   bounded by 2^-19.783 */
-static const float p0[] = {0x1.921fd2p0f, -0x1.000c5cp0f, 0x1.9ed63ap-9f,
-                           -0x1.731646p-3f};
-
-/* degree-3 minimax polynomial for acos(x) over [0.25,0.5], with relative error
-   bounded by 2^-17.104, manually optimized to reduce the number of exceptions
-*/
-static const float p1[] = {0x1.92fdc4p0f, -0x1.08e352p0f, 0x1.f5273p-4f,
-                           -0x1.4961b2p-2f};
-
-/* degree-3 minimax polynomial for acos(x)/sqrt(1-x) over [0.5,1],
-   with relative error bounded by 2^-19.338 */
-static const float p2[] = {0x1.91a802p0f, -0x1.9fd22cp-3f, 0x1.e9bcc4p-5f,
-                           -0x1.78f01ep-7f};
-
 /* convert exactly a __bf16 to float, keeping sNaN
    (the cast float f = x transforms a sNaN into a qNaN) */
 static float
@@ -80,7 +62,7 @@ float_to_bf16 (float x)
     v.u = w.u >> 16;
     break;
   case 1: // RNDD
-    v.u = (w.u >> 31) ? (w.u >> 16) - (frac != 0) : w.u >> 16;
+    v.u = (w.u >> 31) ? (w.u >> 16) + (frac != 0) : w.u >> 16;
     break;
   case 2: // RNDU
     v.u = (w.u >> 31) ? w.u >> 16 : (w.u >> 16) + (frac != 0);
@@ -93,6 +75,24 @@ float_to_bf16 (float x)
   }
   return v.f;
 }
+
+// the following polynomials were generated using Sollya (cf acos.sollya)
+
+/* degree-3 minimax polynomial for acos(x) over [0,0.25], with relative error
+   bounded by 2^-19.783 */
+static const float p0[] = {0x1.921fd2p0f, -0x1.000c5cp0f, 0x1.9ed63ap-9f,
+                           -0x1.731646p-3f};
+
+/* degree-3 minimax polynomial for acos(x) over [0.25,0.5], with relative error
+   bounded by 2^-17.104, manually optimized to reduce the number of exceptions
+*/
+static const float p1[] = {0x1.92fdc4p0f, -0x1.08e352p0f, 0x1.f5273p-4f,
+                           -0x1.4961b2p-2f};
+
+/* degree-3 minimax polynomial for acos(x)/sqrt(1-x) over [0.5,1],
+   with relative error bounded by 2^-19.338 */
+static const float p2[] = {0x1.91a802p0f, -0x1.9fd22cp-3f, 0x1.e9bcc4p-5f,
+                           -0x1.78f01ep-7f};
 
 __bf16 cr_acospi_bf16 (__bf16 x)
 {
@@ -116,8 +116,6 @@ __bf16 cr_acospi_bf16 (__bf16 x)
   if (u >> 31) // x < 0
     t = -t;
 
-#define INV_PI 0x1.45f306p-2f
-
   if (au < 0x3e800000u) { // |x| < 0.25
     /* avoid a spurious underflow for tiny x:
        for |x| <= 0x1.92p-9, acospi(x) rounds to 0.5 to nearest */
@@ -138,6 +136,7 @@ __bf16 cr_acospi_bf16 (__bf16 x)
     y = sqrtf (1.0f - t) * y;
   }
 
+#define INV_PI 0x1.45f306p-2f
   y = y * INV_PI;
   // for x < 0, use acospi(-x) = 1 - acospi(x)
   y = (au == u) ? y : 1.0f - y;

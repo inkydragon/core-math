@@ -64,7 +64,7 @@ _Float16 cr_acospif16 (_Float16 x)
 
   if (au >= 0x3f800000u) { // NaN, Inf, or |x| >= 1
     if (au == 0x3f800000u)
-      return (u == 0x3f800000u) ? 0.0f16 : 1.0;
+      return (u == 0x3f800000u) ? 0.0f16 : 1.0f;
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = EDOM;
 #endif

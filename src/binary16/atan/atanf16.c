@@ -100,13 +100,16 @@ _Float16 cr_atanf16 (_Float16 x)
   if (t <= 0.25f) {
     // for |x| < 0x1.d14p-6, atan(x) rounds to x to nearest
     if (!reduce && t <= 0x1.d14p-6f) {
+      if (au == 0) return x; // x = 0
+      t = s * t;
 #ifdef CORE_MATH_SUPPORT_ERRNO
       /* We get underflow for |x| < 2^-14, and for |x| = 2^-14 and
          rounding towards zero. */
-      if (au != 0 && (au < 0x38800000 || __builtin_fmaf (t, -0x1p-25f, t) != t))
+      if (au < 0x38800000 ||
+          (au == 0x38800000 && __builtin_fmaf (t, -0x1p-25f, t) != t))
         errno = ERANGE;
 #endif
-      return (au == 0) ? x : __builtin_fmaf (s * t, -0x1p-23f, s * t);
+      return __builtin_fmaf (t, -0x1p-23f, t);
     }
     
     // deal with exceptional cases

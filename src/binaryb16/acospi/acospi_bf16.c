@@ -111,10 +111,10 @@ __bf16 cr_acospi_bf16 (__bf16 x)
     return 0.0f / 0.0f; // will signal invalid and return sNaN
   }
 
-  float t = v.f, c1, y;
+  float t, c1, y;
 
-  if (u >> 31) // x < 0
-    t = -t;
+  v.u = au;
+  t = v.f;
 
   if (au < 0x3e800000u) { // |x| < 0.25
     /* avoid a spurious underflow for tiny x:

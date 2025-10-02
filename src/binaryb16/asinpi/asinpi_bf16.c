@@ -116,8 +116,8 @@ __bf16 cr_asinpi_bf16 (__bf16 x)
 
   int reduce = au >= 0x3f000000u; // |x| >= 0.5
   if (reduce) {
-    if (u >> 31) // x < 0
-      t = -t;
+    v.u = au;
+    t = v.f;
     // argument reduction: asin(x) = pi/2 - 2*asin(sqrt((1-x)/2))
     t = sqrtf ((1.0f - t) * 0.5f);
     b32u32_u w = {.f = t};

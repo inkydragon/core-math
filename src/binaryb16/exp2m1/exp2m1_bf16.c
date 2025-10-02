@@ -239,5 +239,5 @@ __bf16 cr_exp2m1_bf16 (__bf16 x){
 
 // dummy function since GNU libc does not provide it
 __bf16 exp2m1_bf16 (__bf16 x) {
-  return (__bf16) exp2m1f ((float) x);
+  return (__bf16) (exp2f ((float) x) - 1.0f);
 }

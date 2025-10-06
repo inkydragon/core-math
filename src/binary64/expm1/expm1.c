@@ -367,7 +367,7 @@ double cr_expm1(double x){
       if (aix < 0x10000000000000ull || __builtin_fabs (res) < 0x1p-1022)
         errno = ERANGE; // underflow
 #endif
-      return __builtin_fma(0x1p-54, __builtin_fabs(x), x);
+      return res;
     }
     double sx = 0x1p7*x, fx = roundeven_finite(sx), z = sx - fx, z2 = z*z;
     i64 i = fx;

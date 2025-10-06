@@ -1,4 +1,4 @@
-/* Correctly-rounded exponential function for bfloat16 value.
+/* Correctly-rounded biased logarithm function for bfloat16 value.
 
 Copyright (c) 2025 Paul Zimmermann
 
@@ -30,12 +30,12 @@ SOFTWARE.
 /* code from MPFR */
 
 __bf16
-ref_exp (__bf16 x)
+ref_log1p (__bf16 x)
 {
   mpfr_t y;
   mpfr_init2 (y, 8);
   mpfr_set_flt (y, (float) x, MPFR_RNDN);
-  int inex = mpfr_exp (y, y, rnd2[rnd]);
+  int inex = mpfr_log1p (y, y, rnd2[rnd]);
   mpfr_subnormalize (y, inex, rnd2[rnd]);
   __bf16 ret = (__bf16) mpfr_get_flt (y, MPFR_RNDN);
   mpfr_clear (y);

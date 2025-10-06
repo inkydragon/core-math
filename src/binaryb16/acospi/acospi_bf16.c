@@ -48,7 +48,12 @@ bf16_to_float (__bf16 x)
   return w.f;
 }
 
-// rounds a float to a __bf16
+/* rounds a float to a __bf16. This is slightly faster than the libgcc
+   routine, as of GCC 15.2.0. The libgcc routine for float to __b16
+   conversion is at libgcc/soft-fp/extendbfsf2.c, and for __bf16 to float
+   at libgcc/soft-fp/truncsfbf2.c. The libgcc routines do more work: they
+   also emulate FP exceptions (FP_INIT_EXCEPTIONS and FP_HANDLE_EXCEPTIONS)
+   which are ABI-specific. */
 static __bf16
 float_to_bf16 (float x)
 {

@@ -79,7 +79,9 @@ inline static unsigned int _mm_getcsr(void)
 
 static inline fexcept_t get_flags (void)
 {
-#if defined(__x86_64__) || defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+  /* Warning: on __aarch64__ (for example cfarm103), FE_UPWARD=0x400000
+     instead of 0x800. */
+#if defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)
   return _mm_getcsr ();
 #else
   fexcept_t flag;
@@ -90,7 +92,7 @@ static inline fexcept_t get_flags (void)
 
 static inline void set_flags (fexcept_t flag)
 {
-#if defined(__x86_64__)
+#if defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)
   _mm_setcsr (flag);
 #else
   fesetexceptflag (&flag, FE_ALL_EXCEPT);

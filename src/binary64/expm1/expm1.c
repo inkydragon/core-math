@@ -360,6 +360,13 @@ double cr_expm1(double x){
   if(__builtin_expect(aix < 0x3fd0000000000000ull, 1)){
     if( __builtin_expect(aix < 0x3ca0000000000000ull, 0)) {
       if( !aix ) return x;
+      double res = __builtin_fma(0x1p-54, __builtin_fabs(x), x);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      /* we have underflow for |x| < 2^-1022 and for x=-0x1p-1022 and
+         rounding towards zero */
+      if (aix < 0x10000000000000ull || __builtin_fabs (res) < 0x1p-1022)
+        errno = ERANGE; // underflow
+#endif
       return __builtin_fma(0x1p-54, __builtin_fabs(x), x);
     }
     double sx = 0x1p7*x, fx = roundeven_finite(sx), z = sx - fx, z2 = z*z;
@@ -386,7 +393,7 @@ double cr_expm1(double x){
       }
       if(!(ix.u>>63)){
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  errno = ERANGE;
+        errno = ERANGE; // overflow
 #endif
 	volatile double z = 0x1p1023;
 	return z*z;

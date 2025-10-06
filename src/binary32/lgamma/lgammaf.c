@@ -164,9 +164,12 @@ float cr_lgammaf(float x){
     if(ax > 0x1.afc1ap+1f){
       if(__builtin_expect(x >= 0x1.895f1cp+121f, 0)){
         /* for x=0x1.895f1cp+121, lgamma(x) < 2^128, thus there is no
-           overflow for rounding towards zero or downwards */
-	float r = (x > 0x1.895f1cp+121f) ? 0x1p127f * 0x1p127f
-          : 0x1.fffffep+127f + 0x1p+103f;
+           overflow for rounding towards zero or downwards.
+           The following expression overflows for x > 0x1.895f1cp+121
+           or x = 0x1.895f1cp+121 and rounding to nearest or away,
+           and does not overflow for x = 0x1.895f1cp+121 and rounding
+           towards zero */
+        float r = __builtin_fmaf (x, 0x1.4d3398p+6f, 0x1.10f35ep+103f);
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	if (x > 0x1.895f1cp+121f || (x == 0x1.895f1cp+121f &&
                                      x * 5.0f >= 0x1.ebb6e4p+123))

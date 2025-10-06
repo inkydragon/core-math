@@ -223,7 +223,7 @@ __bf16 cr_exp2m1_bf16 (__bf16 x){
     if (au >= 0x7f80) // NaN or Inf
       return (u == 0xff80) ? -1.0f : x + x;
 #ifdef CORE_MATH_SUPPORT_ERRNO
-    // we have overflow, except for x=128 and rounding towards zero
+    // we have overflow for x > 0, except for x=128 and rounding towards zero
     if (au == u && (au != 0x4300 || __builtin_fmaf (x, -0x1p-25f, x) == x))
       errno = ERANGE; // overflow
 #endif

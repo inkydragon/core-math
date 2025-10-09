@@ -234,7 +234,7 @@ static const float S3[] = {
  -0x1.425308p-1, -0x1.f4df2p-1, -0x1.9f7122p-2, 0x1.7bb732p-1, 0x1.fd6e84p-1,
  -0x1.97b16cp-3, 0x1.8f8886p-2, 0x1.6fde18p-1, 0x1.ffbaeep-1, -0x1.09c494p-4,
  0x1.093536p-3, 0x1.06f98cp-2, 0x1.fc4f5ep-2, 0x1.b9430ap-1, 0x1.bf996ap-1,
- -0x1.b2a66cp-1, 0x1.cb6f76p-1, -0x1.958b4ep-1, 0x1.ef1a9ep-1, -0x1.f8904p-2,
+ -0x1.b2a66cp-1, 0x1.cb6f76p-1, -0x1.958b4ep-1, 0x1.ef1a90p-1, -0x1.f8904p-2,
  0x1.b70f5ap-1, 0x1.c3b8b8p-1, -0x1.a94ad8p-1, 0x1.d99a3p-1, -0x1.67e574p-1,
  0x1.fff6ep-1, 0x1.82a354p-6, -0x1.8287c2p-5, -0x1.82198cp-4, -0x1.806172p-3,
  -0x1.798cc4p-2, -0x1.5ef362p-1, -0x1.ff115ep-1, -0x1.ed331ep-4,
@@ -327,10 +327,6 @@ __bf16 cr_sin_bf16 (__bf16 x){
      the relations:
      sin(a+b) = sin(a)*cos(b) + cos(a)*sin(b)
      cos(a+b) = cos(a)*cos(b) - sin(a)*sin(b) */
-
-  // deal with one exceptional case
-  if (au == 0x5cbd) // |x| = 0x1.7ap+58
-    return (au == u) ? 0x1.fffffep-1 : -0x1.fffffep-1;
 
   int k = (au >> 7) - 0x8b; // k=0 for |x|=4096
   float s = S3[k+7], c = C3[k+7]; // sin/cos of b7*2^(i+7)

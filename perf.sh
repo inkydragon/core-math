@@ -143,6 +143,7 @@ if [ "$CFLAGS" == "" ]; then
       ROUNDING_MATH=
    fi
 fi
+CFLAGS="$CFLAGS $EXTRA_CFLAGS"
 export CFLAGS ROUNDING_MATH
 
 if [ -n "$LIBM" ]; then

@@ -1,4 +1,4 @@
-/* Check correctness of binary16 function like sincos by exhaustive search.
+/* Check correctness of bfloat16 function like sincos by exhaustive search.
 
 Copyright (c) 2022-2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -38,8 +38,8 @@ SOFTWARE.
 
 #include "function_under_test.h"
 
-void cr_function_under_test (_Float16, _Float16*, _Float16*);
-void ref_function_under_test (_Float16, _Float16*, _Float16*);
+void cr_function_under_test (__bf16, __bf16*, __bf16*);
+void ref_function_under_test (__bf16, __bf16*, __bf16*);
 int ref_fesetround (int);
 void ref_init (void);
 
@@ -50,9 +50,9 @@ int rnd2[] = { MPFR_RNDN,    MPFR_RNDZ,     MPFR_RNDU, MPFR_RNDD   };
 
 int rnd = 0;
 
-typedef union { uint16_t n; _Float16 x; } union_t;
+typedef union { uint16_t n; __bf16 x; } union_t;
 
-_Float16
+__bf16
 asfloat (uint16_t n)
 {
   union_t u = {.n = n};
@@ -60,14 +60,14 @@ asfloat (uint16_t n)
 }
 
 static inline uint16_t
-asuint (_Float16 f)
+asuint (__bf16 f)
 {
   union_t u = {.x = f};
   return u.n;
 }
 
 static int
-is_equal (_Float16 y1, _Float16 y2)
+is_equal (__bf16 y1, __bf16 y2)
 {
   if (isnan (y1))
     return isnan (y2);
@@ -78,21 +78,24 @@ is_equal (_Float16 y1, _Float16 y2)
 
 /* define our own is_nan function to avoid depending from math.h */
 static inline int
-is_nan (_Float16 x)
+is_nan (__bf16 x)
 {
+  // +snan is encoded as 0x7f81 to 0x7fbf
+  // +qnan is encoded as 0x7fc0 to 0x7fff
   uint16_t u = asuint (x);
-  int e = u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) != 0;
+  int e = u >> 7;
+  return (e == 0xff || e == 0x1ff) && (u & 0x7f) != 0;
 }
 
 #ifdef CORE_MATH_SUPPORT_ERRNO
 /* define our own is_inf function to avoid depending from math.h */
 static inline int
-is_inf (_Float16 x)
+is_inf (__bf16 x)
 {
+  // +Inf is encoded as 0x7f80, and -Inf as 0xff80
   uint16_t u = asuint (x);
-  int e = u >> 10;
-  return (e == 0x1f || e == 0x3f) && (u & 0x03ff) == 0;
+  int e =  u >> 7;
+  return (e == 0xff || e == 0x1ff) && (u & 0x7f) == 0;
 }
 #endif
 
@@ -114,17 +117,17 @@ check_underflow_before (void)
   fesetexceptflag (&flag, FE_ALL_EXCEPT); //restore flags
 }
 
-/* For |y1| = 2^-14 or |y2| = 2^-14, clear the MPFR underflow exception
+/* For |y1| = 2^-126 or |y2| = 2^-126, clear the MPFR underflow exception
    when the rounded result (with unbounded exponent)
-   equals +/-2^-14 (might be set due to a bug in MPFR <= 4.2.1).
-   For |y1| = 2^-14 or |y2| = 2^-14 and underflow before rounding, clear the
-   fenv.h underflow exception when |f1(x)| < 2^-14 or |f2(x)| < 2^-14 but
+   equals +/-2^-126 (might be set due to a bug in MPFR <= 4.2.1).
+   For |y1| = 2^-126 or |y2| = 2^-126 and underflow before rounding, clear the
+   fenv.h underflow exception when |f1(x)| < 2^-126 or |f2(x)| < 2^-126 but
    there is no underflow after rounding (thus we mimic underflow after rounding).
    We assume y and z cannot be both near the underflow threshold. */
 static void
-fix_underflow (_Float16 x, _Float16 y1, _Float16 y2)
+fix_underflow (__bf16 x, __bf16 y1, __bf16 y2)
 {
-  if (__builtin_fabsf (y1) != 0x1p-14f && __builtin_fabsf (y2) != 0x1p-14f)
+  if (__builtin_fabsf (y1) != 0x1p-126f && __builtin_fabsf (y2) != 0x1p-126f)
     return;
   if (underflow_before) {
     if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
@@ -132,8 +135,8 @@ fix_underflow (_Float16 x, _Float16 y1, _Float16 y2)
     return;
   }
   mpfr_t t, u;
-  mpfr_init2 (t, 11);
-  mpfr_init2 (u, 11);
+  mpfr_init2 (t, 8);
+  mpfr_init2 (u, 8);
   fexcept_t flag;
   fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
   mpfr_set_flt (t, (float) x, MPFR_RNDN); // exact
@@ -148,11 +151,11 @@ fix_underflow (_Float16 x, _Float16 y1, _Float16 y2)
 #if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
   /* Check if we have the issue for one of y1 or y2,
      while the other one does not underflow. */
-  if (mpfr_cmp_ui_2exp (t, 1, -14) == 0 && // |o(f1(x))| = 2^-14
-      mpfr_cmp_ui_2exp (u, 1, -14) >= 0)
+  if (mpfr_cmp_ui_2exp (t, 1, -126) == 0 && // |o(f1(x))| = 2^-126
+      mpfr_cmp_ui_2exp (u, 1, -126) >= 0)
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
-  if (mpfr_cmp_ui_2exp (u, 1, -14) == 0 && // |o(f2(x))| = 2^-14
-      mpfr_cmp_ui_2exp (t, 1, -14) >= 0)
+  if (mpfr_cmp_ui_2exp (u, 1, -126) == 0 && // |o(f2(x))| = 2^-126
+      mpfr_cmp_ui_2exp (t, 1, -126) >= 0)
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
 #endif
   mpfr_clear (t);
@@ -162,7 +165,7 @@ fix_underflow (_Float16 x, _Float16 y1, _Float16 y2)
 void
 doit (uint16_t n)
 {
-  _Float16 x, y1, y2, z1, z2;
+  __bf16 x, y1, y2, z1, z2;
   x = asfloat (n);
   ref_init ();
   ref_fesetround (rnd);
@@ -330,18 +333,19 @@ doit (uint16_t n)
 }
 
 // When x is a NaN, returns 1 if x is an sNaN and 0 if it is a qNaN
-static inline int is_signaling(_Float16 x) {
+static inline int is_signaling(__bf16 x) {
   union_t _x = {.x = x};
 
-  return !(_x.n & (1ull << 9));
+  return !(_x.n & (1u << 6));
 }
 
 /* check for signaling NaN input */
 static void
 check_signaling_nan (void)
 {
-  _Float16 snan = asfloat (0x7c01);
-  _Float16 y, z;
+  // signaling NaNs have encoding 0x7f81 to 0x7fbf
+  __bf16 snan = asfloat (0x7f81);
+  __bf16 y, z;
   cr_function_under_test (snan, &y, &z);
   // check that y = NaN
   if (!is_nan (y))
@@ -372,7 +376,7 @@ check_signaling_nan (void)
     exit (1);
   }
   // also test with the sign bit set
-  snan = asfloat (0xfc01);
+  snan = asfloat (0xff81);
   cr_function_under_test (snan, &y, &z);
   // check that y = NaN
   if (!is_nan (y))
@@ -407,19 +411,19 @@ check_signaling_nan (void)
 static inline int doloop (void)
 {
   // check sNaN
-  doit (0x7c01);
-  doit (0xfc01);
+  doit (0x7f81);
+  doit (0xff81);
   // check qNaN
-  doit (0x7e00);
-  doit (0xfe00);
+  doit (0x7fc0);
+  doit (0xffc0);
   // check +Inf and -Inf
-  doit (0x7c00);
-  doit (0xfc00);
+  doit (0x7f80);
+  doit (0xff80);
 
   check_signaling_nan ();
 
   // check regular numbers
-  uint16_t nmin = asuint (0x0p0f16), nmax = asuint (0x1.ffcp+15f16);
+  uint16_t nmin = asuint (0x0p0f), nmax = asuint (0x1.fep+127f);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif

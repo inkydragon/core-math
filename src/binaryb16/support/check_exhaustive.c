@@ -1,4 +1,4 @@
-/* Check correctness of univariate bfloat16 function by exhaustive search.
+/* Check correctness of bivariate bfloat16 function by exhaustive search.
 
 Copyright (c) 2022-2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -37,16 +37,9 @@ SOFTWARE.
 
 #include "function_under_test.h"
 
-/* when TYPE_PRUNING is defined, assume the library function has input/output
-   uint16_t instead of __bf16 */
-
-#ifndef TYPE_PRUNING
-__bf16 cr_function_under_test (__bf16);
-#else
-uint16_t cr_function_under_test (uint16_t);
-#endif
-__bf16 ref_function_under_test (__bf16);
-int mpfr_function_under_test (mpfr_ptr, mpfr_srcptr, mpfr_rnd_t);
+__bf16 cr_function_under_test (__bf16, __bf16);
+__bf16 ref_function_under_test (__bf16, __bf16);
+int mpfr_function_under_test (mpfr_ptr, mpfr_srcptr, mpfr_srcptr, mpfr_rnd_t);
 int ref_fesetround (int);
 void ref_init (void);
 
@@ -59,18 +52,20 @@ int rnd = 0;
 
 typedef union { uint16_t n; __bf16 x; } union_t;
 
-float
+__bf16
 asfloat (uint16_t n)
 {
-  union_t u = {.n = n};
+  union_t u;
+  u.n = n;
   return u.x;
 }
 
 static inline uint16_t
-asuint (__bf16 x)
+asuint (__bf16 f)
 {
-  union_t u = {.x = x};
-  return u.n;
+	union_t u;
+	u.x = f;
+	return u.n;
 }
 
 /* define our own is_nan function to avoid depending from math.h */
@@ -84,7 +79,7 @@ is_nan (__bf16 x)
   return (e == 0xff || e == 0x1ff) && (u & 0x7f) != 0;
 }
 
-#if defined(CORE_MATH_SUPPORT_ERRNO) || defined(CORE_MATH_CHECK_INEXACT)
+/* define our own is_inf function to avoid depending from math.h */
 /* define our own is_inf function to avoid depending from math.h */
 static inline int
 is_inf (__bf16 x)
@@ -94,7 +89,6 @@ is_inf (__bf16 x)
   int e =  u >> 7;
   return (e == 0xff || e == 0x1ff) && (u & 0x7f) == 0;
 }
-#endif
 
 static int
 is_equal (__bf16 y1, __bf16 y2)
@@ -131,7 +125,7 @@ check_underflow_before (void)
    underflow exception when |f(x)| < 2^-126 but there is no underflow
    after rounding (thus we mimic underflow after rounding). */
 static void
-fix_underflow (__bf16 x, __bf16 y)
+fix_underflow (__bf16 x1, __bf16 x2, __bf16 y)
 {
   if (__builtin_fabsf (y) != 0x1p-126f)
     return;
@@ -140,34 +134,38 @@ fix_underflow (__bf16 x, __bf16 y)
       feclearexcept (FE_UNDERFLOW);
     return;
   }
-  mpfr_t t;
-  mpfr_init2 (t, 8);
+  mpfr_t t1, t2;
+  mpfr_init2 (t1, 11);
+  mpfr_init2 (t2, 11);
   fexcept_t flag;
   fegetexceptflag (&flag, FE_ALL_EXCEPT); // save flags
-  mpfr_set_flt (t, (float) x, MPFR_RNDN); // exact
+  mpfr_set_flt (t1, (float) x1, MPFR_RNDN); // exact
+  mpfr_set_flt (t2, (float) x2, MPFR_RNDN); // exact
   /* mpfr_set_d might raise the processor underflow/overflow/inexact flags
      (https://gitlab.inria.fr/mpfr/mpfr/-/issues/2) */
   fesetexceptflag (&flag, FE_ALL_EXCEPT); // restore flags
-  mpfr_function_under_test (t, t, rnd2[rnd]);
+  mpfr_function_under_test (t1, t1, t2, rnd2[rnd]);
   /* don't call mpfr_subnormalize here since we precisely want an unbounded
      exponent */
-  mpfr_abs (t, t, MPFR_RNDN); // exact
+  mpfr_abs (t1, t1, MPFR_RNDN); // exact
 #if MPFR_VERSION_MAJOR<4 || (MPFR_VERSION_MAJOR==4 && MPFR_VERSION_MINOR<=2)
-  if (mpfr_cmp_ui_2exp (t, 1, -126) == 0) // |o(f(x,y))| = 2^-126
+  if (mpfr_cmp_ui_2exp (t1, 1, -126) == 0) // |o(f(x,y))| = 2^-126
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
 #endif
-  mpfr_clear (t);
+  mpfr_clear (t1);
+  mpfr_clear (t2);
 }
 
 void
-doit (uint16_t n)
+doit (uint16_t n1, uint16_t n2)
 {
-  __bf16 x, y, z;
-  x = asfloat (n);
+  __bf16 x1, x2, y, z;
+  x1 = asfloat (n1);
+  x2 = asfloat (n2);
   ref_init ();
   ref_fesetround (rnd);
   mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
-  y = ref_function_under_test (x);
+  y = ref_function_under_test (x1, x2);
 #if defined(CORE_MATH_CHECK_INEXACT) || defined(CORE_MATH_SUPPORT_ERRNO)
   mpfr_flags_t inex_y = mpfr_flags_test (MPFR_FLAGS_INEXACT);
 #endif
@@ -176,13 +174,7 @@ doit (uint16_t n)
 #ifdef CORE_MATH_SUPPORT_ERRNO
   errno = 0;
 #endif
-#ifndef TYPE_PRUNING
-  z = cr_function_under_test (x);
-#else
-  union_t w = {.x = x};
-  w.n = cr_function_under_test (w.n);
-  z = w.x;
-#endif
+  z = cr_function_under_test (x1, x2);
 #ifdef CORE_MATH_CHECK_INEXACT
   int inex_z = fetestexcept (FE_INEXACT);
 #endif
@@ -190,7 +182,11 @@ doit (uint16_t n)
      the 16-bit encodings. */
   if (!is_equal (y, z))
   {
-    printf ("FAIL x=%a ref=%a y=%a\n", (float) x, (float) y, (float) z);
+#ifndef EXCHANGE_X_Y
+    printf ("FAIL x,y=%a,%a ref=%a z=%a\n", (float) x1, (float) x2, (float) y, (float) z);
+#else
+    printf ("FAIL y,x=%a,%a ref=%a z=%a\n", (float) x1, (float) x2, (float) y, (float) z);
+#endif
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -203,13 +199,13 @@ doit (uint16_t n)
   if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_INEXACT))
     mpfr_flags_clear (MPFR_FLAGS_UNDERFLOW);
 
-  fix_underflow (x, y);
+  fix_underflow (x1, x2, y);
 
 #ifndef CORE_MATH_NOCHECK_UNDERFLOW
   // check spurious/missing underflow
   if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
-    printf ("Spurious underflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    printf ("Spurious underflow exception for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -217,7 +213,7 @@ doit (uint16_t n)
   }
   if (!fetestexcept (FE_UNDERFLOW) && mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
-    printf ("Missing underflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    printf ("Missing underflow exception for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -229,7 +225,7 @@ doit (uint16_t n)
   // check spurious/missing overflow
   if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
-    printf ("Spurious overflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    printf ("Spurious overflow exception for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -237,7 +233,7 @@ doit (uint16_t n)
   }
   if (!fetestexcept (FE_OVERFLOW) && mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
-    printf ("Missing overflow exception for x=%a (y=%a)\n", (float) x, (float) y);
+    printf ("Missing overflow exception for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -249,7 +245,7 @@ doit (uint16_t n)
 #ifdef CORE_MATH_CHECK_INEXACT
   if ((inex_y == 0) && (inex_z != 0))
   {
-    printf ("Spurious inexact exception for x=%a (y=%a)\n", (float) x, (float) y);
+    printf ("Spurious inexact exception for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -257,7 +253,7 @@ doit (uint16_t n)
   }
   if ((inex_y != 0) && (inex_z == 0))
   {
-    printf ("Missing inexact exception for x=%a (y=%a)\n", (float) x, (float) y);
+    printf ("Missing inexact exception for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
    	exit (1);
@@ -267,12 +263,16 @@ doit (uint16_t n)
 
   // check errno
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  // If x is a normal number and y is NaN, we should have errno = EDOM.
-  if (!is_nan (x) && !is_inf (x))
+  // If x1 and x2 are normal numbers and y is NaN, we should have errno = EDOM.
+  if (!is_nan (x1) && !is_inf (x1) && !is_nan (x2) && !is_inf (x2))
   {
     if (is_nan (y) && errno != EDOM)
     {
-      printf ("Missing errno=EDOM for x=%a (y=%a)\n", (float) x, (float) y);
+#ifndef EXCHANGE_X_Y
+      printf ("Missing errno=EDOM for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#else
+      printf ("Missing errno=EDOM for y,x=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#endif
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -280,7 +280,7 @@ doit (uint16_t n)
     }
     if (!is_nan (y) && errno == EDOM)
     {
-      printf ("Spurious errno=EDOM for x=%a (y=%a)\n", (float) x, (float) y);
+      printf ("Spurious errno=EDOM for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -291,7 +291,11 @@ doit (uint16_t n)
       mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
     if (expected_erange && errno != ERANGE)
     {
-      printf ("Missing errno=ERANGE for x=%a (y=%a)\n", (float) x, (float) y);
+#ifndef EXCHANGE_X_Y
+      printf ("Missing errno=ERANGE for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#else
+      printf ("Missing errno=ERANGE for y,x=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
+#endif
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
@@ -299,12 +303,26 @@ doit (uint16_t n)
     }
     if (!expected_erange && errno == ERANGE)
     {
-      printf ("Spurious errno=ERANGE for x=%a (y=%a)\n", (float) x, (float) y);
+      printf ("Spurious errno=ERANGE for x,y=%a,%a (z=%a)\n", (float) x1, (float) x2, (float) y);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit (1);
 #endif
     }
+  }
+#endif
+
+#ifdef CORE_MATH_CHECK_INEXACT
+  // check if the inexact exception was reset
+  feraiseexcept (FE_INEXACT);
+  y = cr_function_under_test (x1, x2);
+  if (!fetestexcept (FE_INEXACT)) {
+    printf ("Exception inexact was reset for x,y=%a,%a (z=%a)\n",
+            (float) x1, (float) x2, (float) y);
+    fflush (stdout);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
 #endif
 }
@@ -322,89 +340,135 @@ check_signaling_nan (void)
 {
   /* signaling NaNs have encoding 0x7f81 to 0x7fbf */
   __bf16 snan;
-  for (uint16_t u = 0x7f81u; u < 0x7fc0u; u++) {
-    snan = asfloat (u);
-    __bf16 y = cr_function_under_test (snan);
-    // check that foo(NaN) = NaN
-    if (!is_nan (y))
-    {
-      printf ("Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
-              u, (float) y, asuint (y));
+  for (uint16_t u1 = 0x7f81u; u1 < 0x7fc0u; u1++) {
+    snan = asfloat (u1);
+    for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+      __bf16 x2 = asfloat((uint16_t) u2);
+      __bf16 y = cr_function_under_test (snan, x2);
+      // check that foo(NaN, x) = NaN
+      if (!is_nan (y))
+      {
+      	fprintf (stderr, "Error, foo(sNaN=%x,y=%a) should be NaN, got %a=%x\n",
+                 u1, (float) x2, (float) y, asuint (y));
 #ifndef DO_NOT_ABORT
-      exit (1);
+      	exit (1);
 #endif
-    }
-    // check that the signaling bit disappeared
-    if (is_signaling (y))
-    {
-      printf ("Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
-              u, asuint (y));
+      }
+      // check that the signaling bit disappeared
+      if (is_signaling (y))
+      {
+      	fprintf (stderr, "Error, foo(sNaN=%x,y=%a) should be qNaN, got sNaN=%x\n",
+               	 u1, (float) x2, asuint (y));
 #ifndef DO_NOT_ABORT
-      exit (1);
+      	exit (1);
 #endif
+      }
+      y = cr_function_under_test (x2, snan);
+      // check that foo(x, NaN) = NaN
+      if (!is_nan (y))
+      {
+      	fprintf (stderr, "Error, foo(x=%a,sNaN=%x) should be NaN, got %a=%x\n",
+                 (float) x2, u1, (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
+      	exit (1);
+#endif
+      }
+    	// check that the signaling bit disappeared
+      if (is_signaling (y))
+      {
+      	fprintf (stderr, "Error, foo(x=%a,sNaN=%x) should be qNaN, got sNaN=%x\n",
+               	 (float) x2, u1, asuint (y));
+#ifndef DO_NOT_ABORT
+      	exit (1);
+#endif
+      }
     }
     // also test sNaN with sign bit set
-    snan = asfloat (0x8000u + u);
-    y = cr_function_under_test (snan);
-    // check that foo(NaN) = NaN
-    if (!is_nan (y))
-    {
-      printf ("Error, foo(sNaN=%x) should be NaN, got %a=%x\n",
-              0x8000u + u, (float) y, asuint (y));
+    snan = asfloat (0x8000 + u1);
+    for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+      __bf16 x2 = asfloat((uint16_t) u2);
+      __bf16 y = cr_function_under_test (snan, x2);
+      // check that foo(NaN, x) = NaN
+      if (!is_nan (y))
+      {
+      	fprintf (stderr, "Error, foo(sNaN=%x,y=%a) should be NaN, got %a=%x\n",
+                 u1, (float) x2, (float) y, asuint (y));
 #ifndef DO_NOT_ABORT
-      exit (1);
+      	exit (1);
 #endif
-    }
-    // check that the signaling bit disappeared
-    if (is_signaling (y))
-    {
-      printf ("Error, foo(sNaN=%x) should be qNaN, got sNaN=%x\n",
-              0x8000u + u, asuint (y));
+      }
+      // check that the signaling bit disappeared
+      if (is_signaling (y))
+      {
+      	fprintf (stderr, "Error, foo(sNaN=%x,y=%a) should be qNaN, got sNaN=%x\n",
+               	 u1, (float) x2, asuint (y));
 #ifndef DO_NOT_ABORT
-      exit (1);
+      	exit (1);
 #endif
+      }
+      y = cr_function_under_test (x2, snan);
+      // check that foo(x, NaN) = NaN
+      if (!is_nan (y))
+      {
+      	fprintf (stderr, "Error, foo(x=%a,sNaN=%x) should be NaN, got %a=%x\n",
+                 (float) x2, u1, (float) y, asuint (y));
+#ifndef DO_NOT_ABORT
+      	exit (1);
+#endif
+      }
+    	// check that the signaling bit disappeared
+      if (is_signaling (y))
+      {
+      	fprintf (stderr, "Error, foo(x=%a,sNaN=%x) should be qNaN, got sNaN=%x\n",
+               	 (float) x2, u1, asuint (y));
+#ifndef DO_NOT_ABORT
+      	exit (1);
+#endif
+      }
     }
   }
 }
 
 static void
-check_exceptions_aux (uint16_t n)
+check_exceptions_aux (uint16_t n1, uint16_t n2)
 {
-  __bf16 x = asfloat (n), y;
-  int inex;
-
-#ifdef CORE_MATH_CHECK_INEXACT
+  __bf16 x1 = asfloat (n1);
+  __bf16 x2 = asfloat (n2);
   feclearexcept (FE_INEXACT);
-  y = cr_function_under_test (x);
-  inex = fetestexcept (FE_INEXACT);
+  __bf16 y = cr_function_under_test (x1, x2);
+  int inex = fetestexcept (FE_INEXACT);
   // there should be no inexact exception if the result is NaN, +/-Inf or +/-0
   if (inex && (is_nan (y) || is_inf (y) || y == 0))
   {
-    printf ("Error, for x=%a=%x, inexact exception set (y=%a=%x)\n",
-            (float) x, asuint (x), (float) y, asuint (y));
+#ifndef EXCHANGE_X_Y
+    fprintf (stderr, "Error, for x,y=%a,%a, inexact exception set (z=%a)\n",
+             (float) x1, (float) x2, (float) y);
+#else
+    fprintf (stderr, "Error, for y,x=%a,%a, inexact exception set (z=%a)\n",
+             (float) x1, (float) x2, (float) y);
+#endif
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
-#endif
-
   feclearexcept (FE_OVERFLOW);
-  y = cr_function_under_test (x);
+  y = cr_function_under_test (x1, x2);
   inex = fetestexcept (FE_OVERFLOW);
   if (inex)
   {
-    printf ("Error, for x=%a, overflow exception set (y=%a)\n", (float) x, (float) y);
+    fprintf (stderr, "Error, for x,y=%a,%a, overflow exception set (z=%a)\n",
+						 (float) x1, (float) x2, (float) y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
   }
-
   feclearexcept (FE_UNDERFLOW);
-  y = cr_function_under_test (x);
+  y = cr_function_under_test (x1, x2);
   inex = fetestexcept (FE_UNDERFLOW);
   if (inex)
   {
-    printf ("Error, for x=%a, underflow exception set (y=%a)\n", (float) x, (float) y);
+    fprintf (stderr, "Error, for x,y=%a,%a, underflow exception set (z=%a)\n",
+						 (float) x1, (float) x2, (float) y);
 #ifndef DO_NOT_ABORT
     exit (1);
 #endif
@@ -416,20 +480,37 @@ check_exceptions_aux (uint16_t n)
 static void
 check_exceptions (void)
 {
-  // checking all Inf, sNaN, qNaN, 0 
-	for (uint16_t u = 0x7f80; u < 0x8000; u++) {
-  	check_exceptions_aux (u);
-  	check_exceptions_aux (u | 0x8000);
-	}
+  // checking all sNaN, qNaN, Inf, 0
+  for (uint16_t u1 = 0x7f80; u1 <= 0x8000; u1++) {
+    for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+      check_exceptions_aux (u1, (uint16_t) u2);
+      check_exceptions_aux ((uint16_t) u2, u1);
+      // checking for -u1
+      u1 ^= 0x8000;
+      check_exceptions_aux (u1, (uint16_t) u2);
+      check_exceptions_aux ((uint16_t) u2, u1);
+      // set u1 to u1 instead of -u1
+      u1 ^= 0x8000;
+    }
+  }
 }
 
 static int doloop (void)
 {
-  // checking all Inf, sNaN, qNaN
-	for (uint16_t u = 0x7f80; u < 0x8000; u++) {
-  	doit (u);
-  	doit (u | 0x8000);
-	}
+	
+  //checking all sNaN, qNaN, Inf
+  for (uint16_t u1 = 0x7f81; u1 < 0x8000; u1++) {
+    for (uint32_t u2 = 0; u2 < 0x10000; u2++) {
+      check_exceptions_aux (u1, (uint16_t) u2);
+      check_exceptions_aux ((uint16_t) u2, u1);
+      // checking for -u1
+      u1 ^= 0x8000;
+      check_exceptions_aux (u1, (uint16_t) u2);
+      check_exceptions_aux ((uint16_t) u2, u1);
+      // set u1 to u1 instead of -u1
+      u1 ^= 0x8000;
+    }
+  }
 
   check_signaling_nan ();
 
@@ -440,11 +521,14 @@ static int doloop (void)
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif
-  for (uint16_t n = nmin; n <= nmax; n++)
-  {
-    doit (n);
-    doit (n | 0x8000);
-  }
+  for (uint16_t n1 = nmin; n1 <= nmax; n1++)
+    for (uint16_t n2 = nmin; n2 <= nmax; n2++)
+  	{
+          doit (n1, n2);
+          doit (n1 | 0x8000, n2);
+          doit (n1, n2 | 0x8000);
+          doit (n1 | 0x8000, n2 | 0x8000);
+  	}
   printf ("all ok\n");
   return 0;
 }

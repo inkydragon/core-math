@@ -565,9 +565,6 @@ main (int argc, char *argv[])
         }
     }
 
-  doit (asuint (0x1.a4p+0), asuint (0x1.8p+0));
-  doit (asuint (0x1.38p+9), asuint (0x1.4p+0));
-
   check_underflow_before ();
 
   return doloop();

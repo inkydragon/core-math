@@ -150,6 +150,7 @@ float cr_lgammaf(float x){
     // gamma(x) is negative in (-2n-1,-2n), thus when fx is odd
     signgam = 1 - ((((int)fx)&1)<<1);
   double z = ax, f;
+  double s = x;
   if(__builtin_expect(ax<0x1.52p-1f, 0)){
     static const double rn[] =
       {-0x1.505bdf4b65acp+4, -0x1.51c80eb47e068p+2, 0x1.0000000007cb8p+0, -0x1.4ac529250a1fcp+1,
@@ -158,7 +159,6 @@ float cr_lgammaf(float x){
     static const double rd[] =
       {-0x1.4db2cfe9a5265p+5, -0x1.062e99d1c4f27p+3, -0x1.c81bc2ecf25f6p+1, -0x1.108e55c10091bp+1,
        -0x1.7dd25af0b83d4p+0, -0x1.36bf1880125fcp+0, -0x1.1379fc8023d9cp+0, -0x1.03712e41525d2p+0};
-    double s = x;
     f = (c0*s)*as_r8(s, rn)/as_r8(s, rd) - as_ln(z);
   } else { // |x| >= 0x1.52p-1
     if(ax > 0x1.afc1ap+1f){
@@ -217,19 +217,19 @@ float cr_lgammaf(float x){
       f = (z-1)*(z-2)*c0*as_r7(z, rn)/as_r8(z, rd);
       if(x < 0.0f){
 	if(__builtin_expect(t.u < 0x40301b93u && t.u > 0x402f95c2u, 0)){
-	  double h = (x + 0x1.5fb410a1bd901p+1) - 0x1.a19a96d2e6f85p-54, h2 = h*h, h4 = h2*h2;
+	  double h = (s + 0x1.5fb410a1bd901p+1) - 0x1.a19a96d2e6f85p-54, h2 = h*h, h4 = h2*h2;
 	  static const double c[] =
 	    {-0x1.ea12da904b18cp+0, 0x1.3267f3c265a54p+3, -0x1.4185ac30cadb3p+4, 0x1.f504accc3f2e4p+5,
 	     -0x1.8588444c679b4p+7, 0x1.43740491dc22p+9, -0x1.12400ea23f9e6p+11, 0x1.dac829f365795p+12};
 	  f = h*((c[0] + h*c[1]) + h2*(c[2] + h*c[3]) + h4*((c[4] + h*c[5]) + h2*(c[6] + h*c[7])));
 	} else if(__builtin_expect(t.u >  0x401ceccbu && t.u < 0x401d95cau, 0)){
-	  double h = (x + 0x1.3a7fc9600f86cp+1) + 0x1.55f64f98af8dp-55, h2 = h*h, h4 = h2*h2;
+	  double h = (s + 0x1.3a7fc9600f86cp+1) + 0x1.55f64f98af8dp-55, h2 = h*h, h4 = h2*h2;
 	  static const double c[] =
 	    {0x1.83fe966af535fp+0, 0x1.36eebb002f61ap+2, 0x1.694a60589a0b3p+0, 0x1.1718d7aedb0b5p+3,
 	     0x1.733a045eca0d3p+2, 0x1.8d4297421205bp+4, 0x1.7feea5fb29965p+4};
 	  f = h*((c[0] + h*c[1]) + h2*(c[2] + h*c[3]) + h4*((c[4] + h*c[5]) + h2*(c[6])));
 	} else if(__builtin_expect(t.u > 0x40492009u && t.u < 0x404940efu, 0)){
-	  double h = (x + 0x1.9260dbc9e59afp+1) + 0x1.f717cd335a7b3p-53, h2 = h*h, h4 = h2*h2;
+	  double h = (s + 0x1.9260dbc9e59afp+1) + 0x1.f717cd335a7b3p-53, h2 = h*h, h4 = h2*h2;
 	  static const double c[] =
 	    {0x1.f20a65f2fac55p+2, 0x1.9d4d297715105p+4, 0x1.c1137124d5b21p+6, 0x1.267203d24de38p+9,
 	     0x1.99a63399a0b44p+11, 0x1.2941214faaf0cp+14, 0x1.bb912c0c9cdd1p+16};

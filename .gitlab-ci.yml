@@ -74,7 +74,7 @@ check_dry:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
-    - FORCE=true DRY=--dry LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include -Wdouble-promotion" ./ci.sh
+    - FORCE=true DRY=--dry LDFLAGS="-L /usr/local/lib" EXTRA_CFLAGS="-I /usr/local/include -Wdouble-promotion -Werror" ./ci.sh
 
 check_dry_with_O3:
   stage: test

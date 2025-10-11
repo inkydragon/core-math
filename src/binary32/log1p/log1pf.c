@@ -125,14 +125,14 @@ float cr_log1pf(float x) {
       double Lh = ln2h * e, Ll = ln2l * e, rl = f + Ll + lix[j];
       b64u64_u tr = {.f = rl + Lh};
       if(__builtin_expect((tr.u&0xfffffffll) == 0 , 0)){
-	if(x==-0x1.247ab0p-6) return -0x1.271f0ep-6f - 0x1p-31f;
-	if(x==-0x1.3a415ep-5) return -0x1.407112p-5f + 0x1p-30f;
-	if(x== 0x1.fb035ap-2) return  0x1.9bddc2p-2f + 0x1p-27f;
+	if(x==-0x1.247ab0p-6f) return -0x1.271f0ep-6f - 0x1p-31f;
+	if(x==-0x1.3a415ep-5f) return -0x1.407112p-5f + 0x1p-30f;
+	if(x== 0x1.fb035ap-2f) return  0x1.9bddc2p-2f + 0x1p-27f;
 	tr.f += 64*(rl + (Lh - tr.f));
       } else if(rl+(Lh-tr.f)==0.0){
-	if(x== 0x1.b7fd86p-4) return  0x1.a1ece2p-4f + 0x1p-29f;
-	if(x==-0x1.3a415ep-5) return -0x1.407112p-5f + 0x1p-30f;
-	if(x== 0x1.43c7e2p-6) return  0x1.409f80p-6f + 0x1p-31f;
+	if(x== 0x1.b7fd86p-4f) return  0x1.a1ece2p-4f + 0x1p-29f;
+	if(x==-0x1.3a415ep-5f) return -0x1.407112p-5f + 0x1p-30f;
+	if(x== 0x1.43c7e2p-6f) return  0x1.409f80p-6f + 0x1p-31f;
       }
       ub = tr.f;
     }

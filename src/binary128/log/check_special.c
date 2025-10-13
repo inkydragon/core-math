@@ -1,4 +1,4 @@
-/* Generate special cases for expm1 testing.
+/* Generate special cases for log testing.
 
 Copyright (c) 2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -44,8 +44,8 @@ typedef union {
 int ref_fesetround(int);
 void ref_init(void);
 
-__float128 cr_expm1q(__float128);
-__float128 ref_expm1q(__float128);
+__float128 cr_logq(__float128);
+__float128 ref_logq(__float128);
 
 int rnd1[] = { FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD };
 
@@ -84,9 +84,7 @@ error2 (__float128 x, __float128 y, __float128 z)
 }
 
 static void check(__float128 x){
-  ref_init();
-  ref_fesetround(rnd);
-  __float128 y1 = ref_expm1q(x), y2 = cr_expm1q(x);
+  __float128 y1 = ref_logq(x), y2 = cr_logq(x);
   if(!is_equal(y1, y2)) {
     error2 (x, y1, y2);
     fflush(stdout);
@@ -100,32 +98,8 @@ static __float128 get_random(int tid){
   v.a |= (__int128)rand_r(Seed + tid) << 31*2;
   v.a |= (__int128)rand_r(Seed + tid) << 31*3;
   v.a |= (__int128)rand_r(Seed + tid) << 31*4;
-  v.a &= ~((__int128)1<<127);
+  //  v.a &= ~((__int128)1<<127);
   return v.f;
-}
-
-#ifndef CORE_MATH_TESTS
-#define CORE_MATH_TESTS (1000UL*1000*1000) /* total number of tests */
-#endif
-
-static void
-check_subnormal (void)
-{
-  /* smallest subnormal is 2^-16494, whose encoding is 1;
-     smallest normal is 2^-16382, whose encoding is 2^112 */
-  __int128 m0 = 1;
-  __int128 m1 = (__int128) 1 << 112;
-  __int128 step = (m1 - m0) / (CORE_MATH_TESTS / 10);
-  m0 += rand_r (Seed);
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel for
-#endif
-  for (__int128 m = m0; m < m1; m += step) {
-    b128u128_u v = {.a = m};
-    __float128 x = v.f;
-    check (x);
-    check (-x);
-  }
 }
 
 int main(int argc, char *argv[]){
@@ -155,26 +129,27 @@ int main(int argc, char *argv[]){
       exit(1);
     }
   }
-  
+
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
+
+  printf("Checking random values\n");
+#ifndef CORE_MATH_TESTS
+#define CORE_MATH_TESTS 1000UL*1000*1000 /* total number of tests */
+#endif
 
   unsigned int seed = getpid();
   for(int i = 0; i < MAX_THREADS; i++)
     Seed[i] = seed + i;
 
-  printf("Checking random values in subnormal range\n");
-  check_subnormal ();
-  
-  printf("Checking random values\n");
-  
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif
   for(uint64_t n = 0; n < CORE_MATH_TESTS; n++){
     ref_init();
     ref_fesetround(rnd);
+    fesetround(rnd1[rnd]);
     int tid;
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
     tid = omp_get_thread_num();

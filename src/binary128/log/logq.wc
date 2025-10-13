@@ -1,7 +1,23 @@
-inf
-nan
-0.0
--0.0
++snan
+-snan
++nan
+-nan
++inf
+-inf
++0
+-0
++1
+-1
++0x1.ffffffffffffffffffffffffffffp+16383
+-0x1.ffffffffffffffffffffffffffffp+16383
++0x1p-16494
+-0x1p-16494
++0x1p-16382
+-0x1p-16382
+0x1.fffffffffffffffffffffffffffep-16383
+-0x1.fffffffffffffffffffffffffffep-16383
+0x1.0000000000000000000000000001p-16382
+-0x1.0000000000000000000000000001p-16382
 
 0x1.5239a620b2c80e3fe60fb62af2d4p-1
 0x1.b0bf11dbf18963f1fceffa0c2b18p-1

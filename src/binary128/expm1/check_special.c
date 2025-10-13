@@ -111,7 +111,7 @@ static __float128 get_random(int tid){
 static void
 check_subnormal (void)
 {
-  /* smallest subnormal is 2^-16445, whose encoding is 1;
+  /* smallest subnormal is 2^-16494, whose encoding is 1;
      smallest normal is 2^-16382, whose encoding is 2^112 */
   __int128 m0 = 1;
   __int128 m1 = (__int128) 1 << 112;

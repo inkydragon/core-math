@@ -175,7 +175,9 @@ doit (uint32_t n)
   {
     printf ("FAIL x=%a ref=%a y=%a\n", x, y, z);
     fflush (stdout);
-    if (!keep) exit (1);
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
 
   /* When there is underflow but the result is exact, IEEE 754-2019 says the

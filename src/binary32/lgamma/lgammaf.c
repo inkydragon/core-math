@@ -77,27 +77,8 @@ static double as_ln(double x){
 }
 
 float cr_lgammaf(float x){
+  // the entries of tb[] should be ordered by increasing .u value
   static const struct {b32u32_u x; float f, df;} tb[] = {
-    {{.f = -0x1.efc2a2p+14}, -0x1.222dbcp+18, -0x1p-7},
-    {{.f = -0x1.627346p+7}, -0x1.73235ep+9, -0x1p-16},
-    {{.f = -0x1.08b14p+4}, -0x1.f0cbe6p+4, -0x1p-21},
-    {{.f = -0x1.69d628p+3}, -0x1.0eac2ap+4, -0x1p-21},
-    {{.f = -0x1.904902p+2}, -0x1.65532cp+2, 0x1p-23},
-    {{.f = -0x1.9272d2p+1}, -0x1.170b98p-8, 0x1p-33},
-    {{.f = -0x1.625edap+1}, 0x1.6a6c4ap-5, -0x1p-30},
-    {{.f = -0x1.5fc2aep+1}, 0x1.c0a484p-11, -0x1p-36},
-    {{.f = -0x1.5fb43ep+1}, 0x1.5b697p-17, 0x1p-42},
-    {{.f = -0x1.5fa20cp+1}, -0x1.132f7ap-10, 0x1p-35},
-    {{.f = -0x1.580c1ep+1}, -0x1.5787c6p-4, 0x1p-29},
-    {{.f = -0x1.3a7fcap+1}, -0x1.e4cf24p-24, -0x1p-49},
-    {{.f = -0x1.c2f04p-30}, 0x1.43a6f6p+4, 0x1p-21},
-    {{.f = -0x1.ade594p-30}, 0x1.446ab2p+4, -0x1p-21},
-    {{.f = -0x1.437e74p-40}, 0x1.b7dec2p+4, -0x1p-21},
-    {{.f = -0x1.d85bfep-43}, 0x1.d31592p+4, -0x1p-21},
-    {{.f = -0x1.f51c8ep-49}, 0x1.0a572ap+5, -0x1p-20},
-    {{.f = -0x1.108a5ap-66}, 0x1.6d7b18p+5, -0x1p-20},
-    {{.f = -0x1.ecf3fep-73}, 0x1.8f8e5ap+5, -0x1p-20},
-    {{.f = -0x1.25cb66p-123}, 0x1.547a44p+6, -0x1p-19},
     {{.f = 0x1.ecf3fep-73}, 0x1.8f8e5ap+5, -0x1p-20},
     {{.f = 0x1.108a5ap-66}, 0x1.6d7b18p+5, -0x1p-20},
     {{.f = 0x1.a68bbcp-42}, 0x1.c9c6e8p+4, 0x1p-21},
@@ -113,6 +94,18 @@ float cr_lgammaf(float x){
     {{.f = 0x1.dcbbaap+99}, 0x1.fc5772p+105, 0x1p+80},
     {{.f = 0x1.58ace8p+112}, 0x1.9e4f66p+118, -0x1p+93},
     {{.f = 0x1.87bdfp+115}, 0x1.e465aep+121, 0x1p+96},
+    {{.f = -0x1.25cb66p-123}, 0x1.547a44p+6, -0x1p-19},
+    {{.f = -0x1.ecf3fep-73}, 0x1.8f8e5ap+5, -0x1p-20},
+    {{.f = -0x1.108a5ap-66}, 0x1.6d7b18p+5, -0x1p-20},
+    {{.f = -0x1.f51c8ep-49}, 0x1.0a572ap+5, -0x1p-20},
+    {{.f = -0x1.d85bfep-43}, 0x1.d31592p+4, -0x1p-21},
+    {{.f = -0x1.437e74p-40}, 0x1.b7dec2p+4, -0x1p-21},
+    {{.f = -0x1.ade594p-30}, 0x1.446ab2p+4, -0x1p-21},
+    {{.f = -0x1.c2f04p-30}, 0x1.43a6f6p+4, 0x1p-21},
+    {{.f = -0x1.580c1ep+1}, -0x1.5787c6p-4, 0x1p-29},
+    {{.f = -0x1.69d628p+3}, -0x1.0eac2ap+4, -0x1p-21},
+    {{.f = -0x1.627346p+7}, -0x1.73235ep+9, -0x1p-16},
+    {{.f = -0x1.efc2a2p+14}, -0x1.222dbcp+18, -0x1p-7},
   };
 
   float fx = __builtin_floor(x), ax = __builtin_fabsf(x);
@@ -248,9 +241,16 @@ float cr_lgammaf(float x){
   float r = f;
   if(__builtin_expect(tl <= 31u, 0)){
     t.f = x;
-    for(unsigned i=0;i<sizeof(tb)/sizeof(tb[0]);i++){
-      if(t.u == tb[i].x.u) return tb[i].f + tb[i].df;
+    int a = 0, b = sizeof(tb)/sizeof(tb[0]);
+    // invariant: t.u < tb[0].x.u or tb[a].x.u <= t.u < tb[b].x.u
+    while (a + 1 < b) {
+      int i = (a + b) / 2;
+      if (t.u < tb[i].x.u)
+        b = i;
+      else
+        a = i;
     }
+    if (t.u == tb[a].x.u) return tb[a].f + tb[a].df;
   }
   return r;
 }

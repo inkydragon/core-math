@@ -101,7 +101,12 @@ float cr_acospif(float x){
     /* For |x| <= 0x1.0fd288p-127, c0 += c4*(z4*z4) would raise a spurious
        underflow exception, we use an FMA instead, where c4 * z4 does not
        underflow. */
-    c0 = __builtin_fma (c4 * z4, z4, c0);
+#ifndef __FP_FAST_FMA
+    if (__builtin_expect (ax > 0x1.0fd288p-127f, 0))
+      c0 = (c4 * z4) * z4 + c0;
+    else
+#endif
+      c0 = __builtin_fma (c4 * z4, z4, c0);
     return 0.5 - z*c0;
   } else {
     double f = __builtin_sqrt(1-az);

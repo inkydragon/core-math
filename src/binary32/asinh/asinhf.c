@@ -155,9 +155,9 @@ float cr_asinhf(float x) {
       c0 += z2*(c2 + z2*c4);
       const double ln2l = 0x1.7f7d1cf79abcap-20, ln2h = 0x1.62e4p-1;
       double Lh = ln2h * e, Ll = ln2l * e;
-      r.f =  __builtin_fma(z, c0, Ll + lix[j]) + Lh;
+      r.f = (z * c0 + (Ll + lix[j])) + Lh;
       if(__builtin_expect((r.u&0xfffffffll) == 0, 0)){
-	double h =  __builtin_fma(z, c0, Ll + lix[j]) + (Lh - r.f);
+        double h = (z * c0 + (Ll + lix[j])) + (Lh - r.f);
 	r.f = r.f + 64*h;
       }
     }

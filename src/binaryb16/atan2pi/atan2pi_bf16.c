@@ -1,4 +1,4 @@
-/* Correctly-rounded half revolution arctangent function of two binary16 values.
+/* Correctly-rounded half revolution arctangent function of two bfloat16 values.
 
 Copyright (c) 2022-2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -26,11 +26,11 @@ SOFTWARE.
 */
 
 /* This code is based on the binary32 code atan2pif.c:
-   at input we convert the inputs to _Float16 (exactly),
+   at input we convert the inputs to __bf16 (exactly),
    we then use the same code than for atan2pif,
-   and at output we round to _Float16.
+   and at output we round to __bf16.
    The changes with respect to atan2pif.c are marked with a comment
-   "specific atan2pif16". */
+   "specific atan2pi_bf16". */
 
 #include <stdint.h>
 #include <errno.h>
@@ -67,9 +67,9 @@ static double polydd(double xh, double xl, int n, const double c[][2], double *l
   return ch;
 }
 
-// specific atan2pif16: inputs name changed from y,x to yf16,xf16
-_Float16 cr_atan2pif16(_Float16 yf16, _Float16 xf16){
-  float y = yf16, x = xf16; // specific atan2pif16
+// specific atan2pi_bf16: inputs name changed from y,x to yf16,xf16
+__bf16 cr_atan2pi_bf16(__bf16 yf16, __bf16 xf16){
+  float y = yf16, x = xf16; // specific atan2pi_bf16
   static const double cn[] =
     {0x1.45f306dc9c883p-2, 0x1.988d83a142adap-1, 0x1.747bebf492057p-1, 0x1.2cc5645094ff3p-2,
      0x1.a0521c711ab66p-5, 0x1.881b8058b9a0dp-9, 0x1.b16ff514a0afp-16};
@@ -189,20 +189,19 @@ _Float16 cr_atan2pif16(_Float16 yf16, _Float16 xf16){
       }
     }
   }
-  _Float16 rf = r; // specific atan2pif16
+  __bf16 rf = r; // specific atan2pi_bf16
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  // specific atan2pif16: changed underflow threshold from 0x1p-126 to 0x1p-14
-  int underflow = __builtin_fabsf (rf) < 0x1p-14f;
-  // we also have underflow when |r| <= 0x1.ffcp-15 (for all roundings)
-  if (__builtin_fabs (r) <= 0x1.ffcp-15)
+  int underflow = __builtin_fabsf (rf) < 0x1p-126f;
+  // we also have underflow when |r| <= 0x1.fep-127 (for all roundings)
+  if (__builtin_fabs (r) <= 0x1.fep-127)
     underflow = 1;
-  /* and when |r| < 0x1.ffep-15 for rounding to nearest (for rounding
-     toward zero we have |rf| < 0x1p-14 in that case thus underflow was already
-     set above).
-     Since the only missed case above is when |rf| = 0x1p-14, it suffices to
+  /* and when |r| < 0x1.ffp-127 for rounding to nearest (for rounding
+     toward zero we have |rf| < 0x1p-126 in that case thus underflow was
+     already set above).
+     Since the only missed case above is when |rf| = 0x1p-126, it suffices to
      set errno in that case. Then rf*2^-24+rf will round to rf when
      rounding to nearest, and to a larger absolute value when rounding away. */
-  if (__builtin_fabs (r) < 0x1.ffep-15 &&
+  if (__builtin_fabs (r) < 0x1.ffp-127 &&
       __builtin_fmaf (rf, 0x1p-24f, rf) == rf)
     underflow = 1;
   if (underflow)
@@ -212,6 +211,6 @@ _Float16 cr_atan2pif16(_Float16 yf16, _Float16 xf16){
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 atan2pif16 (_Float16 y, _Float16 x) {
-  return (_Float16) (atan2f ((float) y, (float) x) / (float) M_PI);
+__bf16 atan2pi_bf16 (__bf16 y, __bf16 x) {
+  return (__bf16) (atan2f ((float) y, (float) x) / (float) M_PI);
 }

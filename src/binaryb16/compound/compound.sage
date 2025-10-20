@@ -14,7 +14,7 @@ def asbfloat16(n):
    n = 2^7 + (n % (2^7))
    return R8(s*n*2^(e-127-7))
 
-# list exact/midpoint cases, exact for x=0 and y=0
+# list exact/midpoint cases, except for x=0 and y=0
 # l=exact()
 # l=[(x,y) for x,y in l if x!=0 and y!=0]
 # get_hex(min(abs(x) for x,y in l))
@@ -56,9 +56,6 @@ def exact():
       for f in [-3..-1]:
          for n in [1..5]:
             y = n*2^f
-            if R8(y).exact_rational()!=y:
-               print (get_hex(y))
-               continue
             Z = (1+X)^y
             if R9(Z).exact_rational()==Z:
                l.append((R8(x),R8(y)))

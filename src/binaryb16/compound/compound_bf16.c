@@ -28,7 +28,6 @@ SOFTWARE.
 #include <errno.h>
 #include <fenv.h>
 #include <math.h> // only used during performance tests
-#include <stdio.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)
@@ -337,14 +336,8 @@ is_exact_or_midpoint (float x, float y, int *midpoint)
   if (e < -31 || -6 < e)
     return 0;
 
-  double xd = 1.0 + (double) x;
-  x = 1.0f + x;
-
-  if (xd != (double) x || x >= 0x1p+53f)
-    return 0; // 1+x is not exact
-
   // recompute e for 1+x
-  v.f = x;
+  v.f = 1.0f + x;
   e = ((v.u << 1) >> 24) - 0x96;
 
   // xmax[y] for 1<=y<=5 is the largest odd m such that m^y fits in 9 bits

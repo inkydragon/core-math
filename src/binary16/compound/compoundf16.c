@@ -527,6 +527,7 @@ static _Float16 exp2_1 (double t, __attribute__((unused)) int exact)
 
 // return non-zero if (1+x)^y is exact or midpoint in binary16
 // adapted from powf.c, commit 8ec0730
+// assume x <> 0 and y <> 0 (these cases are treated earlier in the code)
 // set midpoint to 1 if (1+x)^y is a midpoint
 static int
 is_exact_or_midpoint (float x, float y, int *midpoint)
@@ -537,35 +538,25 @@ is_exact_or_midpoint (float x, float y, int *midpoint)
      (c) y<0: x=0 or (1+x=2^e and |y|=n*2^-k with 2^k dividing e)
          with 1 <= e <= 11
      (d) y>0: y=n*2^f with -3 <= f <= -1 and 1 <= n <= 7
-     In cases (b)-(d), the low 21 bits of the encoding of y are zero,
+     In cases (b)-(d), the low 19 bits of the encoding of y are zero,
      thus we use that for an early exit test. */
 
   b32u32_u v = {.f = x}, w = {.f = y};
-  if (__builtin_expect ((v.u << 1) != 0 && // x = 0
-                        (w.u << (32 - 21)) != 0, 1))
+  if (__builtin_expect ((w.u << (32 - 19)) != 0, 1))
     return 0;
-
-  if (__builtin_expect ((v.u << 1) == 0, 0)) // x = 0
-    return 1; // exact
 
   int32_t e = ((v.u << 1) >> 24) - 0x96; // ulp(x) = 2^e
 
-  /* 1+x cannot be exact in double when |x| < 2^-53, thus since
-     ufp(x)=2^(e+23), when e+23 < -53, i.e., when e < -76.
-     Similarly, 1+x cannot be exact when |x| > 2^53, which occurs when
-     e+23 > 53, i.e., e > 30 */
+  /* From routine exact() in compound.sage, if (1+x)^y is exact or midpoint,
+     and neither x nor y is zero, the minimal absolute value of x is
+     0x1p-11, and the maximal absolute value of x is 0x1.fcp+15.
+     Thus e is in the range -34..-8. */
 
-  if (e < -76 || 30 < e)
+  if (e < -34 || -8 < e)
     return 0;
 
-  double xd = 1.0 + (double) x;
-  x = 1.0f + x;
-
-  if (xd != (double) x)
-    return 0; // 1+x is not exact
-
   // recompute e for 1+x
-  v.f = x;
+  v.f = 1.0f + x; // always exact for 0x1p-11 <= |x| <= 0x1.fcp+15
   e = ((v.u << 1) >> 24) - 0x96;
 
   // xmax[y] for 1<=y<=7 is the largest odd m such that m^y fits in 12 bits
@@ -584,7 +575,7 @@ is_exact_or_midpoint (float x, float y, int *midpoint)
     m = m >> t;
     e += t;
     /* For normal numbers, we have x = m*2^e. */
-    if (y == 0 || y == 1)
+    if (y == 0)
       return 1; // exact
     if (m == 1)
       return -24 <= y * e && y * e < 16; // exact
@@ -596,16 +587,17 @@ is_exact_or_midpoint (float x, float y, int *midpoint)
     if (m > xmax[y_int])
       return 0;
     // |x^y| = m^y * 2^(e*y)
-    uint64_t my = m * m;
-    for (int i = 2; i < y_int; i++)
+    uint64_t my = m;
+    for (int i = 1; i < y_int; i++)
       my = my * m;
     // my = m^y
-    t = 32 - __builtin_clz (m);
+    t = 32 - __builtin_clz (my);
     // 2^(t-1) <= m^y < 2^t thus 2^(e*y + t - 1) <= |x^y| < 2^(e*y + t)
     int32_t ez = e * y_int + t;
     if (ez <= -24 || 16 < ez)
       return 0;
     // since m is odd, x^y is an odd multiple of 2^(e*y)
+    if (my > 2048) *midpoint = 1;
     return e * y_int >= -24;
   }
 

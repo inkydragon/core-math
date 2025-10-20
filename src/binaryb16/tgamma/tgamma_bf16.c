@@ -1,4 +1,4 @@
-/* Correctly-rounded true gamma function for binary16 value.
+/* Correctly-rounded true gamma function for bfloat16 value.
 
 Copyright (c) 2023-2025 Alexei Sibidanov and Paul Zimmermann
 
@@ -25,11 +25,11 @@ SOFTWARE.
 */
 
 /* This code is based on the binary32 code tgammaf.c:
-   at input we convert the inputs to _Float16 (exactly),
+   at input we convert the inputs to __bf16 (exactly),
    we then use the same code than for tgammaf,
-   and at output we round to _Float16.
+   and at output we round to __bf16.
    The changes with respect to tgammaf.c are marked with a comment
-   "specific tgammaf16". */
+   "specific tgamma_bf16". */
 
 #include <stdint.h>
 #include <errno.h>
@@ -78,8 +78,8 @@ roundeven_finite (double x)
 typedef union {float f; uint32_t u;} b32u32_u;
 typedef union {double f; uint64_t u;} b64u64_u;
 
-// specific tgammaf16: input renamed to xf16
-_Float16 cr_tgammaf16(_Float16 xf16){
+// specific tgamma_bf16: input renamed to xf16
+__bf16 cr_tgamma_bf16(__bf16 xf16){
   float x = xf16;
   b32u32_u t = {.f = x};
   uint32_t ax = t.u<<1;
@@ -101,29 +101,30 @@ _Float16 cr_tgammaf16(_Float16 xf16){
   if(__builtin_expect(ax<=0x6f000000u, 0)){ /* |x| <= 0x1p-16 */
     volatile double d = (0x1.fa658c23b1578p-1 - 0x1.d0a118f324b63p-1*z)*z - 0x1.2788cfc6fb619p-1;
     double f = 1.0/z + d;
-    _Float16 r = f;
+    __bf16 r = f;
 #ifdef CORE_MATH_SUPPORT_ERRNO
     /* tgamma(x) overflows for:
-     * 0 <= x < 0x1p-16 whatever the rounding mode
-     * x = 0x1p-16 and rounding to nearest or away from zero
+     * 0 <= x < 0x1p-128 whatever the rounding mode
+     * x = 0x1p-128 and rounding to nearest or away from zero
        (in which case the result is +Inf)
-     * -0x1p-16 <= x <= 0 whatever the rounding mode
+     * -0x1p-128 <= x <= 0 whatever the rounding mode
      */
-    if (x != 0x1p-16f || r > 0x1.fffffep+127f)
+    if (__builtin_fabsf (x) < 0x1p-128f || x == -0x1p-128f ||
+        (__builtin_fabsf (x) == 0x1p-128f && __builtin_fabsf (r) > 0x1.fep+127f))
       errno = ERANGE; // overflow
 #endif
     return r;
   }
   float fx = __builtin_floorf(x);
-  if(__builtin_expect(x >= 0x1.274p+3f, 0)){
+    if(__builtin_expect(x >= 0x1.1ap+5f, 0)){ // specific tgamma_bf16
 #ifdef CORE_MATH_SUPPORT_ERRNO
     /* The C standard says that if the function overflows,
        errno is set to ERANGE. */
-    errno = ERANGE;
+    errno = ERANGE; // overflow
 #endif
-    return 0x1p127f * 0x1p127f;
+    return 0x1p127f + 0x1p127f;
   }
-  int32_t k = fx; // specific tgammaf16: no overflow possible
+  int32_t k = fx; // specific tgamma_bf16: no overflow possible
   if(__builtin_expect(fx==x, 0)){ /* x is integer */
     if(x == 0.0f){
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -141,9 +142,9 @@ _Float16 cr_tgammaf16(_Float16 xf16){
     for(int32_t i=1; i<k; i++, x0 += 1.0) t0 *= x0;
     return t0;
   }
-  // specific tgammaf16: changed threshold of -42 to -16
-  if(__builtin_expect(x<-16.0f, 0)){ /* negative non-integer */
-    /* For x < -16, x non-integer, |gamma(x)| < 2^-25.  */
+  // specific tgamma_bf16: changed threshold from -42 to -36
+  if(__builtin_expect(x<-36.0f, 0)){ /* negative non-integer */
+    /* For x < -36, x non-integer, |gamma(x)| < 2^-134.  */
     static const float sgn[2] = {0x1p-127f, -0x1p-127f};
 #ifdef CORE_MATH_SUPPORT_ERRNO
     /* The C standard says that if the function underflows,
@@ -171,15 +172,15 @@ _Float16 cr_tgammaf16(_Float16 xf16){
   }
   if(i<=-0.5) w = 1/w;
   f *= w;
-  _Float16 r = f;
+  __bf16 r = f;
 #ifdef CORE_MATH_SUPPORT_ERRNO
-  if (__builtin_fabs (f) < 0x1p-14f)
+  if (__builtin_fabs (f) < 0x1p-126f)
     errno = ERANGE; // underflow
 #endif
   return r;
 }
 
 // dummy function since GNU libc does not provide it
-_Float16 tgammaf16 (_Float16 x) {
-  return (_Float16) tgammaf ((float) x);
+__bf16 tgamma_bf16 (__bf16 x) {
+  return (__bf16) tgammaf ((float) x);
 }

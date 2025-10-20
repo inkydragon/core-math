@@ -169,8 +169,6 @@ static inline void d_mul(double *hi, double *lo, double ah, double al,
 
 // INVLOG2 = 1/log(2) * (1 + eps1) with |eps1| < 2^-55.976
 #define INVLOG2 0x1.71547652b82fep+0
-// LOG2 = log(2) * (1 + eps) with |eps| < 2^-54.730
-#define LOG2 0x1.62e42fefa39efp-1
 
 /* for |z| <= 1/64, returns an approximation of log2(1+z)
    with relative error < 2^-49.642 (see analyze_p1() in compoundf.sage)
@@ -529,24 +527,22 @@ static _Float16 exp2_1 (double t, __attribute__((unused)) int exact)
 
 // return non-zero if (1+x)^y is exact or midpoint in binary16
 // adapted from powf.c, commit 8ec0730
-// set midpoint to 1 if (1+x)^y is a midpoing
+// set midpoint to 1 if (1+x)^y is a midpoint
 static int
 is_exact_or_midpoint (float x, float y, int *midpoint)
 {
   /* All cases such that (1+x)^y might be exact or midpoint are:
      (a) x = 0
-     (b) y integer, 0 <= y <= 7 (because 3^8 has 12 bits)
+     (b) y integer, 0 <= y <= 7 (because 3^8 has 13 bits)
      (c) y<0: x=0 or (1+x=2^e and |y|=n*2^-k with 2^k dividing e)
          with 1 <= e <= 11
      (d) y>0: y=n*2^f with -3 <= f <= -1 and 1 <= n <= 7
-     In cases (b)-(d), the low 19 bits of the encoding of y are zero,
-     thus we use that for an early exit test.
-     (For case (c), x=1 and y=-17, only 19 low bits of the
-     encoding of y are zero.) */
+     In cases (b)-(d), the low 21 bits of the encoding of y are zero,
+     thus we use that for an early exit test. */
 
   b32u32_u v = {.f = x}, w = {.f = y};
-  if (__builtin_expect ((v.u << 1) != 0 && // |0| <> 1
-                        (w.u << (32 - 16)) != 0, 1))
+  if (__builtin_expect ((v.u << 1) != 0 && // x = 0
+                        (w.u << (32 - 21)) != 0, 1))
     return 0;
 
   if (__builtin_expect ((v.u << 1) == 0, 0)) // x = 0
@@ -576,7 +572,7 @@ is_exact_or_midpoint (float x, float y, int *midpoint)
   static const uint32_t xmax[] = { 0, 0xfff, 63, 15, 7, 5, 3, 3};
 
   if (y >= 0 && isint (y)) {
-    /* let x = m*2^e with m an odd integer, x^y is exact when
+    /* let x = m*2^e with m an odd integer, x^y is exact/midpoint when
        - y = 0 or y = 1
        - m = 1 or -1 and -24 <= e*y < 16
        - if |x| is not a power of 2, 2 <= y <= 7 and
@@ -889,7 +885,7 @@ accurate_path (float x, float y, int exact, FLAG_T flag)
   double h, l;
 
   log2p1_accurate (&h, &l, x);
-  /* h + l is a double-double approximation of log(1+x),
+  /* h + l is a double-double approximation of log2(1+x),
      with relative error bounded by 2^-91.123,
      and |l| < 2^-48.574 |h| */
 

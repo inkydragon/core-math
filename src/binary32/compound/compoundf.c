@@ -926,7 +926,7 @@ accurate_path (float x, float y, int exact, FLAG_T flag)
   double h, l;
 
   log2p1_accurate (&h, &l, x);
-  /* h + l is a double-double approximation of log(1+x),
+  /* h + l is a double-double approximation of log2(1+x),
      with relative error bounded by 2^-91.123,
      and |l| < 2^-48.574 |h| */
 

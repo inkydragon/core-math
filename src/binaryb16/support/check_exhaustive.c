@@ -571,15 +571,5 @@ main (int argc, char *argv[])
 
   check_underflow_before ();
 
-  doit (asuint (0x1.14p+108), asuint (0x1p+0));
-  doit (asuint (0x1.bp-48), asuint (0x1.56p+1));
-  doit (asuint (0x1.2p+96), asuint (0x1.56p+0));
-  doit (asuint (0x1.84p-4), asuint (0x1.3cp+5));
-  doit (asuint (0x1.ccp-76), asuint (-0x1.b4p+0));
-  doit (asuint (0x1.cp-64), asuint (0x1p+1));
-  doit (asuint (0x1.ep-64), asuint (0x1p+1));
-  doit (asuint (0x1.cp-16), asuint (0x1.8p+1));
-  doit (asuint (-0x1.8p-3), asuint (-0x1.a8p+5));
-
   return doloop();
 }

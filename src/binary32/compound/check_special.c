@@ -90,14 +90,6 @@ is_nan (float x)
 }
 
 static inline int
-is_qnan (float x)
-{
-  uint32_t u = asuint (x);
-  int e = u >> 23;
-  return (e == 0xff || e == 0x1ff) && (u & 0x400000) != 0;
-}
-
-static inline int
 is_equal (float x, float y)
 {
   if (is_nan (x))

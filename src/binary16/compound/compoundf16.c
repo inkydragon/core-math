@@ -397,7 +397,7 @@ static double _log2p1 (double x)
   uint64_t m = v.u & 0xfffffffffffffull;
   int64_t e = (v.u >> 52) - 0x3ff + (m >= 0x6a09e667f3bcdull);
   // 2^e/sqrt(2) < u < 2^e*sqrt(2), with -29 <= e <= 128
-  v.u -= e << 52;
+  v.u -= e * 0x10000000000000ll;
   double t = v.f;
   // u = 2^e*t with 1/sqrt(2) < t < sqrt(2)
   // thus log2(u) = e + log2(t)
@@ -506,13 +506,13 @@ static _Float16 exp2_1 (double t, __attribute__((unused)) int exact)
      The total absolute error is thus bounded by 2^-43.035 + 2^-41.208
      < 2^-40.849. */
   b64u64_u err = {.f = 0x1.1dp-41}; // 2^-40.849 < 0x1.1dp-41
-  v.u += (int64_t) k << 52; // scale v by 2^k
+  v.u += (int64_t) k * 0x10000000000000ll; // scale v by 2^k
 
   // in case of potential underflow, we defer to the accurate path
   if (__builtin_expect (v.f < 0x1.00000000008e2p-126, 0))
     return -1.0f;
 
-  err.u += (int64_t) k << 52; // scale the error by 2^k too
+  err.u += (int64_t) k * 0x10000000000000ll; // scale the error by 2^k too
   // specific compoundf16: changed float to _Float16 below
   _Float16 lb = v.f - err.f, rb = v.f + err.f;
   if (lb != rb) return -1.0f; // rounding test failed
@@ -632,7 +632,11 @@ is_exact_or_midpoint (float x, float y, int *midpoint)
     // in case (a), f >= 0; in case (b), f < 0 and k = -f
     t = __builtin_ctz (e);
     if (-f > t) return 0; // only possible with (b), when 2^k does not divide e
-    int32_t ez = ((f >= 0) ? (-e << f) : (-e >> (-f))) * n;
+    int32_t ez;
+    if (e >= 0)
+      ez = ((f >= 0) ? -(e << f) : -(e >> (-f))) * n;
+    else
+      ez = ((f >= 0) ? (-e << f) : (-e >> (-f))) * n;
     return -24 <= ez && ez < 16;
   }
 
@@ -748,9 +752,9 @@ static _Float16 exp2_2 (double h, double l, float x, float y, int exact,
     static const double err = 0x1.b1p-84; // 2^-83.242 < 0x1.b1p-84
 
     v.f = qh + (ql - err);
-    v.u += (int64_t) k << 52;
+    v.u += (int64_t) k * 0x10000000000000ll;
     w.f = qh + (ql + err);
-    w.u += (int64_t) k << 52;
+    w.u += (int64_t) k * 0x10000000000000ll;
     _Float16 left, right;
 
     left = v.f;
@@ -775,7 +779,7 @@ static _Float16 exp2_2 (double h, double l, float x, float y, int exact,
      qh + ql rounds to qh, then we might have a double-rounding issue. */
   if ((w.u << 36) == 0 && v.f == qh && ql != 0)
       v.u += (ql > 0) ? 1 : -1; // simulate round to odd
-  v.u += (int64_t) k << 52; // scale v by 2^k
+  v.u += (int64_t) k * 0x10000000000000ll; // scale v by 2^k
   // there is no underflow/overflow in the scaling by 2^k since |k| <= 150
   _Float16 res = v.f;
 #ifdef CORE_MATH_SUPPORT_ERRNO

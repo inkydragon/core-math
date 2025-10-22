@@ -25,7 +25,7 @@ SOFTWARE.
 */
 
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for FE_TONEAREST, FE_UPWARD, feraiseexcept, FE_INVALID
 #include <stdint.h>
 #ifdef __x86_64__
 #include <x86intrin.h>

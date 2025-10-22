@@ -26,11 +26,6 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#if defined(__x86_64__)
-#include <x86intrin.h>
-#else
-#include <fenv.h>
-#endif
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for FE_TONEAREST, ...
 #include <math.h> // only used during performance tests
 
 // Warning: clang also defines __GNUC__

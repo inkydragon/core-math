@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for fegetround, FE_TONEAREST, FE_UPWARD
 #ifdef __x86_64__
 #include <x86intrin.h>
 #define FLAG_T uint32_t

@@ -37,7 +37,7 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // needed to define compoundf since it is not in glibc
-#include <fenv.h>
+#include <fenv.h> // for fegetexceptflag, fesetexceptflag
 #ifdef __x86_64__
 #include <x86intrin.h>
 #define FLAG_T uint32_t

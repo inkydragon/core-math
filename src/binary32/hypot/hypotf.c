@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for fegetround, FE_UPWARD, FE_TONEAREST
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

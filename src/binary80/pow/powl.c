@@ -36,7 +36,7 @@ SOFTWARE.
  */
 
 #include <stdint.h>
-#include <fenv.h>
+#include <fenv.h> // for FE_TONEAREST, FE_UPWARD, FE_DOWNWARD, ...
 #include <stdbool.h>
 #include <errno.h>
 

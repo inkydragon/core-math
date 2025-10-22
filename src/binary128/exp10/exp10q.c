@@ -29,7 +29,7 @@ SOFTWARE.
 #ifdef CORE_MATH_SUPPORT_ERRNO
 #include <errno.h>
 #endif
-#include <fenv.h>
+#include <fenv.h> // for FE_INEXACT, FE_INVALID, FE_OVERFLOW, FE_UNDERFLOW
 #include <stdint.h>
 #include <math.h>
 #ifdef __x86_64__

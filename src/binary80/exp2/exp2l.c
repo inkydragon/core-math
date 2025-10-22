@@ -47,7 +47,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for feraiseexcept, FE_UNDERFLOW
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

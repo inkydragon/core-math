@@ -44,7 +44,7 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // needed to define compoundf since it is not in glibc
-#include <fenv.h>
+#include <fenv.h> // for fexcept_t, fegetexceptflag, FE_INEXACT, ...
 #define FLAG_T fexcept_t
 
 // Warning: clang also defines __GNUC__

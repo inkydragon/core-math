@@ -34,7 +34,7 @@ SOFTWARE.
 #include <stdint.h>
 #include <errno.h>
 #include <math.h>
-#include <fenv.h>
+#include <fenv.h> // for FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, feraiseexcept...
 
 #ifdef __x86_64__
 #include <x86intrin.h>

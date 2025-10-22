@@ -54,20 +54,19 @@ SOFTWARE.
    This code corresponds to reference [5].       
 */
 
-#include "pow.h"
 #include <stdio.h> // needed in case of rounding-test failure
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <fenv.h> // for fegetround, FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, ...
 #ifdef __x86_64__
 #include <x86intrin.h>
-#endif
-#if defined(__x86_64__)
 #define FLAG_T uint32_t
 #else
-#include <fenv.h>
 #define FLAG_T fexcept_t
 #endif
+
+#include "pow.h"
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

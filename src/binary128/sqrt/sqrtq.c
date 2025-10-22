@@ -27,7 +27,7 @@ SOFTWARE.
 #define _GNU_SOURCE /* to define ...f128 functions */
 
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for feraiseexcept, FE_INVALID, FE_INEXACT
 #include <stdint.h>
 #include <math.h>
 #ifdef __x86_64__

@@ -25,7 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
-#include <fenv.h>
+#include <fenv.h> // for feraiseexcept, FE_INVALID
 #include <errno.h>
 
 // Warning: clang also defines __GNUC__

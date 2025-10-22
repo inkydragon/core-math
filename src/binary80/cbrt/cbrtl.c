@@ -38,7 +38,7 @@ SOFTWARE.
  */
 
 #include <stdint.h>
-#include <fenv.h>
+#include <fenv.h> // for fexcept_t, fegetexceptflag, FE_INEXACT
 
 #ifdef DEBUG
 #include <stdio.h>

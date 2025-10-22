@@ -29,7 +29,7 @@ SOFTWARE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <fenv.h>
+#include <fenv.h> // for fegetround, FE_TONEAREST, FE_DOWNWARD, FE_UPWARD
 #include <errno.h>
 
 // Warning: clang also defines __GNUC__

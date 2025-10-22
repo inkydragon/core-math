@@ -29,9 +29,7 @@ SOFTWARE.
 #define CR_POW_H
 
 #include <stdint.h>
-#include <assert.h>
 
-#include <fenv.h>
 #include <math.h>
 #include <errno.h>
 

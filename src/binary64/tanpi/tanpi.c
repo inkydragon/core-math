@@ -27,7 +27,6 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
 #include <math.h> // needed to provide tanpi() since glibc does not have it
 
 // Warning: clang also defines __GNUC__

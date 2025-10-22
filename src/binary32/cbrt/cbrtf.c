@@ -25,7 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
-#include <fenv.h>
+#include <fenv.h> // for fegetexceptflag, fesetexceptflag
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

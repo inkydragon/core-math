@@ -27,7 +27,7 @@ SOFTWARE.
 #ifdef CORE_MATH_SUPPORT_ERRNO
 #include <errno.h>
 #endif
-#include <fenv.h>
+#include <fenv.h> // for FE_INEXACT, FE_INVALID, FE_DIVBYZERO
 #include <stdint.h>
 #ifdef __x86_64__
 #include <x86intrin.h>

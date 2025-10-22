@@ -27,7 +27,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for feraiseexcept, FE_INVALID
 #include <math.h> // needed to provide cospi() since glibc does not have it
 
 // Warning: clang also defines __GNUC__

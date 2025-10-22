@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for fexcept_t, fegetexceptflag, FE_INEXACT
 #include <math.h> // only used during performance tests
 #define FLAG_T fexcept_t
 

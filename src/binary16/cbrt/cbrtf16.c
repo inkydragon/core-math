@@ -26,7 +26,6 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <math.h> // only used during performance tests
-#include <fenv.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

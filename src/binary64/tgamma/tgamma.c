@@ -29,7 +29,7 @@ SOFTWARE.
 #if defined(__x86_64__)
 #include <x86intrin.h>
 #else
-#include <fenv.h>
+#include <fenv.h> // for feraiseexcept, FE_UNDERFLOW
 #endif
 
 // Warning: clang also defines __GNUC__

@@ -25,7 +25,7 @@ SOFTWARE.
 */
 
 #include <stdint.h>
-#include <fenv.h>
+#include <fenv.h> // for fexcept_t, fegetexceptflag, ...
 
 #ifdef __x86_64__
 #include <x86intrin.h>

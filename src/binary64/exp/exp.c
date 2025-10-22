@@ -26,7 +26,7 @@ SOFTWARE.
 
 #include <stdint.h>
 #include <errno.h>
-#include <fenv.h>
+#include <fenv.h> // for feraiseexcept, FE_UNDERFLOW
 #if defined(__x86_64__)
 #include <x86intrin.h>
 #endif

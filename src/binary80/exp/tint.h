@@ -24,7 +24,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -369,7 +368,7 @@ static inline void tint_fromd (tint_t *a, double x)
 // Otherwise, err is a bound in ulps on the maximal error on a->l
 // y,x are the inputs of atan2 (in case we can't round correctly)
 static inline double
-tint_tod (const tint_t *a, uint64_t err, double y, double x)
+tint_tod (const tint_t *a, uint64_t err)
 {
   int bug = a->h == 0x80f5b274315ba7ff && a->m == 0xffffffffffffffff && a->l == 0xffffffffffffffff && a->ex == -1028;
   if (a->ex >= 1025) // overflow: |a| >= 2^1024
@@ -391,14 +390,6 @@ tint_tod (const tint_t *a, uint64_t err, double y, double x)
      (a) a->m = 0 and the low 10 bits of a->h are zero and a->l < err
      (b) a->m = 111...111 and the low 10 bits of a->h are 1 and
          a->l > 2^64 - err */
-  if (__builtin_expect (mm == 0 || ~mm == 0, 0))
-    if ((mm == 0 && (low == 0 || low == 0x400) && ll < err) ||
-        (~mm == 0 && (low == 0x3ff || low == 0x7ff) && ~ll < err))
-    {
-      printf ("Unexpected worst-case found, please report to core-math@inria.fr:\n");
-      printf ("Worst-case of atan2 found: y,x=%la,%la\n", y, x);
-      exit (1);
-    }
   if (ex <= -1022) // subnormal case
   {
     int sh = -1021 - ex; // 1 <= sh <= 52
@@ -440,7 +431,7 @@ tint_tod (const tint_t *a, uint64_t err, double y, double x)
 static inline void inv_tint (tint_t *r, const tint_t *A)
 {
   tint_t q[1];
-  double a = tint_tod (A, 0, 0, 0); // exact
+  double a = tint_tod (A, 0); // exact
   // To simplify the error analysis, we assume 0.5 <= a < 1
   int subnormal = __builtin_fabs (a) < 0x1p-1022;
   if (subnormal)

@@ -40,10 +40,6 @@ SOFTWARE.
 #include <stdint.h>
 #include <fenv.h> // for fexcept_t, fegetexceptflag, FE_INEXACT
 
-#ifdef DEBUG
-#include <stdio.h>
-#endif
-
 #ifdef __x86_64__
 #include <x86intrin.h>
 #endif

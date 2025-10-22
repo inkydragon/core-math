@@ -547,8 +547,10 @@ static float exp2_1 (double t)
 
 // return non-zero if (1+x)^y is exact or midpoint in binary32
 // adapted from powf.c, commit 8ec0730
+// set midpoint to non-zero if (1+x)^y is a midpoint
+// (assume midpoint=0 initially)
 static int
-is_exact_or_midpoint (float x, float y)
+is_exact_or_midpoint (float x, float y, int *midpoint)
 {
   /* All cases such that (1+x)^y might be exact are:
      (a) x = 0
@@ -566,7 +568,7 @@ is_exact_or_midpoint (float x, float y)
     return 0;
 
   if (__builtin_expect ((v.u << 1) == 0, 0)) // x = 0
-    return 1;
+    return 1; // never midpoint
 
   int32_t e = ((v.u << 1) >> 24) - 0x96; // ulp(x) = 2^e
 
@@ -605,9 +607,12 @@ is_exact_or_midpoint (float x, float y)
     e += t;
     /* For normal numbers, we have 1+x = m*2^e. */
     if (y == 0 || y == 1)
+    {
+      *midpoint = m > 0x1000000u;
       return 1;
+    }
     if (m == 1)
-      return -149 <= y * e && y * e < 128;
+      return -149 <= y * e && y * e < 128; // never midpoint
     // now for y < 0 or 15 < y it cannot be exact
     if (y < 0 || 15 < y)
       return 0;
@@ -620,12 +625,13 @@ is_exact_or_midpoint (float x, float y)
     for (int i = 2; i < y_int; i++)
       my = my * m;
     // my = m^y
-    t = 64 - __builtin_clzl (m);
+    t = 64 - __builtin_clzl (my);
     // 2^(t-1) <= m^y < 2^t thus 2^(e*y + t - 1) <= |(1+x)^y| < 2^(e*y + t)
     int32_t ez = e * y_int + t;
     if (ez <= -149 || 128 < ez)
       return 0;
     // since m is odd, x^y is an odd multiple of 2^(e*y)
+    *midpoint = my > 0x1000000u;
     return e * y_int >= -149;
   }
 
@@ -1105,12 +1111,13 @@ float cr_compoundf (float x, float y)
   if (__builtin_expect ((t.u << 1) <= 0x7cce2a8ed5e1a9b2ull, 0))
     return (t.u >> 63) ? 1.0f - 0x1p-25f : 1.0f + 0x1p-25f;
 
-  int exact = is_exact_or_midpoint (x, y);
+  int midpoint = 0;
+  int exact = is_exact_or_midpoint (x, y, &midpoint);
 
   float res = exp2_1 (t.f);
   if (__builtin_expect (res != -1.0f, 1))
   {
-    if (exact)
+    if (exact && !midpoint)
       set_flag (flag); // restore flags
     return res;
   }

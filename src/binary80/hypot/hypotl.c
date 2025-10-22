@@ -203,7 +203,12 @@ cr_hypotl (long double x, long double y)
       }
     }
     if (sx.e == 0) // subnormal case, result is always inexact
+    {
       feraiseexcept (FE_UNDERFLOW);
+#ifdef CORE_MATH_SUPPORT_ERRNO
+      errno = ERANGE; // underflow
+#endif
+    }
     return sx.f;
   }
 

@@ -40,7 +40,6 @@ SOFTWARE.
        https://inria.hal.science/hal-04861251
 */
 
-#include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // needed to define compoundf since it is not in glibc

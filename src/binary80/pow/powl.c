@@ -42,7 +42,7 @@ SOFTWARE.
 
 #ifndef CORE_MATH_FAIL_QUIET
 #include <stdio.h> // needed in case of unexpected worst case
-#include <stdlib.h>
+#include <stdlib.h> // for exit
 #endif
 
 #ifdef __x86_64__

@@ -56,7 +56,7 @@ SOFTWARE.
 
 #include <stdio.h> // needed in case of rounding-test failure
 #include <stdint.h>
-#include <stdlib.h>
+#include <stdlib.h> // for exit
 #include <errno.h>
 #include <fenv.h> // for fegetround, FE_TONEAREST, FE_DOWNWARD, FE_UPWARD, ...
 #ifdef __x86_64__

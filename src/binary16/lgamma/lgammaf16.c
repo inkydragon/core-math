@@ -35,7 +35,6 @@ SOFTWARE.
 #include <errno.h>
 #include <math.h> // for signgam
 #include <limits.h>
-#include <stdlib.h>
 
 // Warning: clang also defines __GNUC__
 #if defined(__GNUC__) && !defined(__clang__)

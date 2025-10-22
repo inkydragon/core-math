@@ -27,7 +27,7 @@ SOFTWARE.
 /* stdio.h and stdlib.h are needed in case the rounding test of the accurate
    step fails, to print the corresponding input and exit. */
 #include <stdio.h>
-#include <stdlib.h>
+#include <stdlib.h> // for exit
 #include <stdint.h>
 #include <fenv.h> // for fegetround, FE_TONEAREST, FE_DOWNWARD, FE_UPWARD
 #include <errno.h>

@@ -71,7 +71,7 @@ float cr_atanpif(float x){
 #endif
       return sx;
     }
-    return sx - (0x1.5555555555555p-2*sx)*(x*x);
+    return sx - (0x1.5555555555555p-2*sx)*(z*z);
   }
   uint32_t ax = t.u&(~0u>>1);
   if(__builtin_expect(ax == 0x3fa267ddu, 0)) return __builtin_copysignf(0x1.267004p-2f,x) - __builtin_copysignf(0x1p-55f,x);

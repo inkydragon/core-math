@@ -116,7 +116,7 @@ float cr_log2p1f(float x) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE;
 #endif
-      return -1.0/0.0f; // -1.0
+      return -1.0f/0.0f; // -1.0
     }
     if (ux>(0x1ffu<<23)) return x + x; // nan
 #ifdef CORE_MATH_SUPPORT_ERRNO

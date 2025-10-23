@@ -68,7 +68,7 @@ _Float16 cr_cbrtf16(_Float16 x){
 		int expo = (t.u & 0x7fff) >> 10;
 		if (expo % 3 == 1 && expo < 31) { // avoid sNaN and k != 1 mod 3
 			t.u = (((expo - 16) / 3 + 15) << 10) + 0x018b + ((t.u >> 15) << 15);
-			return (float) t.f + 0x1p-16 * ((t.u >> 15) - 0.5f);
+			return (float) t.f + 0x1p-16f * ((t.u >> 15) - 0.5f);
 		}
 	}
 	return cbrtf ((float) x);

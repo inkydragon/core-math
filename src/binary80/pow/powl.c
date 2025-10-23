@@ -1807,7 +1807,7 @@ long double cr_powl(long double x, long double y) {
 		   < 2^-65, and exp(+/-2^-65) rounds to 1 to nearest,
 		   thus by monotonicity of rounding x^y rounds to 1
 		   to nearest. */
-		if(__builtin_expect(rhsq <= 0x1p-132f, 0)) {
+		if(__builtin_expect(rhsq <= 0x1p-132, 0)) {
 			return sign * 1.L + sign * rh;
 		} else if(__builtin_expect(rhsq >= (16447*16447), 0)) {
 		/* If |rh| >= 16447, then |rh + rl| > 164456.9 and depending on the

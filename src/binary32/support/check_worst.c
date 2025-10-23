@@ -190,7 +190,7 @@ check_underflow_before (void)
 static void
 fix_underflow (float x, float y, float z)
 {
-  if (__builtin_fabsf (z) != 0x1p-126)
+  if (__builtin_fabsf (z) != 0x1p-126f)
     return;
   if (underflow_before) {
     if (mpfr_flags_test (MPFR_FLAGS_UNDERFLOW) == 0)
@@ -245,7 +245,8 @@ check (float x, float y)
   int inex2 = fetestexcept (FE_INEXACT);
 #endif
   if (! is_equal (z1, z2)) {
-    printf("FAIL x,y=%a,%a ref=%a z=%a\n", x, y, z1, z2);
+    printf("FAIL x,y=%a,%a ref=%a z=%a\n",
+           (double) x, (double) y, (double) z1, (double) z2);
     fflush(stdout);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp atomic update
@@ -267,7 +268,8 @@ check (float x, float y)
   // check spurious/missing underflow
   if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
-    printf ("Spurious underflow exception for x,y=%a,%a (z=%a)\n", x, y, z1);
+    printf ("Spurious underflow exception for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -275,7 +277,8 @@ check (float x, float y)
   }
   if (!fetestexcept (FE_UNDERFLOW) && mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
-    printf ("Missing underflow exception for x,y=%a,%a (z=%a)\n", x, y, z1);
+    printf ("Missing underflow exception for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -285,7 +288,8 @@ check (float x, float y)
   // check spurious/missing overflow
   if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
-    printf ("Spurious overflow exception for x,y=%a,%a (z=%a)\n", x, y, z1);
+    printf ("Spurious overflow exception for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -293,7 +297,8 @@ check (float x, float y)
   }
   if (!fetestexcept (FE_OVERFLOW) && mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
-    printf ("Missing overflow exception for x,y=%a,%a (z=%a)\n", x, y, z1);
+    printf ("Missing overflow exception for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -303,7 +308,8 @@ check (float x, float y)
 #ifdef CORE_MATH_CHECK_INEXACT
   if ((inex1 == 0) && (inex2 != 0))
   {
-    printf ("Spurious inexact exception for x,y=%a,%a\n", x, y);
+    printf ("Spurious inexact exception for x,y=%a,%a\n",
+            (double) x, (double) y);
     fflush (stdout);
     failures ++;
 #ifndef DO_NOT_ABORT
@@ -312,7 +318,8 @@ check (float x, float y)
   }
   if ((inex1 != 0) && (inex2 == 0))
   {
-    printf ("Missing inexact exception for x,y=%a,%a\n", x, y);
+    printf ("Missing inexact exception for x,y=%a,%a\n",
+            (double) x, (double) y);
     fflush (stdout);
     failures ++;
 #ifndef DO_NOT_ABORT
@@ -328,7 +335,8 @@ check (float x, float y)
   {
     if (is_nan (z1) && errno != EDOM)
     {
-      printf ("Missing errno=EDOM for x,y=%a,%a (z=%a)\n", x, y, z1);
+      printf ("Missing errno=EDOM for x,y=%a,%a (z=%a)\n",
+              (double) x, (double) y, (double) z1);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit(1);
@@ -336,7 +344,8 @@ check (float x, float y)
     }
     if (!is_nan (z1) && errno == EDOM)
     {
-      printf ("Spurious errno=EDOM for x,y=%a,%a (z=%a)\n", x, y, z1);
+      printf ("Spurious errno=EDOM for x,y=%a,%a (z=%a)\n",
+              (double) x, (double) y, (double) z1);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit(1);
@@ -347,7 +356,8 @@ check (float x, float y)
       mpfr_flags_test (MPFR_FLAGS_UNDERFLOW);
     if (expected_erange && errno != ERANGE)
     {
-      printf ("Missing errno=ERANGE for x,y=%a,%a (z=%a)\n", x, y, z1);
+      printf ("Missing errno=ERANGE for x,y=%a,%a (z=%a)\n",
+              (double) x, (double) y, (double) z1);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit(1);
@@ -355,7 +365,8 @@ check (float x, float y)
     }
     if (!expected_erange && errno == ERANGE)
     {
-      printf ("Spurious errno=ERANGE for x,y=%a,%a (z=%a)\n", x, y, z1);
+      printf ("Spurious errno=ERANGE for x,y=%a,%a (z=%a)\n",
+              (double) x, (double) y, (double) z1);
       fflush (stdout);
 #ifndef DO_NOT_ABORT
       exit(1);
@@ -368,7 +379,8 @@ check (float x, float y)
   feraiseexcept (FE_UNDERFLOW);
   z1 = cr_function_under_test(x, y);
   if (!fetestexcept (FE_UNDERFLOW)) {
-    printf ("Underflow exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Underflow exception was reset for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -379,7 +391,8 @@ check (float x, float y)
   feraiseexcept (FE_DIVBYZERO);
   z1 = cr_function_under_test(x, y);
   if (!fetestexcept (FE_DIVBYZERO)) {
-    printf ("Division by zero exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Division by zero exception was reset for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -391,7 +404,8 @@ check (float x, float y)
   feraiseexcept (FE_INEXACT);
   z1 = cr_function_under_test(x, y);
   if (!fetestexcept (FE_INEXACT)) {
-    printf ("Inexact exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Inexact exception was reset for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -402,7 +416,8 @@ check (float x, float y)
   feraiseexcept (FE_INVALID);
   z1 = cr_function_under_test(x, y);
   if (!fetestexcept (FE_INVALID)) {
-    printf ("Invalid exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Invalid exception was reset for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -413,7 +428,8 @@ check (float x, float y)
   feraiseexcept (FE_OVERFLOW);
   z1 = cr_function_under_test(x, y);
   if (!fetestexcept (FE_OVERFLOW)) {
-    printf ("Overflow exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Overflow exception was reset for x,y=%a,%a (z=%a)\n",
+            (double) x, (double) y, (double) z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -482,7 +498,7 @@ check_signaling_nan (void)
   if (!is_nan (y))
   {
     fprintf (stderr, "Error, foo(sNaN,qNaN) should be NaN, got %a=%x\n",
-             y, asuint (y));
+             (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
@@ -496,7 +512,8 @@ check_signaling_nan (void)
   int flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, qnan);
+    printf ("Missing invalid exception for x,y=%a,%a\n",
+            (double) snan, (double) qnan);
     exit (1);
   }
 
@@ -506,7 +523,7 @@ check_signaling_nan (void)
   if (!is_nan (y))
   {
     fprintf (stderr, "Error, foo(sNaN,1.0) should be NaN, got %a=%x\n",
-             y, asuint (y));
+             (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
@@ -520,7 +537,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 2.0f);
+    printf ("Missing invalid exception for x,y=%a,%a\n", (double) snan, 2.0);
     exit (1);
   }
 
@@ -530,7 +547,7 @@ check_signaling_nan (void)
   if (!is_nan (y))
   {
     fprintf (stderr, "Error, foo(qNaN,sNaN) should be NaN, got %a=%x\n",
-             y, asuint (y));
+             (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
@@ -544,7 +561,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x=qNaN,y=%a\n", snan);
+    printf ("Missing invalid exception for x=qNaN,y=%a\n", (double) snan);
     exit (1);
   }
 
@@ -555,7 +572,7 @@ check_signaling_nan (void)
   if (!is_nan (y))
   {
     fprintf (stderr, "Error, foo(x,sNaN) should be NaN, got %a=%x\n",
-             y, asuint (y));
+             (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
@@ -569,7 +586,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", -1.0f, snan);
+    printf ("Missing invalid exception for x,y=%a,%a\n", -1.0, (double) snan);
     exit (1);
   }
 
@@ -581,7 +598,7 @@ check_signaling_nan (void)
   if (!is_nan (y))
   {
     fprintf (stderr, "Error, foo(sNaN,x) should be NaN, got %a=%x\n",
-             y, asuint (y));
+             (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
@@ -595,7 +612,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", snan, 2.0f);
+    printf ("Missing invalid exception for x,y=%a,%a\n", (double) snan, 2.0);
     exit (1);
   }
 
@@ -606,7 +623,7 @@ check_signaling_nan (void)
   if (!is_nan (y))
   {
     fprintf (stderr, "Error, foo(x,sNaN) should be NaN, got %a=%x\n",
-             y, asuint (y));
+             (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
@@ -620,7 +637,7 @@ check_signaling_nan (void)
   flag = fetestexcept (FE_INVALID);
   if (!flag)
   {
-    printf ("Missing invalid exception for x,y=%a,%a\n", -1.0f, snan);
+    printf ("Missing invalid exception for x,y=%a,%a\n", -1.0, (double) snan);
     exit (1);
   }
 }

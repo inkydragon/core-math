@@ -540,9 +540,10 @@ cr_cbrtl (long double x)
     return r.f;
   } 
 
-	set_flag_quick(flagp);
-	fexcept_t full_flag;
-	fegetexceptflag	(&full_flag, FE_INEXACT);
- 	// we reuse the initial approximation (h+l)*2^e in the accurate path
- 	return accurate_path (h * sign, l * sign, olde, x, full_flag);
+  set_flag_quick(flagp);
+  fexcept_t full_flag;
+  fegetexceptflag	(&full_flag, FE_INEXACT);
+  // we reuse the initial approximation (h+l)*2^e in the accurate path
+  return accurate_path (h * (double) sign, l * (double) sign, olde, x,
+                        full_flag);
 }

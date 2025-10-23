@@ -150,5 +150,5 @@ __bf16 cr_acospi_bf16 (__bf16 x)
 
 // dummy function since GNU libc does not provide it
 __bf16 acospi_bf16 (__bf16 x) {
-  return (__bf16) acosf ((float) x) / M_PI;
+  return (__bf16) acosf ((float) x) / (float) M_PI;
 }

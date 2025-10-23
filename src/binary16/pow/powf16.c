@@ -280,7 +280,7 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 	b64u64_u ret;
 	if (isex > 0xff) ret.u = isex;
 	else if (isex) {
-		ret.f = exp_in_pow(log_in_pow(vx.f) * vy.f);
+          ret.f = exp_in_pow(log_in_pow(vx.f) * (double) vy.f);
 		// Test if ret is exact :
 		b64u64_u test_exact1 = {.f = fast_pow(vx.f, isex >> 4)};
 		b64u64_u test_exact2 = {.u = (ret.u + (0x1ull << 40)) & (0xfffffeull << 40)};
@@ -290,7 +290,7 @@ _Float16 cr_powf16(_Float16 x, _Float16 y){
 			set_flag(flag); // resetting inexact (if inexact -> raise in return)
 		}
 	}
-	else ret.f = exp_in_pow(log_in_pow(vx.f) * vy.f);
+	else ret.f = exp_in_pow(log_in_pow(vx.f) * (double) vy.f);
 	ret.u += sign;
 #ifdef CORE_MATH_SUPPORT_ERRNO
 	if (fegetround() == FE_TONEAREST) { // rndn

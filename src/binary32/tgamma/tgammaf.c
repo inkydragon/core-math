@@ -135,7 +135,7 @@ float cr_tgammaf(float x){
   /* compute k only after the overflow check, otherwise the cast to integer
      might overflow */
   int32_t k;
-  if(__builtin_expect(x <= -0x1p+31, 0)) {
+  if(__builtin_expect(x <= -0x1p+31f, 0)) {
     k = INT32_MIN;
   }
   else {

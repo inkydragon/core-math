@@ -480,7 +480,7 @@ check_errno (_Float16 r, double t)
    exact is non-zero iff (1+x)^y is exact/midpoint (only used for errno) */
 static _Float16 exp2_1 (double t, __attribute__((unused)) int exact)
 {
-  if (t <= -25.0f) {
+  if (t <= -25.0) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE; // underflow
 #endif

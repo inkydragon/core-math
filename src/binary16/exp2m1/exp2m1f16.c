@@ -1013,7 +1013,7 @@ _Float16 cr_exp2m1f16(_Float16 x){
        log(2)*x + 1/2*log(2)^2*x^2 + 1/6*log(2)^3*x^3 */
     float t = x;
     float c = 0x1.62e430p-1f * t, d;
-    d = __builtin_fmaf (c, 0x1.555556p-2 * c, c); // log(2)*x+1/3*log(2)^2*x^2
+    d = __builtin_fmaf (c, 0x1.555556p-2f * c, c); // log(2)*x+1/3*log(2)^2*x^2
     res = __builtin_fmaf (d, 0.5f * c, c);
 #ifdef CORE_MATH_SUPPORT_ERRNO
     /* we have underflow for 0 < |x| < 0x1.714p-14, and for x = -0x1.714p-14

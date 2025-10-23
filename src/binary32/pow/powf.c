@@ -405,7 +405,7 @@ float cr_powf(float x0, float y0){
 #endif
       return (x - x) / (x - x);  // NaN /  (-1)^y for non-integer y, should raise 'Invalid operation' exception.
     }
-    return is_signalingf (y0) ? x0 + y0 : x; // 1^y = 1 except for y = sNaN
+    return is_signalingf (y0) ? x0 + y0 : x0; // 1^y = 1 except for y = sNaN
   }
   if(__builtin_expect (ty.u<<1 == 0, 0))
     return is_signalingf (x0) ? x0 + y0 : 1.0f; // x^0 = 1 except for x = sNaN

@@ -294,7 +294,7 @@ check (float x, float y)
   feraiseexcept (FE_UNDERFLOW);
   z1 = cr_compoundf (x, y);
   if (!fetestexcept (FE_UNDERFLOW)) {
-    printf ("Underflow exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Underflow exception was reset for x,y=%a,%a (z=%a)\n", x, y, z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -305,7 +305,7 @@ check (float x, float y)
   feraiseexcept (FE_DIVBYZERO);
   z1 = cr_compoundf (x, y);
   if (!fetestexcept (FE_DIVBYZERO)) {
-    printf ("Division by zero exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Division by zero exception was reset for x,y=%a,%a (z=%a)\n", x, y, z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -317,7 +317,7 @@ check (float x, float y)
   feraiseexcept (FE_INEXACT);
   z1 = cr_compoundf (x, y);
   if (!fetestexcept (FE_INEXACT)) {
-    printf ("Inexact exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Inexact exception was reset for x,y=%a,%a (z=%a)\n", x, y, z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -328,7 +328,7 @@ check (float x, float y)
   feraiseexcept (FE_INVALID);
   z1 = cr_compoundf (x, y);
   if (!fetestexcept (FE_INVALID)) {
-    printf ("Invalid exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Invalid exception was reset for x,y=%a,%a (z=%a)\n", x, y, z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);
@@ -339,7 +339,7 @@ check (float x, float y)
   feraiseexcept (FE_OVERFLOW);
   z1 = cr_compoundf (x, y);
   if (!fetestexcept (FE_OVERFLOW)) {
-    printf ("Overflow exception was reset for x,y=%la,%la (z=%la)\n", x, y, z1);
+    printf ("Overflow exception was reset for x,y=%a,%a (z=%a)\n", x, y, z1);
     fflush (stdout);
 #ifndef DO_NOT_ABORT
     exit(1);

@@ -111,7 +111,7 @@ __bf16 cr_atanpi_bf16 (__bf16 x)
   int neg = u >> 31;
   float s = Neg[neg];
 
-#define HALF_LOW 0x1.fffffep-2
+#define HALF_LOW 0x1.fffffep-2f
 
   /* for x >= 0x1.46p+8, atan(x) rounds to the same value as HALF_LOW,
      and atan(-x) to the same value as -HALF_LOW, cf check_large() in
@@ -185,5 +185,5 @@ __bf16 cr_atanpi_bf16 (__bf16 x)
 
 // dummy function since GNU libc does not provide it
 __bf16 atanpi_bf16 (__bf16 x) {
-  return (__bf16) atanf ((float) x) / M_PI;
+  return (__bf16) atanf ((float) x) / (float) M_PI;
 }

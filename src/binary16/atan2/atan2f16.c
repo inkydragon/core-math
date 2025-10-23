@@ -77,7 +77,7 @@ cr_atan2f_tiny (float y, float x)
   static const double c = -0x1.5555555555555p-2; /* -1/3 rounded to nearest */
   double zz = z * z;
   double cz = c * z;
-  e = e / x + cz * zz;
+  e = e / (double) x + cz * zz;
   b64u64_u t = {.f = z};
   if ((t.u & 0xfffffffull) == 0) /* boundary case */
   {
@@ -132,7 +132,7 @@ _Float16 cr_atan2f16(_Float16 yf16, _Float16 xf16){
       if(ux>>31)
 	return pi*sgn[uy>>31];
       else
-	return 0.0f*sgn[uy>>31];
+	return 0.0*sgn[uy>>31];
     }
     if(yinf){
       return pi2*sgn[uy>>31];
@@ -146,7 +146,7 @@ _Float16 cr_atan2f16(_Float16 yf16, _Float16 xf16){
       else
 	return off[i];
     }
-    if(!(ux>>31)) return 0.0f*sgn[uy>>31];
+    if(!(ux>>31)) return 0.0*sgn[uy>>31];
   }
   uint32_t gt = ay>ax, i = (uy>>31)*4 + (ux>>31)*2 + gt;
 

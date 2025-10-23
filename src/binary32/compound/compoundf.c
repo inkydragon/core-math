@@ -817,7 +817,7 @@ static float exp2_2 (double h, double l, float x, float y, int exact,
 
     if (left != right) {
         printf ("Rounding test of accurate path failed for compound(%a,%a)\n",
-                x, y);
+                (double) x, (double) y);
         printf ("Please report the above to core-math@inria.fr\n");
         exit (1);
     }

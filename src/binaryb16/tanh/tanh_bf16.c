@@ -131,7 +131,7 @@ __bf16 cr_tanh_bf16 (__bf16 x){
     if (au == 0) return x; // x = +0 or -0
     float res;
     // avoid spurious underflow for |x|=0x1p-126
-    res = (au == 0x80) ? sgn[u>>15] * 0x1.fffffffffffffp-127
+    res = (au == 0x80) ? sgn[u>>15] * 0x1.fffffcp-127f
       : x * 0x1.fffffep-1f; // tanh(x) = x - x^3/6 + o(x^3)
 #ifdef CORE_MATH_SUPPORT_ERRNO
     if (__builtin_fabsf (res) < 0x1p-126)

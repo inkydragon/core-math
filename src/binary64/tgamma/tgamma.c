@@ -705,13 +705,13 @@ double cr_tgamma(double x){
      might overflow */
   int64_t k = fx;
   if(__builtin_expect(fx==x, 0)){ /* x is integer */
-    if(x == 0.0f){
+    if(x == 0.0){
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = ERANGE;
 #endif
       return 1.0/x;
     }
-    if(x < 0.0f) {
+    if(x < 0.0) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
       errno = EDOM;
 #endif

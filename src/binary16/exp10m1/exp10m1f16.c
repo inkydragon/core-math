@@ -1054,7 +1054,7 @@ _Float16 cr_exp10m1f16(_Float16 x){
        log(10)*x + 1/2*log(10)^2*x^2 + 1/6*log(10)^3*x^3 */
     float t = x;
     float c = 0x1.26bb1cp+1f * t, d;
-    d = __builtin_fmaf (c, 0x1.555556p-2 * c, c); // log(10)*x+log(10)^2*x^2/3
+    d = __builtin_fmaf (c, 0x1.555556p-2f * c, c); // log(10)*x+log(10)^2*x^2/3
     res = __builtin_fmaf (d, 0.5f * c, c);
 #ifdef CORE_MATH_SUPPORT_ERRNO
     if (au != 0 && au < 0x1bd) errno = ERANGE; // underflow

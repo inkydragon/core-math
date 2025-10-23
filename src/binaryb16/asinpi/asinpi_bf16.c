@@ -170,5 +170,5 @@ __bf16 cr_asinpi_bf16 (__bf16 x)
 
 // dummy function since GNU libc does not provide it
 __bf16 asinpi_bf16 (__bf16 x) {
-  return (__bf16) asinf ((float) x) / M_PI;
+  return (__bf16) asinf ((float) x) / (float) M_PI;
 }

@@ -550,7 +550,7 @@ check_errno (__bf16 r, double t)
    Adapted from compoundf16.c. */
 static __bf16 exp2_1 (double t, __attribute__((unused)) int exact)
 {
-  if (t <= -134.0f) {
+  if (t <= -134.0) {
 #ifdef CORE_MATH_SUPPORT_ERRNO
     errno = ERANGE; // underflow
 #endif

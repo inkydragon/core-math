@@ -299,7 +299,7 @@ void cr_sincos_bf16 (__bf16 x, __bf16 *s, __bf16 *c){
       return;
     }
     // avoid spurious underflow for |x|=0x1p-126
-    *s = (au == 0x80) ? sgn[u>>15] * 0x1.fffffffffffffp-127
+    *s = (au == 0x80) ? sgn[u>>15] * 0x1.fffffcp-127f
       : x * 0x1.fffffep-1f;
     *c = 0x1.fffffep-1f;
 #ifdef CORE_MATH_SUPPORT_ERRNO

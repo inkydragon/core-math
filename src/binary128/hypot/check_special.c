@@ -177,7 +177,7 @@ check_triples (int k)
   mpz_init (Q);
   while (k--) {
     // if p,q < 2^(113/2) then x and y are representable in binary128
-#define MAXP 0x16a09e667f3bcc9ull
+#define MAXP 0x16a09e667f3bcc9ull // floor(2^(113/2))
     mpz_urandomb (P, state, 64);
     mpz_urandomb (Q, state, 64);
     p = mpz_get_ui (P) % MAXP;

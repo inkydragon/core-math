@@ -483,6 +483,38 @@ check_subnormal(void)
   }
 }
 
+// check k random Pythagorean triples
+// x = p^2-q^2 y = 2pq with gcd(p,q)=1 and one of p,q even
+static void
+check_triples (int k)
+{
+  mpz_t P, Q;
+  gmp_randstate_t state;
+  long double x, y;
+  uint64_t p, q;
+
+  ref_init();
+  ref_fesetround(rnd);
+  fesetround(rnd1[rnd]);
+  gmp_randinit_default (state);
+  gmp_randseed_ui (state, getpid ());
+  mpz_init (P);
+  mpz_init (Q);
+  while (k--) {
+    // if p,q < 2^32 then x and y are representable in binary80
+    mpz_urandomb (P, state, 32);
+    mpz_urandomb (Q, state, 32);
+    p = mpz_get_ui (P);
+    q = mpz_get_ui (Q);
+    x = (p >= q) ? p * p - q * q : q * q - p * p;
+    y = 2 * p * q;
+    check (x, y);
+  }
+  mpz_clear (P);
+  mpz_clear (Q);
+  gmp_randclear (state);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -525,12 +557,15 @@ main (int argc, char *argv[])
         }
     }
 
-  check_invalid ();
-  check_subnormal ();
-
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
+
+  printf ("Checking Pythagorean triples\n");
+  check_triples (1000000);
+
+  check_invalid ();
+  check_subnormal ();
 
   printf ("Checking exact values\n");
   check_exact ();
@@ -543,7 +578,6 @@ main (int argc, char *argv[])
   check_near_exact ();
 
   printf ("Checking random values\n");
-
   unsigned int seed = getpid ();
   for (int i = 0; i < MAX_THREADS; i++)
     Seed[i] = seed + i;

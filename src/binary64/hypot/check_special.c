@@ -484,6 +484,39 @@ check_near_exact (void)
   }
 }
 
+// check k random Pythagorean triples
+// x = p^2-q^2 y = 2pq with gcd(p,q)=1 and one of p,q even
+static void
+check_triples (int k)
+{
+  mpz_t P, Q;
+  gmp_randstate_t state;
+  double x, y;
+  int64_t p, q;
+
+  ref_init();
+  ref_fesetround(rnd);
+  fesetround(rnd1[rnd]);
+  gmp_randinit_default (state);
+  gmp_randseed_ui (state, getpid ());
+  mpz_init (P);
+  mpz_init (Q);
+  while (k--) {
+    // if p,q < 2^(53/2) then x and y are representable in binary80
+#define MAXP 0x5a82799lu // floor(2^(53/2))
+    mpz_urandomb (P, state, 32);
+    mpz_urandomb (Q, state, 32);
+    p = mpz_get_ui (P) % MAXP;
+    q = mpz_get_ui (Q) % MAXP;
+    x = p * p - q * q;
+    y = 2 * p * q;
+    check (x, y);
+  }
+  mpz_clear (P);
+  mpz_clear (Q);
+  gmp_randclear (state);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -529,6 +562,9 @@ main (int argc, char *argv[])
   ref_init ();
   ref_fesetround (rnd);
   fesetround(rnd1[rnd]);
+
+  printf ("Checking Pythagorean triples\n");
+  check_triples (1000000);
 
   printf ("Checking near-exact values\n");
   fflush (stdout);

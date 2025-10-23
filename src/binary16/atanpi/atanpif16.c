@@ -164,5 +164,5 @@ _Float16 cr_atanpif16 (_Float16 x)
 
 // dummy function since GNU libc does not provide it
 _Float16 atanpif16 (_Float16 x) {
-  return (_Float16) atanf ((float) x) / (_Float16) M_PI;
+  return (_Float16) atanf ((float) x) / (float) M_PI;
 }

@@ -139,5 +139,5 @@ _Float16 cr_asinpif16 (_Float16 x)
 
 // dummy function since GNU libc does not provide it
 _Float16 asinpif16 (_Float16 x) {
-  return (_Float16) asinf ((float) x) / M_PI;
+  return (_Float16) asinf ((float) x) / (float) M_PI;
 }

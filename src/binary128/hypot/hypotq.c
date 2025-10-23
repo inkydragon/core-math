@@ -432,7 +432,10 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
       unsigned frac = v.b[0]&0x7fffull; // fractional part
       u64 rnd;
       if(__builtin_expect(rm==_MM_ROUND_NEAREST, 1)){
-	rnd = frac>>14;  // round to nearest tie to even
+	if(__builtin_expect(frac==0x4000, 0)){  // round to nearest tie to even
+	  rnd = (v.b[0]>>15)&1;
+	} else
+	  rnd = frac>>14;
       } else if(rm==_MM_ROUND_UP){
 	rnd = !!frac; // round up
       } else if(rm==_MM_ROUND_DOWN){
@@ -451,7 +454,10 @@ __float128 cr_hypotq(__float128 x, __float128 y) {
     u128 frac = v.a&(((u128)1<<(15-xn))-1); // fractional part
     u64 rnd;
     if(__builtin_expect(rm==_MM_ROUND_NEAREST, 1)){
-      rnd = frac>>(14-xn);  // round to nearest tie to even
+      if(__builtin_expect(frac==(u128)1<<(14-xn), 0)){  // round to nearest tie to even
+	rnd = (v.a>>(15-xn))&1;
+      } else
+	rnd = frac>>(14-xn);
     } else if(rm==_MM_ROUND_UP){
       rnd = !!frac; // round up
     } else if(rm==_MM_ROUND_DOWN){

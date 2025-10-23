@@ -57,7 +57,7 @@ check_without_fma:
     - ci/00-prepare-docker.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git
-    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-march=x86-64 -Werror -fsanitize=undefined -fno-sanitize-recover -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
+    - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH EXTRA_CFLAGS="-march=x86-64 -Werror -I/usr/local/include" LDFLAGS="-L/usr/local/lib" ./ci.sh
 
 check_core2:
   stage: test

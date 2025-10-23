@@ -188,7 +188,7 @@ error2 (__float128 x, __float128 y, __float128 z)
   printf ("%s\n", buf);
 }
 
-static void check (__float128 x)
+static void check_one (__float128 x)
 {
     b128u128_u zr, zt;
     mpfr_flags_clear (MPFR_FLAGS_INEXACT | MPFR_FLAGS_UNDERFLOW | MPFR_FLAGS_OVERFLOW);
@@ -380,6 +380,13 @@ static void check (__float128 x)
     exit(1);
 #endif
   }
+}
+
+static void check (__float128 x) {
+  check_one (x);
+#ifdef WORST_SYMMETRIC
+  check_one (-x);
+#endif
 }
 
 static void test(){

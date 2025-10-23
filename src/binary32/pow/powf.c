@@ -514,7 +514,8 @@ float cr_powf(float x0, float y0){
   c0 += h2*(c2 + h2*c4);
   double w = s*h;
   b64u64_u rr = {.f = s + w*c0};
-  uint64_t off = 0x117;
+  // with off=467, fails for x,y=0x1.fd12b4p-1,-0x1.d0b058p+13 and RNDZ
+  uint64_t off = 468;
   if(((rr.u+off)&0xfffffff) <= 2*off)
     return as_powf_accurate2 (x0, y0, is_exact (x0, y0), flag);
   int et = ((ty.u>>52)&0x7ff) - 0x3ff;

@@ -125,5 +125,5 @@ _Float16 cr_acospif16 (_Float16 x)
 
 // dummy function since GNU libc does not provide it
 _Float16 acospif16 (_Float16 x) {
-  return (_Float16) acosf ((float) x) / M_PI;
+  return (_Float16) acosf ((float) x) / (float) M_PI;
 }

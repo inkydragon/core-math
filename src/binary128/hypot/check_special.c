@@ -32,6 +32,7 @@ SOFTWARE.
 #include <math.h>
 #include <unistd.h>
 #include <quadmath.h>
+#include <gmp.h>
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #include <omp.h>
 #endif
@@ -74,9 +75,9 @@ error2 (__float128 x, __float128 y, __float128 ref, __float128 z)
 {
   char buf[256];
   int n;
-  n = snprintf (buf, sizeof buf, "FAIL x=");
+  n = snprintf (buf, sizeof buf, "FAIL x,y=");
   n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", x);
-  n += snprintf (buf + n, sizeof buf, " y=");
+  n += snprintf (buf + n, sizeof buf, ",");
   n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", y);
   n += snprintf (buf + n, sizeof buf - n, " ref=");
   n += quadmath_snprintf (buf + n, sizeof buf - n, "%Qa", ref);
@@ -157,6 +158,39 @@ static void check_corner_cases ()
   }
 }
 
+// check k random Pythagorean triples
+// x = p^2-q^2 y = 2pq with gcd(p,q)=1 and one of p,q even
+static void
+check_triples (int k)
+{
+  mpz_t P, Q;
+  gmp_randstate_t state;
+  __float128 x, y;
+  __int128 p, q;
+
+  ref_init();
+  ref_fesetround(rnd);
+  fesetround(rnd1[rnd]);
+  gmp_randinit_default (state);
+  gmp_randseed_ui (state, getpid ());
+  mpz_init (P);
+  mpz_init (Q);
+  while (k--) {
+    // if p,q < 2^(113/2) then x and y are representable in binary128
+#define MAXP 0x16a09e667f3bcc9ull
+    mpz_urandomb (P, state, 64);
+    mpz_urandomb (Q, state, 64);
+    p = mpz_get_ui (P) % MAXP;
+    q = mpz_get_ui (Q) % MAXP;
+    x = p * p - q * q;
+    y = 2 * p * q;
+    check (x, y);
+  }
+  mpz_clear (P);
+  mpz_clear (Q);
+  gmp_randclear (state);
+}
+
 int main(int argc, char *argv[]){
   while(argc >= 2){
     if(strcmp(argv[1], "--rndn") == 0){
@@ -188,6 +222,9 @@ int main(int argc, char *argv[]){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
+
+  printf ("Checking Pythagorean triples\n");
+  check_triples (1000);
 
   printf("Checking corner cases\n");
   check_corner_cases ();

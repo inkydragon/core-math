@@ -224,7 +224,7 @@ int main(int argc, char *argv[]){
   fesetround(rnd1[rnd]);
 
   printf ("Checking Pythagorean triples\n");
-  check_triples (1000);
+  check_triples (100000);
 
   printf("Checking corner cases\n");
   check_corner_cases ();

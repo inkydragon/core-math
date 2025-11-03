@@ -45,6 +45,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
+#include <mpfr.h>
 #include "function_under_test.h"
 
 double cr_function_under_test(double);
@@ -88,15 +89,16 @@ double rand_arg2(unsigned int *seed){
   return o.f;
 }
 
-static int check (double x){
+static void check (double x){
   b64u64_u yr = {.f = rfun(x)}, yt = {.f = tfun(x)};
   if (yr.u != yt.u) {
     printf("test_fun and ref_fun differ for x=%a\n", x);
     printf("test_fun gives %a\n", yt.f);
     printf(" ref_fun gives %a\n", yr.f);
-    return -1;
+#ifndef DO_NOT_ABORT
+    exit (1);
+#endif
   }
-  return 0;
 }
 
 static void check_random(unsigned int seed, double a, double b, int64_t ntests){
@@ -112,8 +114,7 @@ static void check_random(unsigned int seed, double a, double b, int64_t ntests){
     int64_t i = 0, n = 10*1000;
     for(;i<n;i++){
       double x = m + rand_arg(s, &seed);
-      if(check(x)) fail++;
-      if(fail>=maxfail) break;
+      check(x);
     }
     count += i;
     if (verbose)
@@ -135,23 +136,50 @@ static void call_random(unsigned int seed, int64_t n, double a, double b){
   }
 }
 
+// put in h+l a double-double approximation of acosh(x)
+static void
+dd_acosh (double *h, double *l, double x)
+{
+  mpfr_t t;
+  mpfr_init2 (t, 107);
+  mpfr_set_d (t, x, MPFR_RNDN);
+  mpfr_acosh (t, t, MPFR_RNDN);
+  *h = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_sub_d (t, t, *h, MPFR_RNDN);
+  *l = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_clear (t);
+}
+
 static void scan_consecutive(int64_t n, double x){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
-  double dir = __builtin_inf();
-  if(n<0) {
-    dir = -dir;
-    n = -n;
-  }
-  int64_t fail = 0;
+#define MAXN 1000000
+  /* proceed in chunks of MAXN values, otherwise the degree-1 approximation
+     is not precise enough */
+  while (n) {
+    double h, l, d;
+    dd_acosh (&h, &l, x);
+    d = 1.0 / sqrt (x * x - 1.0); // derivative of acosh(x)
+    int e;
+    frexp (x, &e);
+    /* 2^(e-1) <= |x| < 2^e thus ulp(x) = 2^(e-53) */
+    d = ldexp (d, e - 53); // multiply d by ulp(x)
+    int64_t nlocal = (n > MAXN) ? MAXN : n;
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel
+#pragma omp parallel for
 #endif
-  for(int64_t j=0;j<n;j++){
-    b64u64_u v = {.f = x};
-    v.u += j;
-    if((fail += check(v.f)<0)>10) break;
+    for(int64_t j=0;j<nlocal;j++){
+      b64u64_u v = {.f = x};
+      v.u += j;
+      double t = tfun (v.f);
+      // acosh(x+j*u) is approximated by h + l + j*d
+      double w = h + __builtin_fma (j, d, l);
+      if (t != w) // expensive test
+        check(v.f);
+    }
+    n -= nlocal;
+    x += nlocal * ldexp (1.0, e - 53);
   }
 }
 
@@ -191,8 +219,7 @@ static void check_random_p(unsigned int seed, int64_t ntests){
     int64_t i = 0, n = 10*1000;
     for(;i<n;i++){
       double x = rand_arg2(&seed);
-      if(check(x)) fail++;
-      if(fail>=maxfail) break;
+      check(x);
     }
     count += i;
     if (verbose)

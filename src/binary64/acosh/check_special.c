@@ -68,21 +68,21 @@ static inline double rfun(double x){
 
 typedef union {double f; uint64_t u;} b64u64_u;
 
-double rand_arg(double s){
+double rand_arg(double s, unsigned int *seed){
   int64_t r0,r1;
-  r0 = rand () | (int64_t) rand () << 31;
-  r1 = rand () | (int64_t) rand () << 31;
+  r0 = rand_r (seed) | (int64_t) rand_r (seed) << 31;
+  r1 = rand_r (seed) | (int64_t) rand_r (seed) << 31;
   b64u64_u o = {.u = (((r0^((uint64_t)r1<<32))&(~(0x7ffull<<52)))|(0x3ffull<<52))};
   double r = o.f-copysign(1,o.f);
   return r*s;
 }
 
-double rand_arg2(){
+double rand_arg2(unsigned int *seed){
   int64_t r0,r1;
   b64u64_u o;
   do {
-    r0 = rand () | (int64_t) rand () << 31;
-    r1 = rand () | (int64_t) rand () << 31;
+    r0 = rand_r (seed) | (int64_t) rand_r (seed) << 31;
+    r1 = rand_r (seed) | (int64_t) rand_r (seed) << 31;
     o.u = r0^((uint64_t)r1<<32);
   } while((o.u<<1)>=(0x7ffull<<53));
   return o.f;
@@ -99,20 +99,19 @@ static int check (double x){
   return 0;
 }
 
-static void check_random(int seed, double a, double b, int64_t ntests){
+static void check_random(unsigned int seed, double a, double b, int64_t ntests){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
   if (verbose)
     printf("seed = %d\n",seed);
-  srand(seed);
   int fail = 0, maxfail = 10;
   double s = (b - a)*0.5, m = (a+b)*0.5;
   int64_t count = 0;
   while(1){
     int64_t i = 0, n = 10*1000;
     for(;i<n;i++){
-      double x = m + rand_arg(s);
+      double x = m + rand_arg(s, &seed);
       if(check(x)) fail++;
       if(fail>=maxfail) break;
     }
@@ -127,12 +126,11 @@ static void check_random(int seed, double a, double b, int64_t ntests){
            fail, count, (double)fail/count*100);
 }
 
-static void call_random(int seed, int64_t n, double a, double b){
+static void call_random(unsigned int seed, int64_t n, double a, double b){
   fesetround(rnd1[rnd]);
-  srand(seed);
   double s = (b - a)*0.5, m = (a+b)*0.5;
   for(int64_t j=0;j<n;j++){
-    double x = m + rand_arg(s);
+    double x = m + rand_arg(s, &seed);
     tfun(x);
   }
 }
@@ -181,19 +179,18 @@ static void check_random_all(int seed, double a, double b){
     check_random(seed + i, a, b, CORE_MATH_TESTS / nthreads);
 }
 
-static void check_random_p(int seed, int64_t ntests){
+static void check_random_p(unsigned int seed, int64_t ntests){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
   if (verbose)
     printf("seed = %d\n",seed);
-  srand(seed);
   int fail = 0, maxfail = 10;
   int64_t count = 0;
   while(1){
     int64_t i = 0, n = 10*1000;
     for(;i<n;i++){
-      double x = rand_arg2();
+      double x = rand_arg2(&seed);
       if(check(x)) fail++;
       if(fail>=maxfail) break;
     }

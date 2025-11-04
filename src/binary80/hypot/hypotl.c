@@ -218,10 +218,12 @@ cr_hypotl (long double x, long double y)
   u128 yy = (u128) my * (u128) my;
   u128 hh = xx + (yy >> dd);
   u128 ll = (dd > 0) ? yy << (128 - dd) : 0;
+  // since dd <= 62, the low 66 bits of ll should be 0
   if (hh < xx) { // overflow
     ll = (hh << 126) | (ll >> 2);
     hh = (((u128) 1) << 126) | (hh >> 2);
     x_exp ++;
+    // since ll was shifted by 2 to the right, its low 64 bits are 0
   }
   // sqrt(x^2 + y^2) = sqrt (hh + ll/2^128) * 2^(x_exp-63)
   // with 2^126 <= hh < 2^128 thus sqrt(x^2 + y^2) >= 2^x_exp
@@ -234,13 +236,23 @@ cr_hypotl (long double x, long double y)
 #endif
       return HUGE + HUGE;
     }
-    // x_exp = 0x3fff
-    // overflow for RNDN iff hh + ll/2^128 > (2^64-1/2)^2
-#define HT (((u128) 0xffffffffffffffffull) << 64) // 2^128-2^64
-#define LT (((u128) 0x4000000000000000ull) << 64) // 2^126 (thus 1/4)
-    // in the midpoint case hh + ll/2^128 = (2^64-1/2)^2, we get overflow
-    // since 2^64-1 is odd
-    if (hh > HT || (hh == HT && ll > 0)) {
+    // now x_exp = 0x3fff
+    u128 HT, LT;
+    switch (fegetround ()) {
+    case FE_TONEAREST: // threshold is (2^64-1/2)^2
+      HT = ((u128) 0xffffffffffffffffull) << 64;
+      LT = (u128) 1 << 126;
+      break;
+    case FE_UPWARD: // threshold is (2^64-1)^2
+      HT = (((u128) 0xfffffffffffffffeull) << 64) + 1;
+      LT = 0;
+      break;
+    default: // FE_DOWNWARD and FE_TOWARDZERO: threshold is (2^64)^2
+      HT = LT = ~ (u128) 0;
+      // since the low 64 bits of ll are zero, we can't have hh=HT and ll=LT
+    }
+    // we have overflow iff hh*2^128+ll >= HT*2^128+LT
+    if (hh > HT || (hh == HT && ll >= LT)) {
       long double res = HUGE + 0x1p+16319L; // add 1/2 ulp(HUGE)
 #ifdef CORE_MATH_SUPPORT_ERRNO
       /* We have overflow:

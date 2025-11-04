@@ -182,7 +182,7 @@ static const double c[] = {-0x1p-1, 0x1.555555555553p-2, -0x1.fffffffffffap-3, 0
 
 double cr_acosh(double x){
   b64u64_u ix = {.f = x};
-  if(__builtin_expect(ix.u>=0x7ff0000000000000ull, 0)){
+  if(__builtin_expect(ix.u>=0x7ff0000000000000ull, 0)){ // x<0 or NaN/Inf
       u64 aix = ix.u<<1;
       if(ix.u==0x7ff0000000000000ull || aix>((u64)0x7ff<<53)) return x + x; // +inf or nan
 #ifdef CORE_MATH_SUPPORT_ERRNO
@@ -201,7 +201,7 @@ double cr_acosh(double x){
   double g;
   int off = 0x3fe;
   b64u64_u t = ix;
-  if(ix.u<0x3ff1e83e425aee63ull){
+  if(ix.u<0x3ff1e83e425aee63ull){ // 0 <= x < 0x1.1e83e425aee63p+0
     double z = x-1;
     double iz = (-0.25)/z, zt = 2*z;
     double sh = __builtin_sqrt(zt), sl = __builtin_fma(sh,sh,-zt)*(sh*iz);
@@ -216,25 +216,26 @@ double cr_acosh(double x){
     if(lb == ub) return lb;
     return as_acosh_one(z, sh, sl);
   } else if(__builtin_expect(ix.u<0x405bf00000000000ull, 1)){
+    // 0x1.1e83e425aee63p+0 <= x < 0x1.bfp+6
     off = 0x3ff;
     double x2h = x*x, wh = x2h - 1, wl = __builtin_fma(x,x,-x2h);
     double sh = __builtin_sqrt(wh), ish = 0.5/wh, sl = (wl - __builtin_fma(sh,sh,-wh))*(sh*ish);
     double tl, th = fasttwosum(x, sh, &tl); tl += sl;
     t.f = th;
     g = tl/th;
-  } else if(ix.u<0x4087100000000000ull){
+  } else if(ix.u<0x4087100000000000ull){ // 0x1.bfp+6 <= x < 0x1.71p+9
     static const double cl[] = {0x1.5c4b6148816e2p-66, -0x1.000000000005cp-2, -0x1.7fffffebf3e6cp-4, -0x1.aab6691f2bae7p-5};
     double z = 1/(x*x);
     g = cl[0] + z*(cl[1] + z*(cl[2] + z*cl[3]));
-  } else if(ix.u<0x40e0100000000000ull){
+  } else if(ix.u<0x40e0100000000000ull){ // 0x1.71p+9 <= x < 0x1.01p+15
     static const double cl[] = {-0x1.7f77c8429c6c6p-67, -0x1.ffffffffff214p-3, -0x1.8000268641bfep-4};
     double z = 1/(x*x);
     g = cl[0] + z*(cl[1] + z*cl[2]);
-  } else if(ix.u<0x41ea000000000000ull){
+  } else if(ix.u<0x41ea000000000000ull){ // 0x1.01p+15 <= x < 0x1.ap+31
     static const double cl[] = {0x1.7a0ed2effdd1p-67, -0x1.000000017d048p-2};
     double z = 1/(x*x);
     g = cl[0] + z*cl[1];
-  } else {
+  } else { // 0x1.ap+31 <= x
     g = 0;
   }
   int ex = t.u>>52, e = ex - off;

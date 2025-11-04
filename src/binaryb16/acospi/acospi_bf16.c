@@ -44,7 +44,7 @@ static float
 bf16_to_float (__bf16 x)
 {
   b16u16_u v = {.f = x};
-  b32u32_u w = {.u = v.u << 16};
+  b32u32_u w = {.u = (uint32_t) v.u << 16};
   return w.f;
 }
 

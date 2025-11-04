@@ -32430,3 +32430,14 @@
 0x1.1adeabd663124p+0
 # new failure after commit dbd2a63
 0x1.08aa2c959b935p+0
+# new failures found by exhaustive search in [0x1.04p+0,0x1.2p+0)
+0x1.0800751d9facbp+0
+0x1.08104b45f3d88p+0
+0x1.08204a5b5e7f2p+0
+0x1.0830106cca62p+0
+0x1.08400b369550cp+0
+0x1.085018481116p+0
+0x1.08600aef0e4c8p+0
+0x1.087004fc1548fp+0
+0x1.0880034cf7dfp+0
+0x1.08900554bb3b4p+0

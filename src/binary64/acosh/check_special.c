@@ -164,11 +164,11 @@ static void scan_consecutive(int64_t n, double x){
     /* 2^(e-1) <= |x| < 2^e thus ulp(x) = 2^(e-53) */
     d = ldexp (d, e - 53); // multiply d by ulp(x)
     dd = ldexp (dd, 2 * (e - 53)); // multiply dd by ulp(x)^2
-    /* we want j^2*dd < 2^-15 ulp(h) so that the 2nd-order term
-       produces an error bounded by 2^-15 ulp(h), to that MPFR
-       will be called with probability about 2^-15.
-       Thus approximately j^2*dd < 2^-68 h,
-       or j < 2^-34 sqrt(h/dd) */
+    /* we want j^2*dd < 2^-11 ulp(h) so that the 2nd-order term
+       produces an error bounded by 2^-11 ulp(h), to that MPFR
+       will be called with probability about 2^-11.
+       Thus approximately j^2*dd < 2^-64 h,
+       or j < 2^-32 sqrt(h/dd) */
     int64_t jmax = 0x1p-32 * sqrt (h / dd);
     if (jmax > n) jmax = n; // cap to n
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))

@@ -154,22 +154,27 @@ static void scan_consecutive(int64_t n, double x){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
-#define MAXN 1000000
-  /* proceed in chunks of MAXN values, otherwise the degree-1 approximation
-     is not precise enough */
   while (n) {
-    double h, l, d;
+    double h, l, d, dd;
     dd_acosh (&h, &l, x);
     d = 1.0 / sqrt (x * x - 1.0); // derivative of acosh(x)
+    dd = d * fabs (x) / (x * x - 1.0); // absolute value of 2nd derivative
     int e;
     frexp (x, &e);
     /* 2^(e-1) <= |x| < 2^e thus ulp(x) = 2^(e-53) */
     d = ldexp (d, e - 53); // multiply d by ulp(x)
-    int64_t nlocal = (n > MAXN) ? MAXN : n;
+    dd = ldexp (dd, 2 * (e - 53)); // multiply dd by ulp(x)^2
+    /* we want j^2*dd < 2^-15 ulp(h) so that the 2nd-order term
+       produces an error bounded by 2^-15 ulp(h), to that MPFR
+       will be called with probability about 2^-15.
+       Thus approximately j^2*dd < 2^-68 h,
+       or j < 2^-34 sqrt(h/dd) */
+    int64_t jmax = 0x1p-32 * sqrt (h / dd);
+    if (jmax > n) jmax = n; // cap to n
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif
-    for(int64_t j=0;j<nlocal;j++){
+    for(int64_t j=0;j<jmax;j++){
       b64u64_u v = {.f = x};
       v.u += j;
       double t = tfun (v.f);
@@ -178,8 +183,8 @@ static void scan_consecutive(int64_t n, double x){
       if (t != w) // expensive test
         check(v.f);
     }
-    n -= nlocal;
-    x += nlocal * ldexp (1.0, e - 53);
+    n -= jmax;
+    x += jmax * ldexp (1.0, e - 53);
   }
 }
 

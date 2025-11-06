@@ -2,6 +2,8 @@
 # worst cases from https://www.vinc17.net/research/testlibm/testlibm-data.xz
 # (update from 2020-11-27), from 0 to pi, with 46 to 59 identical bits after
 # the round bit
+# Note: the hard-to-round cases of sin/cos added in commit d0c1fa5 were not added
+# here to save memory (but these cases were tested with sincos)
 0x1.005023d32fee5p+1
 0x1.00874a5f9fc33p-13
 0x1.009ee184a02e7p-8

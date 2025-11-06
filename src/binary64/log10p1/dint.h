@@ -291,11 +291,13 @@ static inline void dint_fromd(dint64_t *a, double b) {
   a->lo = 0;
 }
 
+#if 0
 // Prints a dint64_t value for debugging purposes
 static inline void print_dint(const dint64_t *a) {
   printf("{.hi=0x%"PRIx64", .lo=0x%"PRIx64", .ex=%"PRId64", .sgn=0x%"PRIx64"}\n", a->hi, a->lo, a->ex,
          a->sgn);
 }
+#endif
 
 /* put in r an approximation of 1/a, assuming a is not zero */
 static inline void inv_dint (dint64_t *r, double a)

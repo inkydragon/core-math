@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#define _GNU_SOURCE // needed to define expf10
+#define _GNU_SOURCE // needed to define exp10f
 
 #include <stdint.h>
 #include <errno.h>

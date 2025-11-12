@@ -24,6 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#define _GNU_SOURCE // needed to define expf10
+
 #include <stdint.h>
 #include <errno.h>
 #include <math.h> // only used during performance tests
@@ -1086,5 +1088,5 @@ _Float16 cr_exp10m1f16(_Float16 x){
 
 // dummy function since GNU libc does not provide it
 _Float16 exp10m1f16 (_Float16 x) {
-  return (_Float16) (powf (10.0f, (float) x) - 1.0f);
+  return (_Float16) (exp10f ((float) x) - 1.0f);
 }

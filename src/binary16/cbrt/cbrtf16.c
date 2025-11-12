@@ -60,7 +60,7 @@ _Float16 cr_cbrtf16(_Float16 x){
 	if (tm[(xf.u >> 19) % 16] == (xf.u >> 13) % 64) { // exact cases (not supported by cbrtf)
 		int expo = (xf.u & 0x7fffffff) >> 23;
 		if (te[(xf.u >> 19) % 16] == (expo + 2) % 3) {
-			t.u = (t.u & 0x8000) + (((expo - 127 - te[(xf.u >> 19) % 16]) / 3) << 10) + tf[(xf.u >> 19) % 16];
+			t.u = (t.u & 0x8000) + ((unsigned)((expo - 127 - te[(xf.u >> 19) % 16]) / 3) << 10) + tf[(xf.u >> 19) % 16];
 			return t.f;
 		}
 	}

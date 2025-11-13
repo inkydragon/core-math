@@ -42,7 +42,7 @@ SOFTWARE.
 // fegetexceptflag accesses the FPSR register, which seems to be much slower
 // than accessing FPCR, so it should be avoided if possible.
 // Adapted from sse2neon: https://github.com/DLTcollab/sse2neon
-#if defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 #if defined(_MSC_VER)
 #include <arm64intr.h>
 #endif
@@ -74,13 +74,13 @@ inline static unsigned int _mm_getcsr(void)
   static const unsigned int lut[2][2] = {{0x0000, 0x2000}, {0x4000, 0x6000}};
   return lut[r.field.bit22][r.field.bit23];
 }
-#endif  // defined(__aarch64__) || defined(__arm64__) || defined(_M_ARM64)
+#endif  // (defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
 
 static inline int get_rounding_mode (fexcept_t *flagp)
 {
   /* Warning: on __aarch64__ (for example cfarm103), FE_UPWARD=0x400000
      instead of 0x800. */
-#if defined(__x86_64__) ||  defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   *flagp = _mm_getcsr ();
   return ((*flagp)>>13) & 3;
 #else
@@ -101,7 +101,7 @@ static inline int get_rounding_mode (fexcept_t *flagp)
 
 static inline void set_flags (const fexcept_t *flagp)
 {
-#if defined(__x86_64__) ||  defined(__arm64__) || defined(_M_ARM64)
+#if (defined(__x86_64__) || defined(__arm64__) || defined(_M_ARM64)) && !defined(__aarch64__)
   _mm_setcsr (*flagp);
 #else
   fesetexceptflag (flagp, FE_ALL_EXCEPT);

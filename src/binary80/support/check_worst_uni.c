@@ -54,6 +54,21 @@ int rnd = 0;
 
 typedef union {long double f; struct {uint64_t m; uint16_t e;};} b80u80_t;
 
+// check long double has 64 bits of precision
+static void
+check_format (void)
+{
+  long double x = 0x1p-1074L; // smallest positive binary64
+  int saved_rnd = fegetround ();
+  fesetround (FE_TONEAREST);
+  x = x * 0.5L;
+  if (x == 0) {
+    fprintf (stderr, "Error, long double is probably double\n");
+    exit (1);
+  }
+  fesetround (saved_rnd);
+}
+
 static void
 readstdin(long double **result, int *count)
 {
@@ -457,6 +472,8 @@ main (int argc, char *argv[])
           exit (1);
         }
     }
+
+  check_format ();
 
   check_signaling_nan ();
 

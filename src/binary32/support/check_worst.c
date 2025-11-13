@@ -522,14 +522,14 @@ check_signaling_nan (void)
   // check that foo(NaN,1.0) = NaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,1.0) should be NaN, got %a=%x\n",
+    fprintf (stderr, "Error, foo(sNaN,2.0) should be NaN, got %a=%x\n",
              (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
   if (is_signaling (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,1.0) should be qNaN, got sNaN=%x\n",
+    fprintf (stderr, "Error, foo(sNaN,2.0) should be qNaN, got sNaN=%x\n",
              asuint (y));
     exit (1);
   }
@@ -597,14 +597,14 @@ check_signaling_nan (void)
   // check that foo(NaN,x) = NaN
   if (!is_nan (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,x) should be NaN, got %a=%x\n",
+    fprintf (stderr, "Error, foo(sNaN,2.0) should be NaN, got %a=%x\n",
              (double) y, asuint (y));
     exit (1);
   }
   // check that the signaling bit disappeared
   if (is_signaling (y))
   {
-    fprintf (stderr, "Error, foo(sNaN,x) should be qNaN, got sNaN=%x\n",
+    fprintf (stderr, "Error, foo(sNaN,2.0) should be qNaN, got sNaN=%x\n",
              asuint (y));
     exit (1);
   }

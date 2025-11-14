@@ -209,9 +209,8 @@ double cr_acosh(double x){
       -0x1.5555555555555p-4, 0x1.3333333332f95p-6, -0x1.6db6db6d5534cp-8, 0x1.f1c71c1e04356p-10,
       -0x1.6e8b8e3e40d58p-11, 0x1.1c4ba825ac4fep-12, -0x1.c9045534e6d9ep-14, 0x1.71fedae26a76bp-15,
       -0x1.f1f4f8cc65342p-17};
-    double z2 = z*z, z4 = z2*z2, ds = (sh*z)*(cl[0] + z*(((cl[1] + z*cl[2]) + z2*(cl[3] + z*cl[4])) + z4*((cl[5] + z*cl[6]) + z2*(cl[7] + z*cl[8]))));
-    double eps = ds*0x1.22p-50 - 0x1p-104*sh;
-    ds += sl;
+    double z2 = z*z, z4 = z2*z2, ds = __builtin_fma(sh*z,(cl[0] + z*(((cl[1] + z*cl[2]) + z2*(cl[3] + z*cl[4])) + z4*((cl[5] + z*cl[6]) + z2*(cl[7] + z*cl[8])))), sl);
+    double eps = ds*0x1.fcp-51 - 0x1p-104*sh;
     double lb = sh + (ds - eps), ub = sh + (ds + eps);
     if(lb == ub) return lb;
     return as_acosh_one(z, sh, sl);

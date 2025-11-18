@@ -309,6 +309,7 @@ check (testcase ts)
 
   fix_underflow (ts.x, ts.y, z1);
 
+#ifndef CORE_MATH_NOCHECK_UNDERFLOW
   // Check for spurious/missing underflow exception
   if (fetestexcept (FE_UNDERFLOW) && !mpfr_flags_test (MPFR_FLAGS_UNDERFLOW))
   {
@@ -332,7 +333,9 @@ check (testcase ts)
     exit(1);
 #endif
   }
+#endif
 
+#ifndef CORE_MATH_NOCHECK_OVERFLOW
   /* Check for spurious/missing overflow exception */
   if (fetestexcept (FE_OVERFLOW) && !mpfr_flags_test (MPFR_FLAGS_OVERFLOW))
   {
@@ -356,6 +359,7 @@ check (testcase ts)
     exit(1);
 #endif
   }
+#endif
 
 #ifdef CORE_MATH_CHECK_INEXACT
   int inex2 = fetestexcept (FE_INEXACT);

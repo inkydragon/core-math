@@ -281,6 +281,7 @@ cr_erf_fast (double *h, double *l, double z)
     /* multiply (h,l) by z */
     a_mul (h, &tl, *h, z);
     *l = __builtin_fma (*l, z, tl);
+    // fails with 0x1.0ap-69 (x=0x1.ffb7b4d67a854p-5, rndn)
     return 0x1.78p-69; /* err < 2.48658249618372e-21, cf Analyze0() */
   }
   double v = __builtin_floor (16.0 * z);

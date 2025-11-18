@@ -1,6 +1,6 @@
 /* Various special tests
 
-Copyright (c) 2023-2025 Alexei Sibidanov
+Copyright (c) 2023-2025 Alexei Sibidanov and Paul Zimmermann
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -45,6 +45,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <getopt.h>
 #include <errno.h>
+#include <mpfr.h>
 #include "function_under_test.h"
 
 #ifndef CORE_MATH_TESTS
@@ -141,19 +142,55 @@ static void call_random(int seed, int64_t n, double a, double b){
   }
 }
 
+// put in h+l a double-double approximation of atanh(x)
+static void
+dd_atanh (double *h, double *l, double x)
+{
+  mpfr_t t;
+  mpfr_init2 (t, 107);
+  mpfr_set_d (t, x, MPFR_RNDN);
+  mpfr_atanh (t, t, MPFR_RNDN);
+  *h = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_sub_d (t, t, *h, MPFR_RNDN);
+  *l = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_clear (t);
+}
+
 static void scan_consecutive(int64_t n, double x){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
-  double dir = __builtin_inf();
-  if(n<0) {
-    dir = -dir;
-    n = -n;
-  }
-  int64_t fail = 0;
-  for(int64_t j=0;j<n;j++){
-    if((fail += check(x)<0)>10) break;
-    x = nextafter(x, dir);
+  while (n) {
+    double h, l, d, dd;
+    dd_atanh (&h, &l, x);
+    d = 1.0 / (1.0 - x * x); // derivative of atanh(x)
+    dd = fabs(2.0 * d * x / (1.0 - x * x)); // absolute value of 2nd derivative
+    int e;
+    frexp (x, &e);
+    /* 2^(e-1) <= |x| < 2^e thus ulp(x) = 2^(e-53) */
+    d = ldexp (d, e - 53); // multiply d by ulp(x)
+    dd = ldexp (dd, 2 * (e - 53)); // multiply dd by ulp(x)^2
+    /* we want j^2*dd < 2^-11 ulp(h) so that the 2nd-order term
+       produces an error bounded by 2^-11 ulp(h), to that MPFR
+       will be called with probability about 2^-11.
+       Thus approximately j^2*dd < 2^-64 h,
+       or j < 2^-32 sqrt(h/dd) */
+    int64_t jmax = 0x1p-32 * sqrt (h / dd);
+    if (jmax > n) jmax = n; // cap to n
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
+    for(int64_t j=0;j<jmax;j++){
+      b64u64_u v = {.f = x};
+      v.u += j;
+      double t = tfun (v.f);
+      // atanh(x+j*u) is approximated by h + l + j*d
+      double w = h + __builtin_fma (j, d, l);
+      if (t != w) // expensive test
+        check(v.f);
+    }
+    n -= jmax;
+    x += jmax * ldexp (1.0, e - 53);
   }
 }
 

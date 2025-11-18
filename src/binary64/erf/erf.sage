@@ -667,3 +667,16 @@ def print_exception(x):
    h = RR(n(erf(X),200))
    l = RR(n(erf(X)-h.exact_rational(),200))
    print ("    {" + get_hex(x) + ", " + get_hex(h) + ", " + get_hex(l) + "},")
+
+# exhaustive tests for 2^-61 <= z < 0.0625
+def check_exhaustive_small(f,K):
+   f = open(f,"w")
+   z1 = RR(0.0625)
+   for k in range(K):
+      u1 = asuint64(z1)
+      u0 = u1 - 1099511627776
+      z0 = asfloat64(u0)
+      f.write(get_hex(z0) + "\n")
+      z1 = z0
+   f.close()
+      

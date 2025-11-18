@@ -332,7 +332,7 @@ int
 main (int argc, char *argv[])
 {
   int conseq = 0;
-  unsigned long n; // length of consecutive runs with -C
+  unsigned long n = 1000000; // length of consecutive runs with -C
   double a = 1.5;  // starting point of consecutive runs with -C
 
   while (argc >= 2)

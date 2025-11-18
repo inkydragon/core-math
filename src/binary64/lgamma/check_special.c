@@ -33,6 +33,8 @@ SOFTWARE.
 #include <sys/types.h>
 #include <unistd.h>
 #include <assert.h>
+#include <mpfr.h>
+#include "function_under_test.h"
 
 int ref_init (void);
 int ref_fesetround (int);
@@ -242,9 +244,97 @@ check_special (void)
   }
 }
 
+// put in h+l a double-double approximation of lgamma(x)
+static void
+dd_lgamma (double *h, double *l, double x)
+{
+  mpfr_t t;
+  mpfr_init2 (t, 107);
+  mpfr_set_d (t, x, MPFR_RNDN);
+  mpfr_lgamma (t, &signgam, t, MPFR_RNDN);
+  *h = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_sub_d (t, t, *h, MPFR_RNDN);
+  *l = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_clear (t);
+}
+
+// return a double approximation of digamma(x) = lgamma'(x)
+static double
+digamma (double x)
+{
+  mpfr_t t;
+  mpfr_init2 (t, 53);
+  mpfr_set_d (t, x, MPFR_RNDN);
+  mpfr_digamma (t, t, MPFR_RNDN);
+  double ret = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_clear (t);
+  return ret;
+}
+
+// return a double approximation of trigamma(x) = lgamma''(x)
+static double
+trigamma (double x)
+{
+  mpfr_t t;
+  mpfr_init2 (t, 53);
+  mpfr_set_d (t, x, MPFR_RNDN);
+  mpfr_trigamma (t, t, MPFR_RNDN);
+  double ret = mpfr_get_d (t, MPFR_RNDN);
+  mpfr_clear (t);
+  return ret;
+}
+
+double cr_function_under_test(double);
+
+static inline double tfun(double x){
+  return cr_function_under_test(x);
+}
+
+static void scan_consecutive(int64_t n, double x){
+  ref_init();
+  ref_fesetround(rnd);
+  fesetround(rnd1[rnd]);
+  while (n) {
+    double h, l, d, dd;
+    dd_lgamma (&h, &l, x);
+    d = digamma (x); // derivative of lgamma(x)
+    dd = fabs (trigamma (x)); // absolute value of 2nd derivative
+    int e;
+    frexp (x, &e);
+    /* 2^(e-1) <= |x| < 2^e thus ulp(x) = 2^(e-53) */
+    d = ldexp (d, e - 53); // multiply d by ulp(x)
+    dd = ldexp (dd, 2 * (e - 53)); // multiply dd by ulp(x)^2
+    /* we want j^2*dd < 2^-11 ulp(h) so that the 2nd-order term
+       produces an error bounded by 2^-11 ulp(h), to that MPFR
+       will be called with probability about 2^-11.
+       Thus approximately j^2*dd < 2^-64 h,
+       or j < 2^-32 sqrt(h/dd) */
+    int64_t jmax = 0x1p-32 * sqrt (h / dd);
+    if (jmax > n) jmax = n; // cap to n
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for
+#endif
+    for(int64_t j=0;j<jmax;j++){
+      b64u64_u v = {.f = x};
+      v.u += j;
+      double t = tfun (v.f);
+      // asinh(x+j*u) is approximated by h + l + j*d
+      double w = h + __builtin_fma (j, d, l);
+      if (t != w) // expensive test
+        check(v.f);
+    }
+    n -= jmax;
+    x += jmax * ldexp (1.0, e - 53);
+  }
+}
+
 int
 main (int argc, char *argv[])
 {
+  int conseq = 0;
+  unsigned long n; // length of consecutive runs with -C
+  double a = 1.5;  // starting point of consecutive runs with -C
+
   while (argc >= 2)
     {
       if (strcmp (argv[1], "--rndn") == 0)
@@ -271,6 +361,19 @@ main (int argc, char *argv[])
           argc --;
           argv ++;
         }
+      else if (strcmp (argv[1], "-C") == 0)
+        {
+          conseq = 1;
+          n = strtoul (argv[2], NULL, 0);
+          argc -= 2;
+          argv += 2;
+        }
+      else if (strcmp (argv[1], "-a") == 0)
+        {
+          a = strtod (argv[2], NULL);
+          argc -= 2;
+          argv += 2;
+        }
       else if (strcmp (argv[1], "--verbose") == 0)
         {
           verbose = 1;
@@ -285,6 +388,11 @@ main (int argc, char *argv[])
     }
   ref_init ();
   ref_fesetround (rnd);
+
+  if (conseq) {
+    scan_consecutive (n, a);
+    return 0;
+  }
 
   check_special ();
 
@@ -301,7 +409,7 @@ main (int argc, char *argv[])
   printf ("Checking random numbers...\n");
   /* this code should not be run in parallel, since the use of signgam is
      not thread-safe */
-  for (uint64_t n = 0; n < CORE_MATH_TESTS; n++)
+  for (n = 0; n < CORE_MATH_TESTS; n++)
   {
     ref_init ();
     ref_fesetround (rnd);

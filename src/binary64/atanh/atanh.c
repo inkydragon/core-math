@@ -1,6 +1,6 @@
 /* Correctly-rounded inverse hyperbolic tangent function for binary64.
 
-Copyright (c) 2023 Alexei Sibidanov.
+Copyright (c) 2023-2025 Alexei Sibidanov <sibid@uvic.ca>.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -254,7 +254,7 @@ double cr_atanh(double x){
   ll += f;
   lh *= __builtin_copysign(1,x);
   ll *= __builtin_copysign(1,x);
-  double eps = 31e-24 + dx2*0x1p-49;
+  double eps = 34e-24 + dx2*0x1p-49;
   double lb = lh + (ll - eps), ub = lh + (ll + eps);
   if(__builtin_expect(lb==ub, 1)) return lb;
   th = fasttwosum(th, tl, &tl);

@@ -62,6 +62,7 @@ int rnd1[] = { FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD };
 
 int rnd;
 int verbose = 0;
+unsigned long tested = 0;
 
 static inline double tfun(double x){
   return cr_function_under_test(x);
@@ -72,6 +73,22 @@ static inline double rfun(double x){
 }
 
 typedef union {double f; uint64_t u;} b64u64_u;
+
+static inline uint64_t
+asuint64 (double x)
+{
+  b64u64_u u;
+  u.f = x;
+  return u.u;
+}
+
+static double
+asfloat64 (uint64_t n)
+{
+  b64u64_u u;
+  u.u = n;
+  return u.f;
+}
 
 double rand_arg(double s){
   int64_t r0,r1;
@@ -95,6 +112,8 @@ double rand_arg2(){
 
 static int check (double x){
   b64u64_u yr = {.f = rfun(x)}, yt = {.f = tfun(x)};
+#pragma omp atomic update
+  tested ++;
   if (yr.u != yt.u) {
     printf("test_fun and ref_fun differ for x=%a\n", x);
     printf("test_fun gives %a\n", yt.f);
@@ -160,6 +179,11 @@ static void scan_consecutive(int64_t n, double x){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
+  if (n < 0) {
+    n = -n;
+    x = asfloat64 (asuint64 (x) - n);
+  }
+  int64_t n0 = n;
   while (n) {
     double h, l, d, dd;
     dd_atanh (&h, &l, x);
@@ -192,6 +216,7 @@ static void scan_consecutive(int64_t n, double x){
     n -= jmax;
     x += jmax * ldexp (1.0, e - 53);
   }
+  printf ("checked %lu values, expensive checks %lu\n", n0, tested);
 }
 
 static void check_val(double x){

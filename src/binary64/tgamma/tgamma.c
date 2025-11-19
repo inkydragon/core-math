@@ -686,6 +686,7 @@ double cr_tgamma(double x){
     double fh = 1.0/z, fl = __builtin_fma(fh,-z,1.0)*fh;
     fh = fastsum(fh,fl, ch,cl, &fl);
     double eps = fh*(3.5e-19 + (x2*x4)*4e-15);
+    // revision 221543c fails with 0.152*eps and x=-0x1.d098fca069c16p-3 (rndu)
     double ub = fh + (fl + eps), lb = fh + (fl - eps);
     if(ub != lb) return as_tgamma_accurate(x);
     return ub;
@@ -748,12 +749,13 @@ double cr_tgamma(double x){
     }
     double eps = rh*(6.5e-21 - x*1.46e-22);
     b64u64_u th;
-    if(__builtin_expect(ip>=-170,1)){
+    if(__builtin_expect(ip>=-170,1)){ // -171 < x < -3
+      // rev. 221543c fails for 0.617*eps with x=-0x1.001ee4721504bp+3 (rndd)
       double ub = rh + (rl + eps), lb = rh + (rl - eps);
       if(ub != lb) return as_tgamma_accurate(x);
       th.f = ub;
       th.u -= (int64_t)e<<52;
-    } else {
+    } else { // x < -171
       th.f = rh;
       int re = (th.u>>52)&0x7ff;
       if(re-e<=0){ // subnormal case
@@ -762,12 +764,14 @@ double cr_tgamma(double x){
 	double l;
 	rh = fasttwosum(th.f, rh, &l);
 	rl += l;
+        // rev. 221543c fails for 0.508*eps with x=-0x1.57e58320e5fd1p+7 (rndz)
 	double ub = rh + (rl + eps), lb = rh + (rl - eps);
 	if(ub != lb) return as_tgamma_accurate(x);
 	th.f = ub;
 	th.u &= ~(0x7ffull<<52); // make subnormal
         raise_underflow ();
       } else {
+        // rev. 221543c fails for 0.444*eps with x=-0x1.5517e2c48dc8bp+7 (rndz)
 	double ub = rh + (rl + eps), lb = rh + (rl - eps);
 	if(ub != lb) return as_tgamma_accurate(x);
 	th.f = ub;
@@ -781,6 +785,7 @@ double cr_tgamma(double x){
     double ll = 0, lh = as_lgamma_asym(x,&ll);
     int e; lh = as_expd(lh, &ll, &e);
     double eps = lh*(2e-21 + x*1.5e-22);
+    // revision 221543c fails for 0.686*eps with x=0x1.4ff0587da08e6p+7 (rndz)
     double ub = lh + (ll + eps), lb = lh + (ll - eps);
     if(ub != lb) return as_tgamma_accurate(x);
     b64u64_u th = {.f = ub};
@@ -828,6 +833,7 @@ double cr_tgamma(double x){
   double rh = 1.0/wh, rl = (__builtin_fma(rh,-wh,1.0) - wl*rh)*rh;
   fh = muldd(rh,rl,fh,fl,&fl);
   double eps = fh*1e-21;
+  // revision 221543c fails for 0.925*eps with x=0x1.80ea59ee2340dp+1 (rndu)
   double ub = fh + (fl + eps), lb = fh + (fl - eps);
   if(ub != lb) return as_tgamma_accurate(x);
   return ub;

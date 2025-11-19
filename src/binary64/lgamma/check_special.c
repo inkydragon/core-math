@@ -34,6 +34,7 @@ SOFTWARE.
 #include <unistd.h>
 #include <assert.h>
 #include <mpfr.h>
+#include <omp.h>
 #include "function_under_test.h"
 
 int ref_init (void);
@@ -46,6 +47,8 @@ int rnd1[] = { FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD };
 
 int rnd = 0;
 int verbose = 0;
+unsigned long tested = 0;
+int nthreads;
 
 #define MAX_THREADS 192
 
@@ -118,6 +121,10 @@ expected_signgam (double x)
 static void
 check (double x)
 {
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp atomic update
+#endif
+  tested ++;
   ref_init ();
   ref_fesetround (rnd);
   double y1 = ref_lgamma (x);
@@ -133,25 +140,28 @@ check (double x)
 #endif
   }
 
-  int s = expected_signgam (x);
-  // check signgam is correctly set
-  if (s != 0 && signgam == 0)
-  {
-    printf ("Error, signgam is not set for x=%la (y=%la)\n", x, y1);
-    fflush (stdout);
+  // don't check signgam in multi-thread mode since it is not thread-safe
+  if (nthreads == 1) {
+    int s = expected_signgam (x);
+    // check signgam is correctly set
+    if (s != 0 && signgam == 0)
+    {
+      printf ("Error, signgam is not set for x=%la (y=%la,s=%d)\n", x, y1, s);
+      fflush (stdout);
 #ifndef DO_NOT_ABORT
-    exit (1);
+      exit (1);
 #endif
-  }
-  // check signgam is correctly set
-  if (s != 0 && s != signgam)
-  {
-    printf ("Error, signgam is wrong for x=%la (y=%la)\n", x, y1);
-    printf ("expected %d, got %d\n", s, signgam);
-    fflush (stdout);
+    }
+    // check signgam is correctly set
+    if (s != 0 && s != signgam)
+    {
+      printf ("Error, signgam is wrong for x=%la (y=%la)\n", x, y1);
+      printf ("expected %d, got %d\n", s, signgam);
+      fflush (stdout);
 #ifndef DO_NOT_ABORT
-    exit (1);
+      exit (1);
 #endif
+    }
   }
 }
 
@@ -294,6 +304,11 @@ static void scan_consecutive(int64_t n, double x){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
+  if (n < 0) {
+    n = -n;
+    x = asfloat64 (asuint64 (x) - n);
+  }
+  int64_t n0 = n;
   while (n) {
     double h, l, d, dd;
     dd_lgamma (&h, &l, x);
@@ -307,9 +322,9 @@ static void scan_consecutive(int64_t n, double x){
     /* we want j^2*dd < 2^-11 ulp(h) so that the 2nd-order term
        produces an error bounded by 2^-11 ulp(h), to that MPFR
        will be called with probability about 2^-11.
-       Thus approximately j^2*dd < 2^-64 h,
-       or j < 2^-32 sqrt(h/dd) */
-    int64_t jmax = 0x1p-32 * sqrt (h / dd);
+       Thus approximately j^2*dd < 2^-64 |h|,
+       or j < 2^-32 sqrt(|h|/dd) */
+    int64_t jmax = 0x1p-32 * sqrt (fabs (h) / dd);
     if (jmax > n) jmax = n; // cap to n
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
@@ -326,6 +341,7 @@ static void scan_consecutive(int64_t n, double x){
     n -= jmax;
     x += jmax * ldexp (1.0, e - 53);
   }
+  printf ("checked %lu values, expensive checks %lu\n", n0, tested);
 }
 
 int
@@ -388,6 +404,11 @@ main (int argc, char *argv[])
     }
   ref_init ();
   ref_fesetround (rnd);
+
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel
+#endif
+  nthreads = omp_get_num_threads ();
 
   if (conseq) {
     scan_consecutive (n, a);

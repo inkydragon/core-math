@@ -947,7 +947,7 @@ double cr_lgamma(double x){
       fh = sumdd(-lh,-ll, fh,fl, &fl);
       eps += __builtin_fabs(lh)*5e-22;
     }
-  } else {
+  } else { // |x| >= 0.5
     double ax = __builtin_fabs(x);
     if(au>=ubrd[19]) {  // |x|>=8.29541 we use asymptotic expansion or Stirling's formula
       double ll, lh = as_logd(ax, &ll);
@@ -1016,6 +1016,7 @@ double cr_lgamma(double x){
     }
     
   }
+  // revision 221543c: fails with 0.965*eps and x=0x1.0ff6b5de60c12p+3 (rndz)
   double ub = fh + (fl + eps), lb = fh + (fl - eps);
   if(ub != lb){ // rounding test
     return as_lgamma_accurate(x);

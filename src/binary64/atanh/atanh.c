@@ -165,6 +165,7 @@ double cr_atanh(double x){
     ph = fasttwosum(x,ph,&tl);
     pl += tl;
     double eps = x*(x4*0x1.dp-53 + 0x1p-103);
+    // revision 221543c fails with 0.737*eps and x=0x1.2f67d96be6eafp-9 (rndu)
     double lb = ph + (pl - eps), ub = ph + (pl + eps);
     if(__builtin_expect(lb == ub,1)) return lb;
     return as_atanh_zero(x);

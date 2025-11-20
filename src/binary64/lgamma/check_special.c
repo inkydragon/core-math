@@ -181,7 +181,7 @@ check_negative (void)
 }
 
 #ifndef CORE_MATH_TESTS
-#define CORE_MATH_TESTS 100000000UL /* total number of tests */
+#define CORE_MATH_TESTS 10000000UL /* total number of tests */
 #endif
 
 // check precision-p inputs

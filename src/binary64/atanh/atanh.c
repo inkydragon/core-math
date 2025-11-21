@@ -151,12 +151,19 @@ double cr_atanh(double x){
       return __builtin_fma(x,0x1p-55,x);
     }
     double x2 = x * x;
+    /* the polynomial c(x) = c[0]+c[1]*x^2+...+c[8]*x^16 is a minimax
+       approximation of (atanh(x) - x - x^3/3)/x^5, which yields for
+       p(x) = x + (0x1.5555555555555p-2 + 0x1.5555555555555p-56) x^3 + x^5 c(x)
+       an approximation of atanh(x) with relative error <= 2^-64.377
+       on [0x1.d12ed0af1a27fp-27,1/4], cf atanh.sollya */
     static const double c[] = 
       {0x1.999999999999ap-3, 0x1.2492492492244p-3, 0x1.c71c71c79715fp-4, 0x1.745d16f777723p-4,
        0x1.3b13ca4174634p-4, 0x1.110c9724989bdp-4, 0x1.e2d17608a5b2ep-5, 0x1.a0b56308cba0bp-5, 0x1.fb6341208ad2ep-5};
     double dx2 = __builtin_fma(x,x,-x2);
     double x4 = x2*x2, x3 = x2*x, x8 = x4*x4;
     double dx3 = __builtin_fma(x2,x,-x3) + dx2*x;
+    /* following the C standard, the following is equivalent to (a + b) + c,
+       where a = c[0] + x2*c[1], b = x4*(...) and c = x8*(...) */
     double p = (c[0] + x2*c[1]) + x4*(c[2] + x2*c[3]) + x8*((c[4] + x2*c[5]) + x4*(c[6] + x2*c[7]) + x8*c[8]);
     double t = 0x1.5555555555555p-56 + x2*p;
     double pl, ph = fasttwosum(0x1.5555555555555p-2, t, &pl);

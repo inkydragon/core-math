@@ -262,7 +262,7 @@ double cr_atanh(double x){
   ll += f;
   lh *= __builtin_copysign(1,x);
   ll *= __builtin_copysign(1,x);
-  double eps = 34e-24 + dx2*0x1p-49;
+  double eps = 36e-24 + dx2*0x1p-49;
   // revision c9f5322 fails with 0.973 * eps and x=0x1.658f845991fe4p-2 (rndz)
   double lb = lh + (ll - eps), ub = lh + (ll + eps);
   if(__builtin_expect(lb==ub, 1)) return lb;

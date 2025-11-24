@@ -165,7 +165,7 @@ double cr_atanh(double x){
     /* following the C standard, the following is equivalent to (a + b) + c,
        where a = c[0] + x2*c[1], b = x4*(...) and c = x8*(...) */
     double p = (c[0] + x2*c[1]) + x4*(c[2] + x2*c[3]) + x8*((c[4] + x2*c[5]) + x4*(c[6] + x2*c[7]) + x8*c[8]);
-    double t = 0x1.5555555555555p-56 + x2*p;
+    double t = __builtin_fma (x2, p, 0x1.5555555555555p-56);
     double pl, ph = fasttwosum(0x1.5555555555555p-2, t, &pl);
     ph = muldd(ph, pl,  x3, dx3, &pl);
     double tl;

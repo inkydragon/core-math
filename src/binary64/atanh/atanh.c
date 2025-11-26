@@ -263,7 +263,7 @@ double cr_atanh(double x){
   lh *= __builtin_copysign(1,x);
   ll *= __builtin_copysign(1,x);
   double eps = 38e-24 + dx2*0x1p-49;
-  // revision c9f5322 fails with 0.973 * eps and x=0x1.658f845991fe4p-2 (rndz)
+  // revision ec6ec4c fails with 0.987 * eps and x=0x1.07f00a701ace5p-1 (rndz)
   double lb = lh + (ll - eps), ub = lh + (ll + eps);
   if(__builtin_expect(lb==ub, 1)) return lb;
   th = fasttwosum(th, tl, &tl);

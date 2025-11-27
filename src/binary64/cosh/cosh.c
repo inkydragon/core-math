@@ -50,9 +50,7 @@ static inline double fasttwosum(double x, double y, double *e){
 static inline double muldd(double xh, double xl, double ch, double cl, double *l){
   double ahlh = ch*xl, alhh = cl*xh, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
   ahhl += alhh + ahlh;
-  ch = ahhh + ahhl;
-  *l = (ahhh - ch) + ahhl;
-  return ch;
+  return fasttwosum (ahhh, ahhl, l);
 }
 
 static inline double polydd(double xh, double xl, int n, const double c[][2], double *l){

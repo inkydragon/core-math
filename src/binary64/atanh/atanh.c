@@ -55,6 +55,24 @@ static inline double adddd(double xh, double xl, double ch, double cl, double *l
   return s;
 }
 
+/* Note: in revision 085972b, we replaced the last two lines
+   ch = ahhh + ahhl and *l = (ahhh - ch) + ahhl by fasttwosum (ahhh, ahhl, l).
+   Indeed, these last two lines did emulate a FastTwoSum.
+   However, they did emulate another variant of fasttwosum, with
+   z = x - s and e = z + y.
+   Note that these two variants differ when the fasttwosum condition
+   |x| >= |y| is not satisfied.
+   Take for example with precision 3 and rounding upwards, x=-7 and
+   y=28. Then s = RU(x + y) = 24. With the first variant, z = RU(s-x) = 32
+   and e = RU(y - z) = -4, thus s + e = 20. With the second variant,
+   z = RU(x-s) = -28 and e = RU(z + y) = 0, thus s + e = 24. In this case,
+   the first variant is closer to the sum x + y = 21.
+   Still with precision 3 and rounding upwards, now take x=7 and
+   y=-28. Then s = RU(x + y) = -20. With the first variant, z = RU(s-x) = -24
+   and e = RU(y - z) = -4, thus s + e = -28. With the second variant,
+   z = RU(x-s) = 28 and e = RU(z + y) = 0, thus s + e = -20. In this case,
+   the second variant is closer to the sum x + y = -21.
+*/
 static inline double muldd(double xh, double xl, double ch, double cl, double *l){
   double ahlh = ch*xl, alhh = cl*xh, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
   ahhl += alhh + ahlh;

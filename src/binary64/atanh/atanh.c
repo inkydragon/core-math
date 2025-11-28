@@ -87,10 +87,13 @@ static inline double mulddd(double xh, double xl, double ch, double *l){
 
 static inline double polydd(double xh, double xl, int n, const double c[][2], double *l){
   int i = n-1;
-  double ch = c[i][0] + *l, cl = ((c[i][0] - ch) + *l) + c[i][1];
+  double ch, cl;
+  ch = fasttwosum(c[i][0], *l, &cl);
+  cl += c[i][1];
   while(--i>=0){
     ch = muldd(xh, xl, ch, cl, &cl);
-    double th = ch + c[i][0], tl = (c[i][0] - th) + ch;
+    double th, tl;
+    th = fasttwosum(c[i][0], ch, &tl);
     ch = th;
     cl += tl + c[i][1];
   }
@@ -101,17 +104,26 @@ static inline double polydd(double xh, double xl, int n, const double c[][2], do
 static double __attribute__((noinline)) as_atanh_refine(double, double, double, double);
 static double __attribute__((noinline)) as_atanh_zero(double x){
   static const double ch[][2] = {
-    {0x1.5555555555555p-2, 0x1.5555555555555p-56}, {0x1.999999999999ap-3, -0x1.999999999611cp-57},
-    {0x1.2492492492492p-3, 0x1.2492490f76b25p-57}, {0x1.c71c71c71c71cp-4, 0x1.c71cd5c38a112p-58},
-    {0x1.745d1745d1746p-4, -0x1.7556c4165f4cap-59}, {0x1.3b13b13b13b14p-4, -0x1.b893c3b36052ep-59},
-    {0x1.1111111111105p-4, 0x1.4e1afd723ed1fp-59}, {0x1.e1e1e1e1e2678p-5, -0x1.f86ea96fb1435p-59},
-    {0x1.af286bc9f90ccp-5, 0x1.1e51a6e54fde9p-60}, {0x1.8618618c779b6p-5, -0x1.ab913de95c3bfp-61},
-    {0x1.642c84aa383ebp-5, 0x1.632e747641b12p-59}, {0x1.47ae2d205013cp-5, -0x1.0c9617e7bcff2p-60},
-    {0x1.2f664d60473f9p-5, 0x1.3adb3e2b7f35ep-61}};
+    {0x1.5555555555555p-2, 0x1.5555555555555p-56},  // degree 3
+    {0x1.999999999999ap-3, -0x1.999999999611cp-57}, // degree 5
+    {0x1.2492492492492p-3, 0x1.2492490f76b25p-57},  // degree 7
+    {0x1.c71c71c71c71cp-4, 0x1.c71cd5c38a112p-58},  // degree 9
+    {0x1.745d1745d1746p-4, -0x1.7556c4165f4cap-59}, // degree 11
+    {0x1.3b13b13b13b14p-4, -0x1.b893c3b36052ep-59}, // degree 13
+    {0x1.1111111111105p-4, 0x1.4e1afd723ed1fp-59},  // degree 15
+    {0x1.e1e1e1e1e2678p-5, -0x1.f86ea96fb1435p-59}, // degree 17
+    {0x1.af286bc9f90ccp-5, 0x1.1e51a6e54fde9p-60},  // degree 19
+    {0x1.8618618c779b6p-5, -0x1.ab913de95c3bfp-61}, // degree 21
+    {0x1.642c84aa383ebp-5, 0x1.632e747641b12p-59},  // degree 23
+    {0x1.47ae2d205013cp-5, -0x1.0c9617e7bcff2p-60}, // degree 25
+    {0x1.2f664d60473f9p-5, 0x1.3adb3e2b7f35ep-61}}; // degree 27
 
   static const double cl[] = {
-    0x1.1a9a91fd692afp-5, 0x1.06dfbb35e7f44p-5, 0x1.037bed4d7588fp-5, 0x1.5aca6d6d720d6p-6,
-    0x1.99ea5700d53a5p-5};
+    0x1.1a9a91fd692afp-5, // degree 29
+    0x1.06dfbb35e7f44p-5, // degree 31
+    0x1.037bed4d7588fp-5, // degree 33
+    0x1.5aca6d6d720d6p-6, // degree 35
+    0x1.99ea5700d53a5p-5}; // degree 37
 
   double x2 = x*x , x2l = __builtin_fma(x, x,-x2);
   double y2 = x2 * (cl[0] + x2 * (cl[1] + x2 * (cl[2] + x2 * (cl[3] + x2 * (cl[4])))));
@@ -120,6 +132,10 @@ static double __attribute__((noinline)) as_atanh_zero(double x){
   y1 = muldd(y1, y2, x2, x2l, &y2);
   double y0 = fasttwosum(x, y1, &y1);
   y1 = fasttwosum(y1, y2, &y2);
+  /* We have 22 failures (only for RNDN, 11 up to sign) if we disable this
+     check, all with 53 or 54 identical bits after the round bit.
+     For example x=0x1.cc7092205cfafp-10 we have y0=0x1.cc70b12857108p-10
+     and y1=-0x1p-63. */
   b64u64_u t = {.f = y1};
   if(__builtin_expect(!(t.u&(~(uint64_t)0>>12)), 0)){
     b64u64_u w = {.f = y2};

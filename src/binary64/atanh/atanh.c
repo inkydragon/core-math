@@ -74,9 +74,9 @@ static inline double adddd(double xh, double xl, double ch, double cl, double *l
    the second variant is closer to the sum x + y = -21.
 */
 static inline double muldd(double xh, double xl, double ch, double cl, double *l){
-  double hh = xh*ch;
-  *l = __builtin_fma(ch, xh, -hh) + xl*ch + xh*cl;
-  return hh;
+  double ahlh = ch*xl, alhh = cl*xh, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
+ ahhl += alhh + ahlh;
+ return fasttwosum (ahhh, ahhl, l);
 }
 
 static inline double mulddd(double xh, double xl, double ch, double *l){
@@ -301,10 +301,8 @@ double cr_atanh(double x){
 
 static __attribute__((noinline)) double as_atanh_database(double x, double f){
   static const double db[][3] = {
-    {0x1.110e96a6c2d96p-2, 0x1.17d1e8a63711fp-2, 0x1p-56},
     {0x1.2dbb7b1c91363p-2, 0x1.36f33d51c264dp-2, 0x1p-56},
     {0x1.c493dc899e4a5p-2, 0x1.e611aa58ab608p-2,-0x1p-56},
-    {0x1.dc3fe1b524821p-2, 0x1.01efe7ac8c15dp-1, 0x1p-55},
   };
   double ax = __builtin_fabs(x), sgn = __builtin_copysign(1,x);
   int a = 0, b = sizeof(db)/sizeof(db[0]) - 1, m = (a + b)/2;

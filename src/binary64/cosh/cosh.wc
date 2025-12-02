@@ -36697,3 +36697,12 @@
 0x1.633ce8fb9f87cp+9
 0x1.633ce8fb9f87dp+9
 0x1.633ce8fb9f87ep+9
+# failures found by Adhemerval Zanella
+# https://gitlab.inria.fr/core-math/core-math/-/issues/43
+-0x1.41eafc1cc27e8p+2
+0x1.4173941572a71p+2
+0x1.42544c5813684p+2
+-0x1.4173b4d96fbffp+2
+0x1.4173941572a71p+2
+0x1.42544c5813684p+2
+-0x1.426a88f2e15b9p+2

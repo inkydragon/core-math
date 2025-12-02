@@ -207,6 +207,9 @@ double cr_atanh(double x){
     return as_atanh_zero(x);
   }
 
+  /* We have performed an exhaustive search of branch |x| >= 0.25 on 221543c
+     with default CFLAGS (with FMA). We found no failure, except the ones
+     in atanh.wc which are fixed in a later commit. */
   double pl, ph = fasttwosum(1,ax,&pl), ql, qh = fasttwosub(1,ax,&ql), iqh = 1/qh, th = ph*iqh,
      tl = __builtin_fma(ph,iqh,-th) + (pl + ph*(__builtin_fma(-qh,iqh,1) - ql*iqh))*iqh;
   

@@ -304,7 +304,7 @@ double cr_cosh(double x){
     rh = th;
     rl = (tl + em) + th*pp;
 
-    double e = 0.09e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
+    double e = 0.1e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
     if(lb == ub) return lb;
 
     th = as_exp_accurate( ax, t, th, tl, &tl);

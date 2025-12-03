@@ -1,6 +1,6 @@
 /* Correctly rounded hyperbolic cosine for binary64 values.
 
-Copyright (c) 2023 Alexei Sibidanov.
+Copyright (c) 2023-2025 Alexei Sibidanov <sibid@uvic.ca>
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -48,19 +48,18 @@ static inline double fasttwosum(double x, double y, double *e){
 }
 
 static inline double muldd(double xh, double xl, double ch, double cl, double *l){
-  double ahlh = ch*xl, alhh = cl*xh, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
-  ahhl += alhh + ahlh;
-  return fasttwosum (ahhh, ahhl, l);
+  double h = ch*xh;
+  *l = __builtin_fma(ch,xh, -h) + xh*cl + ch*xl;
+  return h;
 }
 
 static inline double polydd(double xh, double xl, int n, const double c[][2], double *l){
   int i = n-1;
-  double ch = c[i][0] + *l, cl = ((c[i][0] - ch) + *l) + c[i][1];
+  double ch = c[i][0] + *l, cl = ((c[i][0] - ch) + *l) + c[i][1], e;
   while(--i>=0){
     ch = muldd(xh, xl, ch, cl, &cl);
-    double th = ch + c[i][0], tl = (c[i][0] - th) + ch;
-    ch = th;
-    cl += tl + c[i][1];
+    ch = fasttwosum(c[i][0], ch, &e);
+    cl = (cl + c[i][1]) + e;
   }
   *l = cl;
   return ch;

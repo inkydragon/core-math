@@ -1,6 +1,6 @@
 /* Correctly rounded hyperbolic sine for binary64 values.
 
-Copyright (c) 2023 Alexei Sibidanov.
+Copyright (c) 2023-2025 Alexei Sibidanov <sibid@uvic.ca>.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -47,27 +47,24 @@ static inline double fasttwosum(double x, double y, double *e){
 }
 
 static inline double muldd(double xh, double xl, double ch, double cl, double *l){
-  double ahlh = ch*xl, alhh = cl*xh, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
-  ahhl += alhh + ahlh;
-  return fasttwosum (ahhh, ahhl, l);
+  double h = ch*xh;
+  *l = __builtin_fma(ch,xh, -h) + xh*cl + ch*xl;
+  return h;
 }
 
 static inline double mulddd(double xh, double xl, double ch, double *l){
-  double ahlh = ch*xl, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
-  ahhl += ahlh;
-  ch = ahhh + ahhl;
-  *l = (ahhh - ch) + ahhl;
-  return ch;
+  double h = ch*xh;
+  *l = __builtin_fma(ch,xh, -h) + ch*xl;
+  return h;
 }
 
 static inline double polydd(double xh, double xl, int n, const double c[][2], double *l){
   int i = n-1;
-  double ch = c[i][0] + *l, cl = ((c[i][0] - ch) + *l) + c[i][1];
+  double ch = c[i][0] + *l, cl = ((c[i][0] - ch) + *l) + c[i][1], e;
   while(--i>=0){
     ch = muldd(xh, xl, ch, cl, &cl);
-    double th = ch + c[i][0], tl = (c[i][0] - th) + ch;
-    ch = th;
-    cl += tl + c[i][1];
+    ch = fasttwosum(c[i][0], ch, &e);
+    cl = (cl + c[i][1]) + e;
   }
   *l = cl;
   return ch;
@@ -121,6 +118,7 @@ static __attribute__((noinline)) double as_sinh_database(double x, double f){
     {0x1.4169f234f23b9p-2, 0x1.46b7b3b358f99p-2, -0x1p-56},
     {0x1.616cc75d49226p-2, 0x1.687bd068c1c1ep-2, 0x1.ap-111},
     {0x1.ae3773250e7d2p-2, 0x1.bafc3479fc9ccp-2, -0x1p-105},
+    {0x1.b7efa91915c95p-2, 0x1.c59869f17b483p-2, -0x1p-104},
     {0x1.d68039861ab53p-2, 0x1.e73b46abb01e1p-2, -0x1.2p-109},
     {0x1.e90f16eb88c09p-2, 0x1.fbdd4a37760b7p-2, -0x1.f8p-108},
     {0x1.a3fc7e4dd47d1p-1, 0x1.d4b21ebf542fp-1, 0x1.ep-107},

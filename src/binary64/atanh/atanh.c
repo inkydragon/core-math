@@ -129,7 +129,7 @@ static double __attribute__((noinline)) as_atanh_zero(double x){
   double y2 = x2 * (cl[0] + x2 * (cl[1] + x2 * (cl[2] + x2 * (cl[3] + x2 * (cl[4])))));
   double y1 = polydd(x2, x2l, 13, ch, &y2);
   y1 = mulddd(y1, y2, x, &y2);
-  y1 = muldd(y1, y2, x2, x2l, &y2);
+  y1 = muldd(x2, x2l, y1, y2, &y2);
   double y0 = fasttwosum(x, y1, &y1);
   y1 = fasttwosum(y1, y2, &y2);
   /* We have 22 failures (only for RNDN, 11 up to sign) if we disable this

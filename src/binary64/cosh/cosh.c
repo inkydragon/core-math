@@ -333,7 +333,7 @@ double cr_cosh(double x){
 
     rh = fph + fmh;
     rl = ((fph - rh) + fmh) + fml + fpl;
-    double e = 0.28e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
+    double e = 0.31e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
     if(lb == ub) return lb;
     th = as_exp_accurate( ax, t, th, tl, &tl);
     qh = as_exp_accurate(-ax,-t, qh, ql, &ql);

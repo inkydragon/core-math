@@ -140,6 +140,7 @@ static __attribute__((noinline)) double as_sinh_database(double x, double f){
     {0x1.43a81752eabe7p+3, 0x1.81d364845ecfap+13, -0x1p-90},
     {0x1.16369cd53bb69p+4, 0x1.0fbc6c02b1c9p+24, -0x1.9p-81},
     {0x1.20e29ea8b51e2p+4, 0x1.08b8abba28abcp+25, 0x1.9bp-79},
+    {0x1.92a5c27afbe82p+4, 0x1.3c81f9a247253p+35, 0x1p-67},
     {0x1.a1e4f11b513d7p+4, 0x1.9a65b6c2e2185p+36, -0x1.bcp-70},
     {0x1.c089fcf166171p+4, 0x1.5c452e0e37569p+39, 0x1.4p-69},
     {0x1.e42a98b3a0be5p+4, 0x1.938768ca4f8aap+42, 0x1.6dp-62},

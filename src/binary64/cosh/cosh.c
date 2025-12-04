@@ -310,10 +310,12 @@ double cr_cosh(double x){
     rl = (tl + em) + th*pp;
 
     double e = 0.1e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
+    // fails with e = 0.091e-18*rh and x=0x1.4173941572a71p+2 (rndz)
     if(lb == ub) return lb;
 
     th = as_exp_accurate( ax, t, th, tl, &tl);
     if(__builtin_expect(aix>0x403f666666666666ull, 0)){
+      // |x| > 0x1.f666666666666p+4
       rh = th + qh; rl = ((th - rh) + qh) + tl;
     } else {
       qh = q0h*q1h;
@@ -324,7 +326,7 @@ double cr_cosh(double x){
       qh = as_exp_accurate(-ax,-t, qh, ql, &ql);
       rh = th + qh; rl = (((th - rh) + qh) + ql) + tl;
     }
-  } else {
+  } else { // |x| <= 5
     double q0h = t0[j0][1], q0l = t0[j0][0];
     double q1h = t1[j1][1], q1l = t1[j1][0];
     double qh = q0h*q1h, ql = q0h*q1l + q1h*q0l + __builtin_fma(q0h,q1h,-qh);
@@ -339,6 +341,7 @@ double cr_cosh(double x){
     rh = fph + fmh;
     rl = ((fph - rh) + fmh) + fml + fpl;
     double e = 0.31e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
+    // fails with e = 0.076e-18*rh and x=0x1.c334ce55f09f7p+1 (rndu)
     if(lb == ub) return lb;
     th = as_exp_accurate( ax, t, th, tl, &tl);
     qh = as_exp_accurate(-ax,-t, qh, ql, &ql);

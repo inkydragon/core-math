@@ -1,6 +1,6 @@
 /* Check sinh on random inputs.
 
-Copyright (c) 2022-2024 Paul Zimmermann, Inria.
+Copyright (c) 2022-2025 Paul Zimmermann, Inria.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).

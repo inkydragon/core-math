@@ -33,6 +33,7 @@ SOFTWARE.
 #include <sys/types.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <assert.h>
 #include <mpfr.h>
 #include "function_under_test.h"
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
@@ -319,8 +320,9 @@ static void scan_consecutive(int64_t n, double x){
        will be called with probability about 2^-11.
        Thus approximately j^2*dd < 2^-64 h,
        or j < 2^-32 sqrt(h/dd) */
-    int64_t jmax = 0x1p-32 * sqrt (h / dd);
+    int64_t jmax = 0x1p-32 * sqrt (fabs (h) / dd);
     if (jmax > n) jmax = n; // cap to n
+    assert (jmax > 0);
 #if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
 #pragma omp parallel for
 #endif

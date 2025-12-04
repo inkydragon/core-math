@@ -242,11 +242,13 @@ double cr_cosh(double x){
 #endif
   b64u64_u ix = {.f = ax};
   u64 aix = ix.u;
-  if(__builtin_expect(aix<0x3fc0000000000000ull, 0)){
-    if(__builtin_expect(aix<0x3e50000000000000ull, 0)) return __builtin_fma(ax,0x1p-55,1);
+  if(__builtin_expect(aix<0x3fc0000000000000ull, 0)){ // |x| < 0.125
+    if(__builtin_expect(aix<0x3e50000000000000ull, 0)) // |x| < 0x1p-26
+      return __builtin_fma(ax,0x1p-55,1);
     static const double c[] = {
       0x1p-1, 0x1.555555555554ep-5, 0x1.6c16c16c26737p-10, 0x1.a019ffbbcdbdap-16, 0x1.27ffe2df106cbp-22};
     double x2 = x*x, x4 = x2*x2, p = x2*((c[0] + x2*c[1]) + x4*((c[2] + x2*c[3]) + x4*c[4]));
+    // failure with e = x2*(2.82*0x1p-53) and x=0x1.02f8f4ed3ecbp-12 (RNDU)
     double e = x2*(4*0x1p-53), lb = 1 + (p - e), ub = 1 + (p + e);
     if(lb == ub) return lb;
     return as_cosh_zero(x);
@@ -263,6 +265,7 @@ double cr_cosh(double x){
     return 0x1p1023 * 2.0;
   }
 
+  // now 0.125 <= |x| <= 0x1.633ce8fb9f87dp+9
   int64_t il = ((uint64_t)jt.u<<14)>>40, jl = -il;
   int64_t i1 = il&0x3f, i0 = (il>>6)&0x3f, ie = il>>12;
   int64_t j1 = jl&0x3f, j0 = (jl>>6)&0x3f, je = jl>>12;
@@ -291,6 +294,9 @@ double cr_cosh(double x){
       th += tl;
       th *= 2;
       th *= sp.f;
+      /* if the exponent difference between eh and el is larger than 103,
+         or if the last bits from ml are <= 8 in absolute value,
+         call the accurate path */
       if(ml<=16 || eh-el>103) return as_cosh_database(x, th);
       return th;
     }

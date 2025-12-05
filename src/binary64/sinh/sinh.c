@@ -349,7 +349,7 @@ double cr_sinh(double x){
 
     rh *= __builtin_copysign(1, x);
     rl *= __builtin_copysign(1, x);
-    double e = 0.115e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
+    double e = 0.116e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
     if(lb == ub) return lb;
 
     th = as_exp_accurate( ax, t, th, tl, &tl);

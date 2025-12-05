@@ -309,7 +309,7 @@ double cr_cosh(double x){
     rh = th;
     rl = (tl + em) + th*pp;
 
-    double e = 0.115e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
+    double e = 0.116e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
     // fails with e = 0.091e-18*rh and x=0x1.4173941572a71p+2 (rndz)
     if(lb == ub) return lb;
 

@@ -229,7 +229,7 @@ static void scan_consecutive(int64_t n, double x){
       b64u64_u v = {.f = x};
       v.u += j;
       double t = tfun (v.f);
-      // asinh(x+j*u) is approximated by h + l + j*d
+      // cosh(x+j*u) is approximated by h + l + j*d
       double w = h + __builtin_fma (j, d, l);
       if (t != w) // expensive test
         check(v.f);

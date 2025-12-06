@@ -349,6 +349,7 @@ double cr_sinh(double x){
 
     rh *= __builtin_copysign(1, x);
     rl *= __builtin_copysign(1, x);
+    // fails with e = 0.1162e-18*rh and x=0x1.4059050000564p+2 (rndz, no fma)
     double e = 0.117e-18*rh, lb = rh + (rl - e), ub = rh + (rl + e);
     if(lb == ub) return lb;
 

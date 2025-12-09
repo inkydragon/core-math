@@ -1,6 +1,6 @@
 /* Correctly-rounded inverse hyperbolic sine function for binary64.
 
-Copyright (c) 2023-2025 Alexei Sibidanov.
+Copyright (c) 2023-2025 Alexei Sibidanov <sibid@uvic.ca>.
 
 This file is part of the CORE-MATH project
 (https://core-math.gitlabpages.inria.fr/).
@@ -51,19 +51,15 @@ static inline double adddd(double xh, double xl, double ch, double cl, double *l
 }
 
 static inline double muldd(double xh, double xl, double ch, double cl, double *l){
-  double ahlh = ch*xl, alhh = cl*xh, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
-  ahhl += alhh + ahlh;
-  ch = ahhh + ahhl;
-  *l = (ahhh - ch) + ahhl;
-  return ch;
+  double h = ch*xh;
+  *l = __builtin_fma(ch,xh, -h) + xh*cl + ch*xl;
+  return h;
 }
 
 static inline double mulddd(double xh, double xl, double ch, double *l){
-  double ahlh = ch*xl, ahhh = ch*xh, ahhl = __builtin_fma(ch, xh, -ahhh);
-  ahhl += ahlh;
-  ch = ahhh + ahhl;
-  *l = (ahhh - ch) + ahhl;
-  return ch;
+  double h = ch*xh;
+  *l = __builtin_fma(ch,xh, -h) + ch*xl;
+  return h;
 }
 
 static inline double polydd(double xh, double xl, int n, const double c[][2], double *l){
@@ -213,7 +209,7 @@ double cr_asinh(double x){
       double x4 = x2h*x2h;
       sl = x3h*(cl[0] + x2h*(c1 + x4*(c3 + x4*c5)));
     }
-    double eps = 0x1.6p-53*x3h;
+    double eps = 0x1.76p-53*x3h;
     // revision 00a4981 fails with 0.957*eps and x=0x1.72d1e11799aedp-4 (rndz)
     double lb = x + (sl - eps), ub = x + (sl + eps);
     if(lb == ub) return lb;
@@ -455,6 +451,8 @@ static double as_asinh_refine(double x, double zh, double zl, double a){
   sh = adddd(sh, sl, L[1], L[2], &sl);
   double v2, v0 = fasttwosum(L[0], sh, &v2);
   double v1 = fasttwosum(v2, sl, &v2);
+  v0 = fasttwosum(v0,v1, &v1);
+  v1 = fasttwosum(v1,v2, &v2);
   v0 *= __builtin_copysign(2,x);
   v1 *= __builtin_copysign(2,x);
   v2 *= __builtin_copysign(2,x);

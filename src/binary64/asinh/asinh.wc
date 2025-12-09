@@ -33130,3 +33130,16 @@
 -1
 +0x1.fffffffffffffp+1023
 -0x1.fffffffffffffp+1023
+# failures found by Vincenzo Innocente in the range 0x1.3p-6 <= x < 0x1.bp-4
+0x1.0244d88809cc9p-5
+0x1.026e963e840ccp-5
+0x1.028d875d9546ap-5
+0x1.029a7ed11c33cp-5
+0x1.02a6d3cbb1ba5p-5
+0x1.02a7e0faff623p-5
+0x1.02b555c2a923p-5
+0x1.02c5dc10b7d81p-5
+0x1.02dca5120d032p-5
+0x1.02df223e3c996p-5
+0x1.02e25f8bae9e3p-5
+0x1.02e2d7e4a1124p-5

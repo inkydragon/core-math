@@ -142,3 +142,13 @@ perf_test:
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
     - ci/perf_test.sh
+
+check_llvm:
+  stage: test
+  image: debian:testing
+  before_script:
+    - ci/00-prepare-docker.sh
+    - ci/01-prepare-llvm.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - ci/llvm_test.sh

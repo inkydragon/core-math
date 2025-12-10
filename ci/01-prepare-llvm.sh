@@ -1,5 +1,5 @@
 #!/bin/bash
-apt-get update -qq && apt-get install -qq cmake ninja-build
+apt-get update -qq && apt-get install -qq cmake ninja-build clang
 cd /tmp
 git clone https://github.com/llvm/llvm-project.git
 cd llvm-project

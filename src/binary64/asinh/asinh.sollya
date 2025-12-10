@@ -1,0 +1,26 @@
+pretty = proc(u) {
+  return ~(floor(u*1000)/1000);
+};
+
+c3=-0x1.5555555555555p-3;
+c5=0x1.333333333331p-4;
+c7=-0x1.6db6db6da466cp-5;
+c9=0x1.f1c71c2ea7be4p-6;
+c11=-0x1.6e8b651b09d72p-6;
+c13=0x1.1c309fc0e69c2p-6;
+c15=-0x1.bab7833c1ep-7;
+p=x+c3*x^3+c5*x^5+c7*x^7+c9*x^9+c11*x^11+c13*x^13+c15*x^15;
+
+d = [0x1.3p-6,0x1.bp-4];
+f = 1;
+w = 1/asinh(x);
+err_p = -log2(dirtyinfnorm(p*w-f, d));
+print (pretty(err_p));
+
+pf = fpminimax(asinh(x), [|3,5,7,9,11,13|], [|D...|], d, relative, floating, x);
+err_p = -log2(dirtyinfnorm(pf*w-f, d));
+print (pretty(err_p));
+display = hexadecimal;
+print (pf);
+
+

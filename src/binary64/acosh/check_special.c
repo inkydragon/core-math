@@ -170,7 +170,7 @@ dd_acosh (double *h, double *l, double x)
   mpfr_clear (t);
 }
 
-static void scan_consecutive(int64_t n, double x){
+static void scan_consecutive_aux(int64_t n, double x){
   ref_init();
   ref_fesetround(rnd);
   fesetround(rnd1[rnd]);
@@ -178,7 +178,6 @@ static void scan_consecutive(int64_t n, double x){
     n = -n;
     x = asfloat64 (asuint64 (x) - n);
   }
-  int64_t n0 = n;
   while (n) {
     double h, l, d, dd;
     dd_acosh (&h, &l, x);
@@ -197,9 +196,6 @@ static void scan_consecutive(int64_t n, double x){
     int64_t jmax = 0x1p-32 * sqrt (h / dd);
     if (jmax > n) jmax = n; // cap to n
     assert (jmax > 0); // ensure progress
-#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
-#pragma omp parallel for
-#endif
     for(int64_t j=0;j<jmax;j++){
       b64u64_u v = {.f = x};
       v.u += j;
@@ -212,7 +208,29 @@ static void scan_consecutive(int64_t n, double x){
     n -= jmax;
     x += jmax * ldexp (1.0, e - 53);
   }
-  printf ("checked %lu values, expensive checks %lu\n", n0, tested);
+}
+
+static void scan_consecutive (int64_t n, double x){
+  int nthreads;
+  if (n < 0) {
+    n = -n;
+    x = asfloat64 (asuint64 (x) - n);
+  }
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel
+#endif
+  nthreads = omp_get_num_threads ();
+  int64_t h = (n - 1) / nthreads + 1; // ceil(n/nthreads)
+#if (defined(_OPENMP) && !defined(CORE_MATH_NO_OPENMP))
+#pragma omp parallel for schedule(static,1)
+#endif
+  for (int i = 0; i < nthreads; i++) {
+    int64_t ni = i * h;
+    double xi = asfloat64 (asuint64 (x) + ni);
+    int64_t hi = (ni + h > n) ? n - ni : h;
+    scan_consecutive_aux (hi, xi);
+  }
+  printf ("checked %lu values, expensive checks %lu\n", n, tested);
 }
 
 static void check_val(double x){

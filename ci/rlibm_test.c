@@ -1,6 +1,9 @@
-// check RLIBM log2
+// to check RLIBM function log2:
+// gcc -DSTR=log2 -O3 test.c -lmpfr -lm rlibm.a -fopenmp
+// ./a.out
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <fenv.h>
 #include <mpfr.h>
@@ -32,6 +35,7 @@ int rnd[] = {FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD};
 int rnd2[] = {MPFR_RNDN, MPFR_RNDZ, MPFR_RNDU, MPFR_RNDZ};
 
 static void check (float x) {
+  if (x != x) return; // don't check NaN
   for (int r = 0; r < 4; r++) {
     // recommended way (cf README.md)
     fesetround (FE_TONEAREST);
@@ -39,6 +43,11 @@ static void check (float x) {
     fesetround (rnd[r]);
     float y = (float) temp;
     float z = ref (x, rnd2[r]);
+    if (y != z) {
+      printf ("FAIL %s x=%a y=%a ref=%a\n",
+              mpfr_print_rnd_mode (rnd2[r]), x, y, z);
+      exit (1);
+    }
   }
 }
 

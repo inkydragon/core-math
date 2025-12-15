@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <fenv.h>
+#include <math.h>
 #include <mpfr.h>
 #include <omp.h>
 
@@ -34,8 +35,13 @@ static float ref (float x, mpfr_rnd_t rnd) {
 int rnd[] = {FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD};
 int rnd2[] = {MPFR_RNDN, MPFR_RNDZ, MPFR_RNDU, MPFR_RNDZ};
 
+int is_equal (float y, float z) {
+  if (isnan (y)) return isnan (z);
+  if (isnan (z)) return isnan (y);
+  return y == z;
+}
+
 static void check (float x) {
-  if (x != x) return; // don't check NaN
   for (int r = 0; r < 4; r++) {
     // recommended way (cf README.md)
     fesetround (FE_TONEAREST);
@@ -43,7 +49,7 @@ static void check (float x) {
     fesetround (rnd[r]);
     float y = (float) temp;
     float z = ref (x, rnd2[r]);
-    if (y != z) {
+    if (!is_equal (y, z)) {
       printf ("FAIL %s x=%a y=%a ref=%a\n",
               mpfr_print_rnd_mode (rnd2[r]), x, y, z);
       exit (1);

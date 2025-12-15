@@ -33,7 +33,7 @@ static float ref (float x, mpfr_rnd_t rnd) {
 }
 
 int rnd[] = {FE_TONEAREST, FE_TOWARDZERO, FE_UPWARD, FE_DOWNWARD};
-int rnd2[] = {MPFR_RNDN, MPFR_RNDZ, MPFR_RNDU, MPFR_RNDZ};
+mpfr_rnd_t rnd2[] = {MPFR_RNDN, MPFR_RNDZ, MPFR_RNDU, MPFR_RNDD};
 
 int is_equal (float y, float z) {
   if (isnan (y)) return isnan (z);

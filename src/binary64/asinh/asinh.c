@@ -215,7 +215,7 @@ double cr_asinh(double x){
       sl = x3h*(cl[0] + x2h*(c1 + x4*(c3 + x4*c5)));
     }
     double eps = 0x1.79p-53*x3h;
-    // revision e7dd122 fails with 0.999*eps and x=0x1.0244d88809cc9p-5 (rndz)
+    // revision 03523e1 fails with 0.999*eps and x=0x1.019bcf56d16f7p-4 (rndz)
     double lb = x + (sl - eps), ub = x + (sl + eps);
     if(lb == ub) return lb;
     return as_asinh_zero(x,x2h,x2l);

@@ -153,7 +153,7 @@ perf_test:
 #     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
 #     - ci/llvm_test.sh
 
-check_rlibm:
+check_rlibm1:
   stage: test
   image: debian:testing
   before_script:
@@ -161,4 +161,14 @@ check_rlibm:
     - ci/02-prepare-rlibm.sh
   script:
     - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
-    - ci/rlibm_test.sh
+    - ci/rlibm_test1.sh
+
+check_rlibm2:
+  stage: test
+  image: debian:testing
+  before_script:
+    - ci/00-prepare-docker.sh
+    - ci/02-prepare-rlibm.sh
+  script:
+    - apt-get update -qq && apt-get install -qq build-essential git libmpfr-dev
+    - ci/rlibm_test2.sh

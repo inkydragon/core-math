@@ -16,7 +16,7 @@
 #define RLIBM_FOO CAT2(rlibm_,FOO)
 #define MPFR_FOO CAT2(mpfr_,STR)
 
-double rlibm_log2f(float);
+double RLIBM_FOO(float);
 
 typedef union {float x; uint32_t u;} b32u32_t;
 

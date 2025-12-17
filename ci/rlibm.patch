@@ -1,0 +1,4 @@
+5c5
+< rlibmfiles = log2f logf exp10f exp2f expf log10f coshf sinhf cospif sinpif sinf cosf tanf atanf asinf acosf
+---
+> rlibmfiles = log2f logf exp10f exp2f expf log10f coshf sinhf cospif sinpif sinf cosf tanf atanf asinf acosf wrapper

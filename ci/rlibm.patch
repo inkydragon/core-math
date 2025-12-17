@@ -1,4 +1,11 @@
-5c5
-< rlibmfiles = log2f logf exp10f exp2f expf log10f coshf sinhf cospif sinpif sinf cosf tanf atanf asinf acosf
----
-> rlibmfiles = log2f logf exp10f exp2f expf log10f coshf sinhf cospif sinpif sinf cosf tanf atanf asinf acosf wrapper
+--- Makefile.orig	2025-12-17 08:40:23.986097395 +0100
++++ Makefile	2025-12-17 08:40:31.384680838 +0100
+@@ -2,7 +2,7 @@
+ 
+ CC = gcc
+ 
+-rlibmfiles = log2f logf exp10f exp2f expf log10f coshf sinhf cospif sinpif sinf cosf tanf atanf asinf acosf
++rlibmfiles = log2f logf exp10f exp2f expf log10f coshf sinhf cospif sinpif sinf cosf tanf atanf asinf acosf wrapper
+ 
+ rlibmsrcdir = .
+ rlibmobjdir = obj

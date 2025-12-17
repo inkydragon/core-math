@@ -224,7 +224,7 @@ double cr_asinh(double x){
   double x2h = 0, x2l = 0;
   double ah, al;
   int off = 0x3ff;
-  if(__builtin_expect(u<0x4190000000000000ull, 1)){ // x < 0x1p+26
+  if(__builtin_expect(u<0x4190000000000000ull, 1)){ // |x| < 0x1p+26
     double th, tl;
     x2h = x * x;
     x2l = __builtin_fma(x, x, -x2h);
@@ -238,10 +238,10 @@ double cr_asinh(double x){
     al = (tl - __builtin_fma(ah,ah,-th))*(rs*ah);
     ah = fasttwosum(ah, ax, &tl);
     al += tl;
-  } else if(u<0x4330000000000000ull){
+  } else if(u<0x4330000000000000ull){ // |x| < 0x1p+52
     ah = 2*ax;
     al = 0.5/ax;
-  } else {
+  } else { // |x| >= 0x1p+52
     if(__builtin_expect(u>=(u64)0x7ff0000000000000ull, 0)) return x + x; // +-inf or nan
     off = 0x3fe;
     ah = ax;
@@ -266,6 +266,7 @@ double cr_asinh(double x){
   lh *= __builtin_copysign(1, x);
   ll *= __builtin_copysign(1, x);
   double eps = 1.63e-19;
+  // revision 03523e1 fails with eps=0.997*eps, x=0x1.eece8f7802fbp+468 and rndz
   double lb = lh + (ll - eps), ub = lh + (ll + eps);
   if (lb == ub) return lb;
   if(ax<0x1p-2) return as_asinh_zero(x,x2h,x2l);

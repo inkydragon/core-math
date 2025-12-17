@@ -6,6 +6,6 @@ cd /tmp
 git clone https://github.com/rutgers-apl/The-RLIBM-Project.git
 cd The-RLIBM-Project/libm
 cp /tmp/rlibm_wrapper.c wrapper.c
-patch -p1 -i /tmp/rlibm.patch
+patch -i /tmp/rlibm.patch
 make
 # library located at /tmp/The-RLIBM-Project/libm/rlibm.a
